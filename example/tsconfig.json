@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "expo-nano-icons": ["../src/index"],
+      "expo-nano-icons/*": ["../src/*"]
+    }
+  }
+}
