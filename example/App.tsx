@@ -19,6 +19,7 @@ export default function App() {
           <Icon name="triangle" size={52} color={"blue"} />
           <Icon name="usFlag" size={52} color={"blue"} />
           <Icon name="star" size={52} />
+          <Icon name="triangleCropped" color="green" size={52} />
         </View>
       </View>
     </View>
