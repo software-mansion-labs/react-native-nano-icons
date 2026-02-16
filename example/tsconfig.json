@@ -3,8 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "expo-nano-icons": ["../src/index"],
-      "expo-nano-icons/*": ["../src/*"]
+      "react-native-nano-icons": ["../src/index"],
+      "react-native-nano-icons/*": ["../src/*"]
     }
   }
 }

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "expo-nano-icons-example",
-    "slug": "expo-nano-icons-example",
+    "name": "react-native-nano-icons-example",
+    "slug": "react-native-nano-icons-example",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -27,6 +27,28 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      ["expo-font", { "fonts": [] }],
+      [
+        "react-native-nano-icons",
+        {
+          "iconSets": [
+            {
+              "inputDir": "./assets/testicons",
+              "fontFamily": "Testicons",
+              "upm": 1024,
+              "startUnicode": "0xe900"
+            },
+            {
+              "inputDir": "./assets/differentIcons",
+              "fontFamily": "DifferentIcons",
+              "upm": 1024,
+              "startUnicode": "0xe900"
+            }
+          ]
+        }
+      ]
+    ]
   }
 }

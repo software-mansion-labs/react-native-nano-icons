@@ -1,53 +1,31 @@
-import { useEvent } from 'expo';
-import ExpoNanoIcons, { ExpoNanoIconsView } from 'expo-nano-icons';
-import { Button, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from "react-native";
+import { Icon } from "./Icon";
 
 export default function App() {
-  const onChangePayload = useEvent(ExpoNanoIcons, 'onChange');
-
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.container}>
-        <Text style={styles.header}>Module API Example</Text>
-        <Group name="Constants">
-          <Text>{ExpoNanoIcons.PI}</Text>
-        </Group>
-        <Group name="Functions">
-          <Text>{ExpoNanoIcons.hello()}</Text>
-        </Group>
-        <Group name="Async functions">
-          <Button
-            title="Set value"
-            onPress={async () => {
-              await ExpoNanoIcons.setValueAsync('Hello from JS!');
-            }}
-          />
-        </Group>
-        <Group name="Events">
-          <Text>{onChangePayload?.value}</Text>
-        </Group>
-        <Group name="Views">
-          <ExpoNanoIconsView
-            url="https://www.example.com"
-            onLoad={({ nativeEvent: { url } }) => console.log(`Loaded: ${url}`)}
-            style={styles.view}
-          />
-        </Group>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function Group(props: { name: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.group}>
-      <Text style={styles.groupHeader}>{props.name}</Text>
-      {props.children}
+    <View style={styles.container}>
+      <View
+        style={{
+          flexDirection: "row",
+          columnGap: 20,
+          justifyContent: "space-around",
+          width: "100%",
+        }}
+      >
+        <View style={{ justifyContent: "center", alignItems: "center" }}>
+          <Text style={{ marginBottom: 20 }}>Nanoicons source</Text>
+          <Icon name="AO" size={52} color={"blue"} />
+          <Icon name="message" size={52} color={"#7e0c0c"} />
+          <Icon name="triangle" size={52} color={"blue"} />
+          <Icon name="usFlag" size={52} color={"blue"} />
+          <Icon name="star" size={52} />
+        </View>
+      </View>
     </View>
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   header: {
     fontSize: 30,
     margin: 20,
@@ -58,16 +36,14 @@ const styles = {
   },
   group: {
     margin: 20,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 10,
     padding: 20,
   },
   container: {
     flex: 1,
-    backgroundColor: '#eee',
+    backgroundColor: "#eee",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  view: {
-    flex: 1,
-    height: 200,
-  },
-};
+});
