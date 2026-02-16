@@ -14,12 +14,12 @@ export default function App() {
       >
         <View style={{ justifyContent: "center", alignItems: "center" }}>
           <Text style={{ marginBottom: 20 }}>Nanoicons source</Text>
-          <Icon name="AO" size={52} color={"blue"} />
-          <Icon name="message" size={52} color={"#7e0c0c"} />
-          <Icon name="triangle" size={52} color={"blue"} />
-          <Icon name="usFlag" size={52} color={"blue"} />
+          <Icon name="AO" size={52} />
+          <Icon name="message" size={52} colorPalette={["#7e0c0c"]} />
+          <Icon name="triangle" size={52} colorPalette={["blue"]} />
+          <Icon name="usFlag" size={52} />
           <Icon name="star" size={52} />
-          <Icon name="triangleCropped" color="green" size={52} />
+          <Icon name="triangleCropped" size={52} colorPalette={["green"]} />
         </View>
       </View>
     </View>

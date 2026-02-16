@@ -86,7 +86,7 @@ export const UserIcon = createNanoIconSet(glyphMap, {
 
 The generated component supports standard `Text` props **excluding** `style.color | .fontWeight | .fontFamily`.
 
-To manipulate the color(s) of the icon you should provide `colorPallete: string[]`
+To manipulate the color(s) of the icon you should provide `colorPalette: ColorValue[]` (same type as [Expo LinearGradient](https://docs.expo.dev/versions/latest/sdk/linear-gradient/) `colors`).
 
 The `name` prop corresponds to the original name of the svg file for a given icon.
 
@@ -99,13 +99,13 @@ export default function App() {
     <Icon name="avatar-1" size={32} />
 
     // Overrides all color layers with the provided colors respectively
-    <Icon name="avatar-1" size={24} colorPalette=["blue", "#ffffff", "#fc2930"] />
+    <Icon name="avatar-1" size={24} colorPalette={["blue", "#ffffff", "#fc2930"]} />
   );
 }
 ```
 
 Your color icons can have as many colors as your original svg has, therefore you should experiment to establish which element of the array corresponds to the layer you aim to change the color of.
-If the icon is single-color by design (which results in creating a single glyph during build-time) only the first element is took into consideration, and if the `colorPallete` array is too short - the last color is repeated.
+If the icon is single-color by design (which results in creating a single glyph during build-time) only the first element is took into consideration, and if the `colorPalette` array is too short - the last color is repeated.
 
 You should always verify your icons visually.
 

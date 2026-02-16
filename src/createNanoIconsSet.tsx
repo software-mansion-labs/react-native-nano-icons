@@ -6,8 +6,8 @@ import {
   Text,
   View,
   ViewProps,
+  type ColorValue,
   type TextProps,
-  type TextStyle,
 } from "react-native";
 import {
   DEFAULT_ICON_SIZE,
@@ -23,18 +23,19 @@ type ValueData = { uri: string; scale: number };
 type GetImageSourceSyncIconFunc<GM> = (
   name: GM,
   size?: number,
-  color?: TextStyle["color"],
+  color?: ColorValue,
 ) => ValueData | undefined;
 type GetImageSourceIconFunc<GM> = (
   name: GM,
   size?: number,
-  color?: TextStyle["color"],
+  color?: ColorValue,
 ) => Promise<ValueData | undefined>;
 
 export type IconProps<T> = TextProps & {
   name: T;
   size?: number;
-  color?: TextStyle["color"];
+  /** Override colors per layer; first element for single-color icons; last color is repeated if array is short. */
+  colorPalette?: ColorValue[];
   innerRef?: Ref<Text>;
 };
 
@@ -46,7 +47,8 @@ export type IconComponent<GM extends GlyphMap> = React.FC<
   TextProps & {
     name: keyof GM;
     size?: number;
-    color?: TextStyle["color"];
+    /** Override colors per layer; first element for single-color icons; last color is repeated if array is short. */
+    colorPalette?: ColorValue[];
     innerRef?: Ref<Text>;
   } & React.RefAttributes<Text>
 > & {
@@ -117,17 +119,13 @@ export function createIconSet<GM extends GlyphMap>(
   };
 
   const resolveLayeredGlyph = (name: keyof GM): GlyphEntry[] => {
-    const glyph = glyphMap[name] || [{ hex: "?", color: "black" }];
-
-    console.log("glyph", name, glyph);
-
-    return glyph;
+    return glyphMap[name] ?? [{ hex: "?", color: "black" }];
   };
 
   const Icon = ({
     name,
     size = DEFAULT_ICON_SIZE,
-    color,
+    colorPalette,
     style,
     children,
     allowFontScaling = false,
@@ -181,11 +179,15 @@ export function createIconSet<GM extends GlyphMap>(
       },
     };
 
-    const subGlyphsCount = layeredGlyph.length;
+    const lastPaletteColor = colorPalette?.length
+      ? colorPalette[colorPalette.length - 1]
+      : undefined;
 
     return (
       <View ref={innerRef} {...containerProps}>
-        {layeredGlyph.map(({ hex, color: glyphSourceColor }) => {
+        {layeredGlyph.map(({ hex, color: glyphSourceColor }, i) => {
+          const layerColor =
+            colorPalette?.[i] ?? lastPaletteColor ?? glyphSourceColor;
           return (
             <Text
               key={hex}
@@ -197,7 +199,7 @@ export function createIconSet<GM extends GlyphMap>(
                 fontStyle,
                 {
                   fontSize: size,
-                  color: subGlyphsCount <= 1 ? color : glyphSourceColor,
+                  color: layerColor,
                 },
               ]}
             >
