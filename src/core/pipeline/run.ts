@@ -1,4 +1,3 @@
-// src/core/pipeline/run.ts
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
@@ -86,13 +85,9 @@ export async function runPipeline(
     paths.outputDir,
     `${config.fontFamily}.glyphmap.json`,
   );
-  await fsp.writeFile(
-    glyphmapPath,
-    JSON.stringify(glyphMap, null, 2),
-    "utf8",
-  );
+  await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap, null, 2), "utf8");
 
-  log("🎨 Compiling TTF with svgicons2svgfont + svg2ttf (Node)...");
+  log("🎨➡️✒️ 🔨 Compiling TTF with svgicons2svgfont + svg2ttf (Node)...");
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
 
   await compileTtfFromGlyphSvgs({
@@ -108,7 +103,9 @@ export async function runPipeline(
     fs.rmSync(paths.tempDir, { recursive: true, force: true });
 
   if (!options?.silent) {
-    log(`✅ Build Complete!\n   - Font: ${ttfPath}\n   - Map:  ${glyphmapPath}`);
+    log(
+      `🎨➡️✒️ ✅ ${config.fontFamily} Build Complete!\n   - Font: ${ttfPath}\n   - Map:  ${glyphmapPath}`,
+    );
   }
 
   return { ttfPath, glyphmapPath };

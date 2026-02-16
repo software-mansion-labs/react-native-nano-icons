@@ -1,4 +1,3 @@
-// src/core/pipeline/layers.ts
 import fsp from "node:fs/promises";
 import path from "node:path";
 

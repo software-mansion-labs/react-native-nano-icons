@@ -105,7 +105,7 @@ export function createIconSet<GM extends GlyphMap>(
     textAlignVertical: "center",
   };
 
-  // TODO: get rid of this and adjust getImageSource to adopt resolveLayeredGlyph
+  // TODO: get rid of this and adjust getImageSource(..) to adopt resolveLayeredGlyph
   const resolveGlyph = (name: keyof GM): string => {
     const glyph = glyphMap[name]?.[0]?.hex || "?";
 
@@ -141,9 +141,6 @@ export function createIconSet<GM extends GlyphMap>(
       isFontLoaded && name
         ? resolveLayeredGlyph(name)
         : [{ hex: "", color: "black" }];
-    // const layeredGlyph = resolveLayeredGlyph(name);
-
-    console.log("isFontLoaded && name", isFontLoaded && name && true);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: the dependencies never change
     useEffect(() => {
@@ -189,7 +186,6 @@ export function createIconSet<GM extends GlyphMap>(
     return (
       <View ref={innerRef} {...containerProps}>
         {layeredGlyph.map(({ hex, color: glyphSourceColor }) => {
-          // console.log(hex, glyphSourceColor);
           return (
             <Text
               key={hex}

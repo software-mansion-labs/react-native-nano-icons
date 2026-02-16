@@ -1,4 +1,3 @@
-// Re-export pipeline API for use by the Expo plugin (and future CLI).
 export {
   runPipeline,
   runFromCli,

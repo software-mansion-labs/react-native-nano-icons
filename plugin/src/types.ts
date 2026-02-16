@@ -1,6 +1,5 @@
 /**
  * Config for one icon set: input SVGs → one TTF + glyphmap.
- * Matches the shape used in app.json / app.config.ts.
  */
 export interface IconSetConfig {
   /** Path to folder of SVG files (relative to project root). */
@@ -16,7 +15,6 @@ export interface IconSetConfig {
 }
 
 /**
- * Plugin options as passed in app.json:
  * plugins: [ [ "react-native-nano-icons", { iconSets: [...] } ] ]
  */
 export interface NanoIconsPluginOptions {
@@ -24,7 +22,7 @@ export interface NanoIconsPluginOptions {
 }
 
 /**
- * Result of building one icon set (paths absolute).
+ * Result of building one icon set.
  */
 export interface BuiltFont {
   fontFamily: string;

@@ -1,4 +1,3 @@
-// src/core/font/metrics.ts
 export function forceTtfMetrics(
   Font: any,
   ttfBuffer: Buffer,

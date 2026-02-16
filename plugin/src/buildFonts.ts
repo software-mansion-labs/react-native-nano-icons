@@ -17,7 +17,7 @@ type PipelineModule = {
 };
 
 /**
- * Load the pipeline from the same package (ESM dynamic import; works when plugin is in node_modules).
+ * Load the pipeline as an ESM dynamic import.
  */
 async function getPipelineModule(): Promise<PipelineModule> {
   const root = getPackageRootPath();

@@ -1,4 +1,3 @@
-// src/managers.ts
 import { loadPyodide } from "pyodide";
 import { createRequire } from "node:module";
 import path from "node:path";

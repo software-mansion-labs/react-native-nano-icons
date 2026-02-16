@@ -1,4 +1,3 @@
-// src/pathops.ts
 import type {
   Cmd,
   PathKitModule,

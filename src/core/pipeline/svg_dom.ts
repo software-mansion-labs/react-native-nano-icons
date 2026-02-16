@@ -1,4 +1,3 @@
-// src/core/pipeline/svg_dom.ts
 import { JSDOM } from "jsdom";
 
 export type ParsedFlatSvg = {

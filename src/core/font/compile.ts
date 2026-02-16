@@ -1,4 +1,3 @@
-// src/core/font/compile.ts
 import fs from "node:fs";
 import path from "node:path";
 import { once } from "node:events";
@@ -77,7 +76,7 @@ export async function compileTtfFromGlyphSvgs(opts: {
   const fontStreamErrorPromise = new Promise<never>((_, rej) => {
     fontStreamReject = rej;
   });
-  fontStream.on("error", (err: Error) => fontStreamReject!(err));
+  fontStream.on("error", (err: Error) => fontStreamReject(err));
 
   for (const f of files) {
     await Promise.race([
