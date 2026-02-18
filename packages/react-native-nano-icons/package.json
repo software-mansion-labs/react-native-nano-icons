@@ -1,0 +1,82 @@
+{
+  "name": "react-native-nano-icons",
+  "version": "0.1.0",
+  "description": "Use any svg as font. High-performance, build-time icon font generation for React Native & Expo.",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "react-native": "src/index.ts",
+  "source": "src/index.ts",
+  "bin": "build/scripts/cli.js",
+  "files": [
+    "build",
+    "plugin/build",
+    "app.plugin.js",
+    "src/core/shims",
+    "bin"
+  ],
+  "scripts": {
+    "build": "expo-module build && yarn exec tsc -p scripts/tsconfig.json",
+    "clean": "expo-module clean",
+    "lint": "expo-module lint",
+    "test": "expo-module test",
+    "prepare": "expo-module prepare",
+    "prepublishOnly": "expo-module prepublishOnly",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@expo/config-plugins": ">=9.0.0",
+    "@react-native-vector-icons/common": "patch:@react-native-vector-icons/common@npm%3A12.4.0#~/.yarn/patches/@react-native-vector-icons-common-npm-12.4.0-3d831cd8d9.patch",
+    "fonteditor-core": "^2.6.3",
+    "jsdom": "^28.1.0",
+    "minimist": "^1.2.8",
+    "pathkit-wasm": "^1.0.0",
+    "plist": "^3.0.5",
+    "pyodide": "^0.29.3",
+    "svg2ttf": "^6.0.3",
+    "svgicons2svgfont": "^15.0.1",
+    "xcode": "^3.0.1"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "peerDependenciesMeta": {
+    "@expo/config-plugins": {
+      "optional": true
+    },
+    "expo": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^25.2.3",
+    "@types/react": "~19.1.0",
+    "babel-plugin-module-resolver": "^5.0.2",
+    "expo-module-scripts": "^5.0.8",
+    "patch-package": "^8.0.0",
+    "react-native": "^0.84.0",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "react-native-nano-icons",
+    "ExpoNanoIcons",
+    "RNNanoIcons",
+    "ReactNativeNanoIcons",
+    "svg-to-ttf",
+    "svg2font",
+    "svg-to-font",
+    "svg-to-ttf",
+    "svg-to-glyph"
+  ],
+  "repository": "https://github.com/stachbial/react-native-nano-icons",
+  "bugs": {
+    "url": "https://github.com/stachbial/react-native-nano-icons/issues"
+  },
+  "author": "Stanislaw Bialecki <stanislaw.bialecki@swmansion.com> (https://github.com/stachbial)",
+  "license": "MIT",
+  "homepage": "https://github.com/stachbial/react-native-nano-icons#readme"
+}

@@ -1,9 +1,0 @@
-{
-  "platforms": ["apple", "android", "web"],
-  "apple": {
-    "modules": ["RNNanoIconsModule"]
-  },
-  "android": {
-    "modules": ["expo.modules.nanoicons.RNNanoIconsModule"]
-  }
-}

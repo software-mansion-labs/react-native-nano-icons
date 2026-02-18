@@ -1,74 +1,28 @@
 {
-  "name": "react-native-nano-icons",
-  "version": "0.1.0",
-  "description": "Use any svg as font. High-performance, build-time icon font generation for React Native & Expo.",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
-  "type": "module",
-  "files": [
-    "build",
-    "plugin/build",
-    "app.plugin.js",
-    "expo-module.config.json",
-    "src/core/shims"
-  ],
+  "name": "react-native-nano-icons-monorepo",
+  "private": true,
+  "packageManager": "yarn@4.1.1",
+  "workspaces": {
+    "packages": [
+      "packages/*",
+      "examples/*"
+    ]
+  },
   "scripts": {
-    "build": "expo-module build && tsc -p plugin/tsconfig.json",
-    "clean": "expo-module clean",
-    "lint": "expo-module lint",
-    "test": "expo-module test",
-    "prepare": "expo-module prepare",
-    "prepublishOnly": "expo-module prepublishOnly",
-    "expo-module": "expo-module",
-    "open:ios": "xed example/ios",
-    "open:android": "open -a \"Android Studio\" example/android",
-    "postinstall": "patch-package"
+    "build": "yarn build-packages",
+    "build-packages": "yarn workspace react-native-nano-icons build",
+    "build:expo:ios": "yarn workspace expo-nano-icons-example ios",
+    "build:expo:android": "yarn workspace expo-nano-icons-example android",
+    "build:bare:ios": "yarn workspace bare-react-native-nano-icons-example ios",
+    "build:bare:android": "yarn workspace bare-react-native-nano-icons-example android",
+    "start:bare": "yarn workspace bare-react-native-nano-icons-example start",
+    "start:expo": "yarn workspace expo-nano-icons-example start",
+    "prebuild": "yarn workspace expo-nano-icons-example expo prebuild --clean"
   },
-  "keywords": [
-    "react-native",
-    "expo",
-    "react-native-nano-icons",
-    "ExpoNanoIcons",
-    "RNNanoIcons",
-    "ReactNativeNanoIcons",
-    "svg-to-ttf",
-    "svg2font",
-    "svg-to-font",
-    "svg-to-ttf",
-    "svg-to-glyph"
-  ],
-  "repository": "https://github.com/stachbial/react-native-nano-icons",
-  "bugs": {
-    "url": "https://github.com/stachbial/react-native-nano-icons/issues"
-  },
-  "author": "Stanislaw Bialecki <stanislaw.bialecki@swmansion.com> (https://github.com/stachbial)",
-  "license": "MIT",
-  "homepage": "https://github.com/stachbial/react-native-nano-icons#readme",
   "dependencies": {
-    "@react-native-vector-icons/common": "^12.4.0",
-    "fonteditor-core": "^2.6.3",
-    "jsdom": "^28.1.0",
-    "minimist": "^1.2.8",
-    "pathkit-wasm": "^1.0.0",
-    "pyodide": "^0.29.3",
-    "svg2ttf": "^6.0.3",
-    "svgicons2svgfont": "^15.0.1"
+    "@babel/runtime": "^7.28.6"
   },
   "devDependencies": {
-    "@expo/config-plugins": "^10.0.0",
-    "@expo/vector-icons": "^15.0.3",
-    "@types/minimist": "^1.2.5",
-    "@types/node": "^25.2.3",
-    "@types/react": "~19.1.0",
-    "expo": "^54.0.27",
-    "expo-module-scripts": "^5.0.8",
-    "react-native": "0.81.5",
-    "patch-package": "^8.0.0"
-  },
-  "peerDependencies": {
-    "@expo/config-plugins": ">=9.0.0",
-    "expo": "*",
-    "react": "*",
-    "react-native": "*"
+    "typescript": "^5.9.3"
   }
 }

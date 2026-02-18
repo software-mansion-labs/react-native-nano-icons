@@ -1,36 +1,28 @@
-// Learn more https://docs.expo.io/guides/customizing-metro
-const { getDefaultConfig } = require('expo/metro-config');
-const path = require('path');
+const path = require("path");
+const { getDefaultConfig } = require("expo/metro-config");
 
-const packageName = require('../package.json').name;
+const projectRoot = __dirname;
+const repoRoot = path.resolve(projectRoot, "../..");
 
-const config = getDefaultConfig(__dirname);
+// We want ExpoExample to ignore the Bare example folder entirely.
+const bareExampleRoot = path.resolve(
+  repoRoot,
+  "examples/BareReactNativeExample",
+);
 
-// npm v7+ will install ../node_modules/react and ../node_modules/react-native because of peerDependencies.
-// To prevent the incompatible react-native between ./node_modules/react-native and ../node_modules/react-native,
-// excludes the one from the parent folder when bundling.
-config.resolver.blockList = [
-  ...Array.from(config.resolver.blockList ?? []),
-  new RegExp(path.resolve('..', 'node_modules', 'react')),
-  new RegExp(path.resolve('..', 'node_modules', 'react-native')),
-];
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
-config.resolver.nodeModulesPaths = [
-  path.resolve(__dirname, './node_modules'),
-  path.resolve(__dirname, '../node_modules'),
-];
+const config = getDefaultConfig(projectRoot);
 
-config.resolver.extraNodeModules = {
-  [packageName]: '..',
-};
+// Metro's default blockList can be RegExp or RegExp[]
+const baseBlockList = Array.isArray(config.resolver.blockList)
+  ? config.resolver.blockList
+  : [config.resolver.blockList].filter(Boolean);
 
-config.watchFolders = [path.resolve(__dirname, '..')];
-
-config.transformer.getTransformOptions = async () => ({
-  transform: {
-    experimentalImportSupport: false,
-    inlineRequires: true,
-  },
-});
+config.resolver.blockList = baseBlockList.concat([
+  new RegExp(`^${escapeRegExp(bareExampleRoot)}[/\\\\].*`),
+]);
 
 module.exports = config;
