@@ -1,101 +1,43 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import React, { forwardRef, type Ref, useEffect } from "react";
+import React, { forwardRef, type Ref } from "react";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
   Platform,
   Text,
   View,
-  ViewProps,
+  type ViewProps,
   type ColorValue,
   type TextProps,
 } from "react-native";
-import {
-  DEFAULT_ICON_SIZE,
-  isDynamicLoadingEnabled,
-  createIconSourceCache,
-  dynamicLoader,
-  getImageSource as getImageSourceImpl,
-  getImageSourceSync as getImageSourceSyncImpl,
-} from "@react-native-vector-icons/common";
-import type { FontSource } from "@react-native-vector-icons/common";
+import { GlyphEntry, NanoGlyphMap } from "./core/types";
 
-type ValueData = { uri: string; scale: number };
-type GetImageSourceSyncIconFunc<GM> = (
-  name: GM,
-  size?: number,
-  color?: ColorValue,
-) => ValueData | undefined;
-type GetImageSourceIconFunc<GM> = (
-  name: GM,
-  size?: number,
-  color?: ColorValue,
-) => Promise<ValueData | undefined>;
+const DEFAULT_ICON_SIZE = 12;
 
-export type IconProps<T> = TextProps & {
-  name: T;
+export type IconProps<Name> = TextProps & {
+  name: Name;
   size?: number;
-  /** Override colors per layer; first element for single-color icons; last color is repeated if array is short. */
   colorPalette?: ColorValue[];
   innerRef?: Ref<Text>;
 };
 
-export type GlyphEntry = { hex: string; color: string };
-
-type GlyphMap = Record<string, GlyphEntry[]>;
-
-export type IconComponent<GM extends GlyphMap> = React.FC<
+export type IconComponent<GM extends NanoGlyphMap> = React.FC<
   TextProps & {
-    name: keyof GM;
+    name: keyof GM["icons"];
     size?: number;
-    /** Override colors per layer; first element for single-color icons; last color is repeated if array is short. */
     colorPalette?: ColorValue[];
     innerRef?: Ref<Text>;
   } & React.RefAttributes<Text>
-> & {
-  getImageSource: GetImageSourceIconFunc<keyof GM>;
-  getImageSourceSync: GetImageSourceSyncIconFunc<keyof GM>;
-};
+>;
 
-export type CreateIconSetOptions = {
-  postScriptName: string;
-  fontFileName: string;
-  fontSource?: FontSource;
-  fontStyle?: TextProps["style"];
-};
-
-export function createIconSet<GM extends GlyphMap>(
+export function createIconSet<GM extends NanoGlyphMap>(
   glyphMap: GM,
-  postScriptName: string,
-  fontFileName: string,
-  fontStyle?: TextProps["style"],
-): IconComponent<GM>;
-export function createIconSet<GM extends GlyphMap>(
-  glyphMap: GM,
-  options: CreateIconSetOptions,
-): IconComponent<GM>;
-export function createIconSet<GM extends GlyphMap>(
-  glyphMap: GM,
-  postScriptNameOrOptions: string | CreateIconSetOptions,
-  fontFileNameParam?: string,
-  fontStyleParam?: TextProps["style"],
 ): IconComponent<GM> {
-  const { postScriptName, fontFileName, fontStyle } =
-    typeof postScriptNameOrOptions === "string"
-      ? {
-          postScriptName: postScriptNameOrOptions,
-          fontFileName: fontFileNameParam,
-          fontStyle: fontStyleParam,
-        }
-      : postScriptNameOrOptions;
-
-  const fontBasename = fontFileName
-    ? fontFileName.replace(/\.(otf|ttf)$/, "")
-    : postScriptName;
+  const fontBasename = glyphMap.meta.fontFamily;
 
   const fontReference = Platform.select({
-    windows: `/Assets/${fontFileName}#${postScriptName}`,
+    windows: `/Assets/${fontBasename}`,
     android: fontBasename,
-    default: postScriptName,
+    default: fontBasename,
   });
 
   const styleOverrides: TextProps["style"] = {
@@ -104,22 +46,15 @@ export function createIconSet<GM extends GlyphMap>(
     fontStyle: "normal",
     position: "absolute",
     includeFontPadding: false,
-    textAlignVertical: "center",
   };
 
-  // TODO: get rid of this and adjust getImageSource(..) to adopt resolveLayeredGlyph
-  const resolveGlyph = (name: keyof GM): string => {
-    const glyph = glyphMap[name]?.[0]?.hex || "?";
-
-    if (typeof glyph === "number") {
-      return String.fromCodePoint(glyph);
-    }
-
-    return glyph;
-  };
-
-  const resolveLayeredGlyph = (name: keyof GM): GlyphEntry[] => {
-    return glyphMap[name] ?? [{ hex: "?", color: "black" }];
+  const resolveEntry = (name: keyof GM["icons"]): GlyphEntry => {
+    return (
+      glyphMap.icons[name as string] ?? {
+        adv: glyphMap.meta.upm,
+        layers: [{ codepoint: 63, color: "black" }], // "?"
+      }
+    );
   };
 
   const Icon = ({
@@ -127,51 +62,18 @@ export function createIconSet<GM extends GlyphMap>(
     size = DEFAULT_ICON_SIZE,
     colorPalette,
     style,
-    children,
     allowFontScaling = false,
     innerRef,
     ...props
-  }: IconProps<keyof GM>) => {
-    const [isFontLoaded, setIsFontLoaded] = React.useState(
-      isDynamicLoadingEnabled() ? dynamicLoader.isLoaded(fontReference) : true,
-    );
-    const layeredGlyph =
-      isFontLoaded && name
-        ? resolveLayeredGlyph(name)
-        : [{ hex: "", color: "black" }];
+  }: IconProps<keyof GM["icons"]>) => {
+    const entry = resolveEntry(name);
+    const layers = entry.layers ?? [];
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: the dependencies never change
-    useEffect(() => {
-      let isMounted = true;
-
-      if (
-        !isFontLoaded &&
-        typeof postScriptNameOrOptions === "object" &&
-        typeof postScriptNameOrOptions.fontSource !== "undefined"
-      ) {
-        dynamicLoader
-          .loadFontAsync(fontReference, postScriptNameOrOptions.fontSource)
-          .finally(() => {
-            if (isMounted) {
-              setIsFontLoaded(true);
-            }
-          });
-      }
-      return () => {
-        isMounted = false;
-      };
-    }, []);
-
-    const newProps: TextProps = {
-      ...props,
-      allowFontScaling,
-    };
+    const width = (entry.adv / glyphMap.meta.upm) * size;
 
     const containerProps: ViewProps = {
       style: {
-        borderWidth: 1,
-        borderColor: "cyan",
-        width: size,
+        width,
         height: size,
         flexDirection: "row",
         alignItems: "center",
@@ -184,26 +86,27 @@ export function createIconSet<GM extends GlyphMap>(
       : undefined;
 
     return (
-      <View ref={innerRef} {...containerProps}>
-        {layeredGlyph.map(({ hex, color: glyphSourceColor }, i) => {
+      <View ref={innerRef as any} {...containerProps}>
+        {layers.map(({ codepoint, color: srcColor }, i) => {
           const layerColor =
-            colorPalette?.[i] ?? lastPaletteColor ?? glyphSourceColor;
+            colorPalette?.[i] ?? lastPaletteColor ?? srcColor ?? "black";
+
           return (
             <Text
-              key={hex}
+              key={`${codepoint}-${i}`}
               selectable={false}
-              {...newProps}
+              {...props}
+              allowFontScaling={allowFontScaling}
               style={[
                 style,
                 styleOverrides,
-                fontStyle,
                 {
                   fontSize: size,
                   color: layerColor,
                 },
               ]}
             >
-              {JSON.parse(`"${hex}"`)}
+              {String.fromCodePoint(codepoint)}
             </Text>
           );
         })}
@@ -211,53 +114,10 @@ export function createIconSet<GM extends GlyphMap>(
     );
   };
 
-  const WrappedIcon = forwardRef<Text, IconProps<keyof typeof glyphMap>>(
+  const WrappedIcon = forwardRef<Text, IconProps<keyof GM["icons"]>>(
     (props, ref) => <Icon innerRef={ref} {...props} />,
   );
-  WrappedIcon.displayName = `Icon(${postScriptName})`;
+  WrappedIcon.displayName = `Icon(${fontBasename})`;
 
-  const imageSourceCache = createIconSourceCache();
-
-  const getImageSource: GetImageSourceIconFunc<keyof GM> = async (
-    name,
-    size,
-    color,
-  ) => {
-    if (
-      typeof postScriptNameOrOptions === "object" &&
-      typeof postScriptNameOrOptions.fontSource !== "undefined"
-    ) {
-      await dynamicLoader.loadFontAsync(
-        fontReference,
-        postScriptNameOrOptions.fontSource,
-      );
-    }
-    return getImageSourceImpl(
-      imageSourceCache,
-      fontReference,
-      resolveGlyph(name),
-      size,
-      color,
-    );
-  };
-
-  const getImageSourceSync: GetImageSourceSyncIconFunc<keyof GM> = (
-    name,
-    size,
-    color,
-  ) =>
-    getImageSourceSyncImpl(
-      imageSourceCache,
-      fontReference,
-      resolveGlyph(name),
-      size,
-      color,
-    );
-
-  const IconNamespace = Object.assign(WrappedIcon, {
-    getImageSource,
-    getImageSourceSync,
-  });
-
-  return IconNamespace;
+  return WrappedIcon;
 }

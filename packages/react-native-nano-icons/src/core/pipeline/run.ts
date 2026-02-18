@@ -13,7 +13,8 @@ import {
   type PipelinePaths,
 } from "./config.js";
 import { parseFlattenedSvg, shouldSkipPath } from "./svg_dom.js";
-import { computePlacement, writeLayerSvg, type GlyphMap } from "./layers.js";
+import { computePlacement, writeLayerSvg } from "./layers.js";
+import { GlyphEntry, NanoGlyphMap } from "../types.js";
 
 export type PipelineResult = {
   ttfPath: string;
@@ -23,7 +24,6 @@ export type PipelineResult = {
 /**
  * Run the font pipeline with given config and paths.
  * Uses the singleton Pyodide/PathKit instance (initialized on first call).
- * Use this from the Expo plugin to build multiple icon sets without reinitializing WASM.
  */
 export async function runPipeline(
   config: PipelineConfig,
@@ -37,13 +37,22 @@ export async function runPipeline(
   );
 
   ensureEmptyDir(paths.tempDir);
-  ensureDir(paths.outputDir); // do not wipe: multiple icon sets share the same output dir
+  ensureDir(paths.outputDir);
 
   const files = (await fsp.readdir(paths.inputDir)).filter((f) =>
     f.toLowerCase().endsWith(".svg"),
   );
 
-  const glyphMap: GlyphMap = {};
+  const glyphMap: NanoGlyphMap = {
+    meta: {
+      fontFamily: config.fontFamily,
+      upm: config.upm,
+      safeZone: config.safeZone,
+      startUnicode: config.startUnicode,
+    },
+    icons: {},
+  };
+
   let currentUnicode = config.startUnicode;
 
   for (const file of files) {
@@ -53,31 +62,36 @@ export async function runPipeline(
     const flattenedSvg = await picoFromFile(filePath);
     const parsed = parseFlattenedSvg(flattenedSvg);
 
-    const { vx, vy, scale, xOff, yOff } = computePlacement({
+    const { vx, vy, scale, xOff, yOff, adv } = computePlacement({
       upm: config.upm,
       safeZone: config.safeZone,
       viewBox: parsed.viewBox,
     });
 
-    glyphMap[iconName] = [];
+    const entry: GlyphEntry = { adv, layers: [] };
 
     for (const p of parsed.paths) {
       if (shouldSkipPath(p.d, p.fill)) continue;
 
-      const { hex } = await writeLayerSvg({
+      const cp = currentUnicode++;
+      await writeLayerSvg({
         tempDir: paths.tempDir,
         upm: config.upm,
+        adv,
         vx,
         vy,
         scale,
         xOff,
         yOff,
         d: p.d,
-        codepoint: currentUnicode,
+        codepoint: cp,
       });
 
-      glyphMap[iconName].push({ hex: `\\u${hex}`, color: p.fill || "black" });
-      currentUnicode++;
+      entry.layers.push({ codepoint: cp, color: p.fill || "black" });
+    }
+
+    if (entry.layers.length > 0) {
+      glyphMap.icons[iconName] = entry;
     }
   }
 
@@ -99,8 +113,9 @@ export async function runPipeline(
     descent: 0,
   });
 
-  if (fs.existsSync(paths.tempDir))
+  if (fs.existsSync(paths.tempDir)) {
     fs.rmSync(paths.tempDir, { recursive: true, force: true });
+  }
 
   if (!options?.silent) {
     log(

@@ -94,11 +94,24 @@ export interface PathKitModule {
   ) => PathKitPath | null;
 }
 
-export type PyodideLike = {
+export type PyodideModule = {
   mountNodeFS: (mountpoint: string, hostPath: string) => void;
   registerJsModule: (name: string, mod: unknown) => void;
   loadPackage: (pkgs: string[]) => Promise<void>;
   runPythonAsync: (code: string) => Promise<unknown>;
   runPython: (code: string) => string;
   FS: { writeFile: (path: string, data: string) => void };
+};
+
+export type GlyphLayer = { codepoint: number; color: string };
+export type GlyphEntry = { adv: number; layers: GlyphLayer[] };
+export type IconsMap = Record<string, GlyphEntry>;
+export type NanoGlyphMap = {
+  meta: {
+    fontFamily: string;
+    upm: number;
+    safeZone: number;
+    startUnicode: number;
+  };
+  icons: IconsMap;
 };

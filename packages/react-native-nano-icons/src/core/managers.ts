@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
-import type { PathKitModule, PyodideLike } from "./types.js";
+import type { PathKitModule, PyodideModule } from "./types.js";
 import { buildPathopsBackend } from "./svg_pathops.js";
 
 const require = createRequire(import.meta.url);
@@ -44,9 +44,9 @@ export class PathKitManager {
 }
 
 export class PyodideManager {
-  private static instance: PyodideLike | null = null;
+  private static instance: PyodideModule | null = null;
 
-  static async getInstance(): Promise<PyodideLike> {
+  static async getInstance(): Promise<PyodideModule> {
     if (this.instance) return this.instance;
 
     const pyodideAsmPath = require.resolve("pyodide/pyodide.asm.js") as string;
@@ -54,29 +54,35 @@ export class PyodideManager {
 
     const py = (await loadPyodide({
       indexURL: pyodideDir,
-    })) as unknown as PyodideLike;
+    })) as unknown as PyodideModule;
     py.mountNodeFS("/app", process.cwd());
 
     const PathKit = await PathKitManager.getInstance();
     py.registerJsModule("_pathops_js", buildPathopsBackend(PathKit));
 
-    const pathopsPyPath = path.join(getPackageRoot(), "src", "core", "shims", "pathops.py");
+    const pathopsPyPath = path.join(
+      getPackageRoot(),
+      "src",
+      "core",
+      "shims",
+      "pathops.py",
+    );
     const pathopsPy = await fs.readFile(pathopsPyPath, "utf8");
     py.FS.writeFile("/pathops.py", pathopsPy);
 
     await py.loadPackage(["micropip", "lxml"]);
 
     await py.runPythonAsync(`
-import sys
-if "/" not in sys.path:
-    sys.path.insert(0, "/")
-
-import micropip
-await micropip.install("picosvg", deps=False)
-
-import pathops
-import picosvg
-`);
+      import sys
+      if "/" not in sys.path:
+          sys.path.insert(0, "/")
+          
+      import micropip
+      await micropip.install("picosvg", deps=False)
+          
+      import pathops
+      import picosvg
+    `);
 
     this.instance = py;
     return py;
@@ -90,21 +96,22 @@ import picosvg
     const virtualPath = path.join("/app", rel).replaceAll("\\", "/");
 
     const out = py.runPython(`
-from picosvg.svg import SVG
-import os
+      from picosvg.svg import SVG
+      import os
 
-p = r"${virtualPath}"
-if not os.path.exists(p):
-    raise FileNotFoundError(f"Could not find file at {p}")
+      p = r"${virtualPath}"
+      if not os.path.exists(p):
+          raise FileNotFoundError(f"Could not find file at {p}")
 
-with open(p, "rb") as f:
-    data = f.read()
+      with open(p, "rb") as f:
+          data = f.read()
 
-text = data.decode("utf-8-sig", errors="replace")
-svg = SVG.fromstring(text)
-pico = svg.topicosvg()
-pico.tostring(pretty_print=True)
-`);
+      text = data.decode("utf-8-sig", errors="replace")
+      svg = SVG.fromstring(text)
+      pico = svg.topicosvg()
+      pico.tostring(pretty_print=True)
+    `);
+
     return out;
   }
 }

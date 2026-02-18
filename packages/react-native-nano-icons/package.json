@@ -7,6 +7,7 @@
   "react-native": "src/index.ts",
   "source": "src/index.ts",
   "bin": "build/scripts/cli.js",
+  "type": "module",
   "files": [
     "build",
     "plugin/build",
@@ -25,7 +26,6 @@
   },
   "dependencies": {
     "@expo/config-plugins": ">=9.0.0",
-    "@react-native-vector-icons/common": "patch:@react-native-vector-icons/common@npm%3A12.4.0#~/.yarn/patches/@react-native-vector-icons-common-npm-12.4.0-3d831cd8d9.patch",
     "fonteditor-core": "^2.6.3",
     "jsdom": "^28.1.0",
     "minimist": "^1.2.8",
