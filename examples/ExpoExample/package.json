@@ -12,7 +12,8 @@
     "expo": "~54.0.33",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-nano-icons": "workspace:*"
+    "react-native-nano-icons": "workspace:*",
+    "react-native-safe-area-context": "~5.6.0"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
