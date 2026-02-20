@@ -29,7 +29,10 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      ["expo-font", { "fonts": [] }],
+      [
+        "expo-font",
+        { "fonts": ["./assets/Untitled.ttf", "./assets/Fantasticon.ttf"] }
+      ],
       [
         "react-native-nano-icons",
         {

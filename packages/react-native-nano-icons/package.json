@@ -7,7 +7,6 @@
   "react-native": "src/index.ts",
   "source": "src/index.ts",
   "bin": "build/scripts/cli.js",
-  "type": "module",
   "files": [
     "build",
     "plugin/build",

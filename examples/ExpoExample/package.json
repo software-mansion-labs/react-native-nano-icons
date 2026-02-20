@@ -9,7 +9,9 @@
     "android": "expo run:android"
   },
   "dependencies": {
+    "@react-native-vector-icons/icomoon": "patch:@react-native-vector-icons/icomoon@npm%3A12.3.0#~/.yarn/patches/@react-native-vector-icons-icomoon-npm-12.3.0-6eb77b9df5.patch",
     "expo": "~54.0.33",
+    "expo-font": "~14.0.11",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-nano-icons": "workspace:*",
