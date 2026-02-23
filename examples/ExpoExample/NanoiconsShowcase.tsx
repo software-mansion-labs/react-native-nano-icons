@@ -49,23 +49,50 @@ const NanoiconsShowcase = () => {
         <View style={{ borderWidth: 1, borderColor: "red" }}>
           <Icon name="star" size={52} />
         </View>
-        <Text>
-          nanoicon: <Icon name="usFlag" size={12} /> emoji: 🇺🇸
-        </Text>
         <View style={{ borderWidth: 1, borderColor: "red" }}>
           <Icon name="triangleCropped" size={52} colorPalette={["green"]} />
         </View>
-        <View style={{ borderWidth: 1, borderColor: "red" }}>
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: "red",
+            padding: 20,
+            backgroundColor: "#000",
+          }}
+        >
           <Icon name="complicated-icon-1" size={52} colorPalette={["blue"]} />
         </View>
-        <Text style={{ fontSize: 24 }}>
-          complicated inline
+        <Text
+          style={{
+            backgroundColor: "red",
+            fontSize: 32,
+          }}
+        >
+          nanoiconj
+          <Icon name="usFlag" size={20} allowFontScaling={true} />
+          <Text style={{ backgroundColor: "#626262" }}>emojiK</Text>
+          <Text
+            style={{
+              backgroundColor: "#8c1717",
+            }}
+          >
+            🇺🇸
+          </Text>
+        </Text>
+        <Text
+          style={{
+            fontSize: 64,
+            backgroundColor: "red",
+            verticalAlign: "bottom",
+          }}
+        >
+          inline
           <Icon
             name="complicated-icon-2"
-            size={24}
+            size={64}
             colorPalette={["#2c14e0"]}
           />
-          icon
+          <Text style={{ backgroundColor: "#626262" }}>icon</Text>
         </Text>
         <View style={{ flexDirection: "row" }}>
           <View style={{ alignItems: "center" }}>
