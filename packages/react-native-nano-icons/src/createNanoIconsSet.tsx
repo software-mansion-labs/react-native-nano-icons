@@ -1,6 +1,4 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-import React, { forwardRef, type Ref } from "react";
-// eslint-disable-next-line import/no-extraneous-dependencies
+import { forwardRef, type ComponentRef, type Ref } from 'react';
 import {
   Platform,
   Text,
@@ -8,29 +6,32 @@ import {
   type ViewProps,
   type ColorValue,
   type TextProps,
-} from "react-native";
-import { GlyphEntry, NanoGlyphMap } from "./core/types";
+  useWindowDimensions,
+} from 'react-native';
+import type { GlyphEntry, NanoGlyphMap } from './core/types';
 
 const DEFAULT_ICON_SIZE = 12;
+
+type ViewRef = ComponentRef<typeof View>;
 
 export type IconProps<Name> = TextProps & {
   name: Name;
   size?: number;
   colorPalette?: ColorValue[];
-  innerRef?: Ref<Text>;
+  innerRef?: Ref<ViewRef>;
 };
 
 export type IconComponent<GM extends NanoGlyphMap> = React.FC<
   TextProps & {
-    name: keyof GM["icons"];
+    name: keyof GM['icons'];
     size?: number;
     colorPalette?: ColorValue[];
-    innerRef?: Ref<Text>;
-  } & React.RefAttributes<Text>
+    innerRef?: Ref<ViewRef>;
+  } & React.RefAttributes<ViewRef>
 >;
 
 export function createIconSet<GM extends NanoGlyphMap>(
-  glyphMap: GM,
+  glyphMap: GM
 ): IconComponent<GM> {
   const fontBasename = glyphMap.meta.fontFamily;
 
@@ -40,19 +41,20 @@ export function createIconSet<GM extends NanoGlyphMap>(
     default: fontBasename,
   });
 
-  const styleOverrides: TextProps["style"] = {
+  const styleOverrides: TextProps['style'] = {
     fontFamily: fontReference,
-    fontWeight: "normal",
-    fontStyle: "normal",
-    position: "absolute",
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+    position: 'absolute',
     includeFontPadding: false,
+    bottom: 0,
   };
 
-  const resolveEntry = (name: keyof GM["icons"]): GlyphEntry => {
+  const resolveEntry = (name: keyof GM['icons']): GlyphEntry => {
     return (
       glyphMap.icons[name as string] ?? {
         adv: glyphMap.meta.upm,
-        layers: [{ codepoint: 63, color: "black" }], // "?"
+        layers: [{ codepoint: 63, color: 'black' }], // "?"
       }
     );
   };
@@ -62,22 +64,23 @@ export function createIconSet<GM extends NanoGlyphMap>(
     size = DEFAULT_ICON_SIZE,
     colorPalette,
     style,
-    allowFontScaling = false,
+    allowFontScaling = true,
     innerRef,
     ...props
-  }: IconProps<keyof GM["icons"]>) => {
+  }: IconProps<keyof GM['icons']>) => {
+    const { fontScale } = useWindowDimensions();
+
     const entry = resolveEntry(name);
     const layers = entry.layers ?? [];
 
-    const width = (entry.adv / glyphMap.meta.upm) * size;
+    const scaledSize = allowFontScaling ? size * fontScale : size;
+    const width = (entry.adv / glyphMap.meta.upm) * scaledSize;
 
     const containerProps: ViewProps = {
       style: {
+        height: scaledSize,
         width,
-        height: size,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
+        bottom: 0,
       },
     };
 
@@ -86,10 +89,14 @@ export function createIconSet<GM extends NanoGlyphMap>(
       : undefined;
 
     return (
-      <View ref={innerRef as any} {...containerProps}>
+      <View
+        nativeID={`nano-icon-container-${String(name)}`}
+        ref={innerRef}
+        {...containerProps}
+      >
         {layers.map(({ codepoint, color: srcColor }, i) => {
           const layerColor =
-            colorPalette?.[i] ?? lastPaletteColor ?? srcColor ?? "black";
+            colorPalette?.[i] ?? lastPaletteColor ?? srcColor ?? 'black';
 
           return (
             <Text
@@ -114,10 +121,11 @@ export function createIconSet<GM extends NanoGlyphMap>(
     );
   };
 
-  const WrappedIcon = forwardRef<Text, IconProps<keyof GM["icons"]>>(
-    (props, ref) => <Icon innerRef={ref} {...props} />,
+  const WrappedIcon = forwardRef<ViewRef, IconProps<keyof GM['icons']>>(
+    (props, ref) => <Icon innerRef={ref} {...props} />
   );
-  WrappedIcon.displayName = `Icon(${fontBasename})`;
+
+  WrappedIcon.displayName = `NanoIcon(${fontBasename})`;
 
   return WrappedIcon;
 }

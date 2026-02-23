@@ -1,27 +1,24 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "node:url";
+import fs from 'fs';
+import path from 'path';
 
 let cached: { name: string; root: string } | null = null;
 
 /**
  * Resolve the package root (directory containing package.json) for this package.
- * Uses the plugin's location: plugin/build/*.js → two levels up → package root.
+ * Uses the plugin's location: build/plugin/src/*.js → three levels up → package root.
  */
 function getPackageRoot(): string {
   if (cached) return cached.root;
-  const currentFile = fileURLToPath(import.meta.url);
-  const pluginBuildDir = path.dirname(currentFile);
-  const root = path.resolve(pluginBuildDir, "..", "..");
+  const root = path.resolve(__dirname, '..', '..', '..');
   cached = { name: readPackageName(root), root };
   return root;
 }
 
 function readPackageName(root: string): string {
-  const pkgPath = path.join(root, "package.json");
-  const raw = fs.readFileSync(pkgPath, "utf8");
+  const pkgPath = path.join(root, 'package.json');
+  const raw = fs.readFileSync(pkgPath, 'utf8');
   const pkg = JSON.parse(raw) as { name?: string };
-  if (typeof pkg.name !== "string") {
+  if (typeof pkg.name !== 'string') {
     throw new Error(`Missing or invalid "name" in ${pkgPath}`);
   }
   return pkg.name;

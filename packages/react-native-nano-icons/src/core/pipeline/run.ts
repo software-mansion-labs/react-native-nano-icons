@@ -1,9 +1,9 @@
-import fs from "node:fs";
-import fsp from "node:fs/promises";
-import path from "node:path";
+import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
 
-import { picoFromFile } from "../index.js";
-import { compileTtfFromGlyphSvgs } from "../font/compile.js";
+import { picoFromFile } from '../index.js';
+import { compileTtfFromGlyphSVGs } from '../font/compile.js';
 
 import {
   ensureDir,
@@ -11,10 +11,10 @@ import {
   readCliConfigAndPaths,
   type PipelineConfig,
   type PipelinePaths,
-} from "./config.js";
-import { parseFlattenedSvg, shouldSkipPath } from "./svg_dom.js";
-import { computePlacement, writeLayerSvg } from "./layers.js";
-import { GlyphEntry, NanoGlyphMap } from "../types.js";
+} from './config.js';
+import { parseFlattenedSvg, shouldSkipPath } from '../svg/svg_dom.js';
+import { computePlacement, writeLayerSvg } from '../svg/layers.js';
+import type { GlyphEntry, NanoGlyphMap } from '../types.js';
 
 export type PipelineResult = {
   ttfPath: string;
@@ -28,19 +28,19 @@ export type PipelineResult = {
 export async function runPipeline(
   config: PipelineConfig,
   paths: PipelinePaths,
-  options?: { silent?: boolean },
+  options?: { silent?: boolean }
 ): Promise<PipelineResult> {
   const log = options?.silent ? () => {} : (msg: string) => console.log(msg);
 
   log(
-    `🚀 Building font "${config.fontFamily}" from ${paths.inputDir} (PathKit+Pyodide picosvg)...`,
+    `🚀 Building font "${config.fontFamily}" from ${paths.inputDir} (PathKit+Pyodide picosvg)...`
   );
 
   ensureEmptyDir(paths.tempDir);
   ensureDir(paths.outputDir);
 
   const files = (await fsp.readdir(paths.inputDir)).filter((f) =>
-    f.toLowerCase().endsWith(".svg"),
+    f.toLowerCase().endsWith('.svg')
   );
 
   const glyphMap: NanoGlyphMap = {
@@ -74,6 +74,7 @@ export async function runPipeline(
       if (shouldSkipPath(p.d, p.fill)) continue;
 
       const cp = currentUnicode++;
+
       await writeLayerSvg({
         tempDir: paths.tempDir,
         upm: config.upm,
@@ -87,7 +88,7 @@ export async function runPipeline(
         codepoint: cp,
       });
 
-      entry.layers.push({ codepoint: cp, color: p.fill || "black" });
+      entry.layers.push({ codepoint: cp, color: p.fill || 'black' });
     }
 
     if (entry.layers.length > 0) {
@@ -97,14 +98,15 @@ export async function runPipeline(
 
   const glyphmapPath = path.join(
     paths.outputDir,
-    `${config.fontFamily}.glyphmap.json`,
+    `${config.fontFamily}.glyphmap.json`
   );
-  await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap, null, 2), "utf8");
 
-  log("🎨➡️✒️ 🔨 Compiling TTF with svgicons2svgfont + svg2ttf (Node)...");
+  await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap, null, 2), 'utf8');
+
+  log('🎨➡️✒️ 🔨 Compiling TTF with svgicons2svgfont + svg2ttf (Node)...');
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
 
-  await compileTtfFromGlyphSvgs({
+  await compileTtfFromGlyphSVGs({
     glyphDir: paths.tempDir,
     outTtfPath: ttfPath,
     fontName: config.fontFamily,
@@ -119,7 +121,7 @@ export async function runPipeline(
 
   if (!options?.silent) {
     log(
-      `🎨➡️✒️ ✅ ${config.fontFamily} Build Complete!\n   - Font: ${ttfPath}\n   - Map:  ${glyphmapPath}`,
+      `🎨➡️✒️ ✅ ${config.fontFamily} Build Complete!\n   - Font: ${ttfPath}\n   - Map:  ${glyphmapPath}`
     );
   }
 

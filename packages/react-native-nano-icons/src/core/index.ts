@@ -1,4 +1,4 @@
-import { PyodideManager } from "./managers.js";
+import { PyodideManager } from './pipeline/managers.js';
 
 export async function picoFromFile(hostFilePath: string): Promise<string> {
   return PyodideManager.picoFromFile(hostFilePath);

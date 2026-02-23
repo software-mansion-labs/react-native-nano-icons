@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import { JSDOM } from 'jsdom';
 
 export type ParsedFlatSvg = {
   viewBox: [number, number, number, number];
@@ -9,9 +9,9 @@ export function parseFlattenedSvg(flattenedSvg: string): ParsedFlatSvg {
   const dom = new JSDOM(flattenedSvg);
   const doc = dom.window.document;
 
-  const svgEl = doc.querySelector("svg");
+  const svgEl = doc.querySelector('svg');
   const viewBoxRaw = svgEl
-    ?.getAttribute("viewBox")
+    ?.getAttribute('viewBox')
     ?.split(/\s+/)
     .map(Number) ?? [0, 0, 100, 100];
 
@@ -20,19 +20,19 @@ export function parseFlattenedSvg(flattenedSvg: string): ParsedFlatSvg {
       ? [viewBoxRaw[0]!, viewBoxRaw[1]!, viewBoxRaw[2]!, viewBoxRaw[3]!]
       : [0, 0, 100, 100];
 
-  const pathEls = Array.from(doc.querySelectorAll("path"));
+  const pathEls = Array.from(doc.querySelectorAll('path'));
   const paths = pathEls
     .map((p) => ({
-      d: p.getAttribute("d") ?? "",
-      fill: p.getAttribute("fill"),
+      d: p.getAttribute('d') ?? '',
+      fill: p.getAttribute('fill'),
     }))
-    .filter((p) => p.d.trim() !== "");
+    .filter((p) => p.d.trim() !== '');
 
   return { viewBox, paths };
 }
 
 export function shouldSkipPath(d: string, fill: string | null): boolean {
-  if (!d || d.trim() === "") return true;
-  const f = (fill ?? "").trim().toLowerCase();
-  return f === "transparent" || f === "none";
+  if (!d || d.trim() === '') return true;
+  const f = (fill ?? '').trim().toLowerCase();
+  return f === 'transparent' || f === 'none';
 }

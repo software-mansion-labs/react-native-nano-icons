@@ -1,18 +1,23 @@
-import path from "path";
-import fs from "fs";
-import { pathToFileURL } from "node:url";
-import type { IconSetConfig, BuiltFont } from "./types.js";
-import { getPackageName, getPackageRootPath } from "./packageName.js";
+import path from 'path';
+import fs from 'fs';
+import { pathToFileURL } from 'node:url';
+import type { IconSetConfig, BuiltFont } from './types.js';
+import { getPackageName, getPackageRootPath } from './packageName.js';
 
-const DEFAULT_SAFE_ZONE = 896;
+const DEFAULT_SAFE_ZONE = 1020;
 const DEFAULT_UPM = 1024;
 const DEFAULT_START_UNICODE = 0xe900;
 
 type PipelineModule = {
   runPipeline: (
-    config: { fontFamily: string; upm: number; safeZone: number; startUnicode: number },
+    config: {
+      fontFamily: string;
+      upm: number;
+      safeZone: number;
+      startUnicode: number;
+    },
     paths: { inputDir: string; outputDir: string; tempDir: string },
-    options?: { silent?: boolean },
+    options?: { silent?: boolean }
   ) => Promise<{ ttfPath: string; glyphmapPath: string }>;
 };
 
@@ -21,7 +26,14 @@ type PipelineModule = {
  */
 async function getPipelineModule(): Promise<PipelineModule> {
   const root = getPackageRootPath();
-  const pipelinePath = path.join(root, "build", "core", "pipeline", "index.js");
+  const pipelinePath = path.join(
+    root,
+    'lib',
+    'module',
+    'core',
+    'pipeline',
+    'index.js'
+  );
   const mod = await import(pathToFileURL(pipelinePath).href);
   return mod as PipelineModule;
 }
@@ -33,7 +45,11 @@ async function getPipelineModule(): Promise<PipelineModule> {
 function shouldSkipGeneration(outputDir: string, fontFamily: string): boolean {
   const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
   const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
-  return fs.existsSync(outputDir) && fs.existsSync(ttfPath) && fs.existsSync(glyphmapPath);
+  return (
+    fs.existsSync(outputDir) &&
+    fs.existsSync(ttfPath) &&
+    fs.existsSync(glyphmapPath)
+  );
 }
 
 /**
@@ -44,7 +60,7 @@ function shouldSkipGeneration(outputDir: string, fontFamily: string): boolean {
 export async function buildAllFonts(
   iconSets: IconSetConfig[],
   projectRoot: string,
-  options?: { silent?: boolean },
+  options?: { silent?: boolean }
 ): Promise<BuiltFont[]> {
   const pkgName = getPackageName();
   const results: BuiltFont[] = [];
@@ -54,25 +70,30 @@ export async function buildAllFonts(
     const inputDir = path.resolve(projectRoot, set.inputDir);
     if (!fs.existsSync(inputDir)) {
       throw new Error(
-        `[${pkgName}] Input directory does not exist: ${inputDir} (from "${set.inputDir}")`,
+        `[${pkgName}] Input directory does not exist: ${inputDir} (from "${set.inputDir}")`
       );
     }
 
     const parentDir = path.dirname(inputDir);
-    const outputDir = path.join(parentDir, "nanoicons");
+    const outputDir = path.join(parentDir, 'nanoicons');
     const ttfPath = path.join(outputDir, `${set.fontFamily}.ttf`);
-    const glyphmapPath = path.join(outputDir, `${set.fontFamily}.glyphmap.json`);
+    const glyphmapPath = path.join(
+      outputDir,
+      `${set.fontFamily}.glyphmap.json`
+    );
 
     if (shouldSkipGeneration(outputDir, set.fontFamily)) {
       if (!options?.silent) {
-        console.log(`[${pkgName}] ✅ ${set.fontFamily} already up to date (output exists), skipping.`);
+        console.log(
+          `[${pkgName}] ✅ ${set.fontFamily} already up to date (output exists), skipping.`
+        );
       }
       results.push({ fontFamily: set.fontFamily, ttfPath, glyphmapPath });
       continue;
     }
 
     if (!pipeline) pipeline = await getPipelineModule();
-    const tempDir = path.join(projectRoot, ".temp_layers", set.fontFamily);
+    const tempDir = path.join(projectRoot, '.temp_layers', set.fontFamily);
 
     const config = {
       fontFamily: set.fontFamily,
@@ -80,7 +101,7 @@ export async function buildAllFonts(
       safeZone: set.safeZone ?? DEFAULT_SAFE_ZONE,
       startUnicode:
         set.startUnicode !== undefined
-          ? typeof set.startUnicode === "string"
+          ? typeof set.startUnicode === 'string'
             ? parseInt(String(set.startUnicode), 16)
             : set.startUnicode
           : DEFAULT_START_UNICODE,
@@ -90,10 +111,14 @@ export async function buildAllFonts(
     const out = await runPipeline(
       config,
       { inputDir, outputDir, tempDir },
-      options,
+      options
     );
 
-    results.push({ fontFamily: set.fontFamily, ttfPath: out.ttfPath, glyphmapPath: out.glyphmapPath });
+    results.push({
+      fontFamily: set.fontFamily,
+      ttfPath: out.ttfPath,
+      glyphmapPath: out.glyphmapPath,
+    });
   }
 
   return results;
