@@ -1,5 +1,5 @@
-import fsp from "node:fs/promises";
-import path from "node:path";
+import fsp from 'node:fs/promises';
+import path from 'node:path';
 
 function roundInt(n: number): number {
   return Math.round(n);
@@ -48,15 +48,19 @@ export async function writeLayerSvg(opts: {
   d: string;
   codepoint: number;
 }): Promise<void> {
-  const hex = opts.codepoint.toString(16).padStart(4, "0");
+  const hex = opts.codepoint.toString(16).padStart(4, '0');
 
   const layerSvg = `
-    <svg viewBox="0 0 ${opts.adv} ${opts.upm}" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 ${opts.adv} ${
+    opts.upm
+  }" xmlns="http://www.w3.org/2000/svg">
       <rect width="${opts.adv}" height="${opts.upm}" fill="none" />
-      <g transform="translate(${opts.xOff}, ${opts.yOff}) scale(${opts.scale}) translate(${-opts.vx}, ${-opts.vy})">
+      <g transform="translate(${opts.xOff}, ${opts.yOff}) scale(${
+    opts.scale
+  }) translate(${-opts.vx}, ${-opts.vy})">
         <path d="${opts.d}" fill="black" />
       </g>
     </svg>`.trim();
 
-  await fsp.writeFile(path.join(opts.tempDir, `u${hex}.svg`), layerSvg, "utf8");
+  await fsp.writeFile(path.join(opts.tempDir, `u${hex}.svg`), layerSvg, 'utf8');
 }

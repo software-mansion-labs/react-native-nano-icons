@@ -4,7 +4,9 @@ import type {
   VerbMap,
   WrappedPath,
   Point,
-} from "./types.js";
+} from '../types.js';
+
+//** */
 
 // ----- numeric helpers -----
 const EPS = 1e-2;
@@ -62,7 +64,7 @@ function signedAreaPolyline(points: readonly Point[]): number {
 function approxSignedAreaFromContourCmds(
   contourCmds: readonly Cmd[],
   VERB: VerbMap,
-  steps = 24,
+  steps = 24
 ): number {
   let cx = 0,
     cy = 0;
@@ -164,7 +166,7 @@ function ensureClosed(contourCmds: readonly Cmd[], VERB: VerbMap): Cmd[] {
 
 function explicitCloseWantedFromCmds(
   contourCmds: readonly Cmd[] | undefined,
-  VERB: VerbMap,
+  VERB: VerbMap
 ): boolean {
   if (!contourCmds?.length) return false;
   const m = contourCmds[0]!;
@@ -187,16 +189,16 @@ function explicitCloseWantedFromCmds(
   return false;
 }
 
-type SegmentL = { type: "L"; start: Point; end: Point; synthetic: boolean };
+type SegmentL = { type: 'L'; start: Point; end: Point; synthetic: boolean };
 type SegmentQ = {
-  type: "Q";
+  type: 'Q';
   start: Point;
   ctrl: Point;
   end: Point;
   synthetic: boolean;
 };
 type SegmentC = {
-  type: "C";
+  type: 'C';
   start: Point;
   c1: Point;
   c2: Point;
@@ -207,7 +209,7 @@ type Segment = SegmentL | SegmentQ | SegmentC;
 
 function contourToSegments(
   contourCmds: readonly Cmd[],
-  VERB: VerbMap,
+  VERB: VerbMap
 ): { start: Point; segs: Segment[] } {
   const c = ensureClosed(contourCmds, VERB);
   const move = c[0]!;
@@ -223,23 +225,23 @@ function contourToSegments(
 
     if (v === VERB.LINE) {
       const end: Point = [cmd[1]!, cmd[2]!];
-      segs.push({ type: "L", start: last, end, synthetic: false });
+      segs.push({ type: 'L', start: last, end, synthetic: false });
       last = end;
     } else if (v === VERB.QUAD) {
       const ctrl: Point = [cmd[1]!, cmd[2]!];
       const end: Point = [cmd[3]!, cmd[4]!];
-      segs.push({ type: "Q", start: last, ctrl, end, synthetic: false });
+      segs.push({ type: 'Q', start: last, ctrl, end, synthetic: false });
       last = end;
     } else if (v === VERB.CUBIC) {
       const c1: Point = [cmd[1]!, cmd[2]!];
       const c2: Point = [cmd[3]!, cmd[4]!];
       const end: Point = [cmd[5]!, cmd[6]!];
-      segs.push({ type: "C", start: last, c1, c2, end, synthetic: false });
+      segs.push({ type: 'C', start: last, c1, c2, end, synthetic: false });
       last = end;
     } else if (v === VERB.CLOSE) {
       const end: Point = [sx, sy];
       if (!eqPt(last, end)) {
-        segs.push({ type: "L", start: last, end, synthetic: true });
+        segs.push({ type: 'L', start: last, end, synthetic: true });
       }
       last = end;
     }
@@ -251,7 +253,7 @@ function contourToSegments(
 function applyClosePolicy(
   segs: Segment[],
   startPt: Point,
-  explicitCloseWanted: boolean,
+  explicitCloseWanted: boolean
 ): Segment[] {
   if (!segs.length) return segs;
 
@@ -260,7 +262,7 @@ function applyClosePolicy(
   const last = segs[segs.length - 1]!;
   const lastEnd = last.end;
   if (!eqPt(lastEnd, startPt)) {
-    segs.push({ type: "L", start: lastEnd, end: startPt, synthetic: false });
+    segs.push({ type: 'L', start: lastEnd, end: startPt, synthetic: false });
   }
 
   if (!explicitCloseWanted) {
@@ -272,14 +274,14 @@ function applyClosePolicy(
 function segmentsToContourCmds(
   startPt: Point,
   segs: readonly Segment[],
-  VERB: VerbMap,
+  VERB: VerbMap
 ): Cmd[] {
   const out: Cmd[] = [[VERB.MOVE, roundN(startPt[0]), roundN(startPt[1])]];
   for (const s of segs) {
     if (s.synthetic) continue;
-    if (s.type === "L") {
+    if (s.type === 'L') {
       out.push([VERB.LINE, roundN(s.end[0]), roundN(s.end[1])]);
-    } else if (s.type === "Q") {
+    } else if (s.type === 'Q') {
       out.push([
         VERB.QUAD,
         roundN(s.ctrl[0]),
@@ -306,7 +308,7 @@ function segmentsToContourCmds(
 function reverseClosedContourKeepStart(
   contourCmds: readonly Cmd[],
   explicitCloseWanted: boolean,
-  VERB: VerbMap,
+  VERB: VerbMap
 ): Cmd[] {
   const { start, segs } = contourToSegments(contourCmds, VERB);
 
@@ -314,12 +316,12 @@ function reverseClosedContourKeepStart(
     .slice()
     .reverse()
     .map((s) => {
-      if (s.type === "L") {
-        return { type: "L", start: s.end, end: s.start, synthetic: false };
+      if (s.type === 'L') {
+        return { type: 'L', start: s.end, end: s.start, synthetic: false };
       }
-      if (s.type === "Q") {
+      if (s.type === 'Q') {
         return {
-          type: "Q",
+          type: 'Q',
           start: s.end,
           ctrl: s.ctrl,
           end: s.start,
@@ -327,7 +329,7 @@ function reverseClosedContourKeepStart(
         };
       }
       return {
-        type: "C",
+        type: 'C',
         start: s.end,
         c1: s.c2,
         c2: s.c1,
@@ -344,7 +346,7 @@ function rotateClosedContourToStart(
   contourCmds: readonly Cmd[],
   desiredStart: Point,
   explicitCloseWanted: boolean,
-  VERB: VerbMap,
+  VERB: VerbMap
 ): Cmd[] {
   const { segs } = contourToSegments(contourCmds, VERB);
 
@@ -372,7 +374,7 @@ function rotateClosedContourToStart(
 
 function cmdsToVerbPoints(
   cmds: readonly Cmd[],
-  VERB: VerbMap,
+  VERB: VerbMap
 ): Array<[number, Point[]]> {
   const out: Array<[number, Point[]]> = [];
   for (const cmd of cmds) {
@@ -402,7 +404,7 @@ function cmdsToVerbPoints(
   return out;
 }
 
-function wrapPath(pathkitPath: WrappedPath["p"]): WrappedPath {
+function wrapPath(pathkitPath: WrappedPath['p']): WrappedPath {
   return { p: pathkitPath, meta: { moves: [] } };
 }
 
@@ -415,7 +417,7 @@ function cloneWrap(h: WrappedPath, PathKit: PathKitModule): WrappedPath {
 
 function mergeMoves(
   aMoves: readonly Point[] | undefined,
-  bMoves: readonly Point[] | undefined,
+  bMoves: readonly Point[] | undefined
 ): Point[] {
   const out: Point[] = [];
   const pushUnique = (pt: Point) => {
@@ -431,7 +433,7 @@ function mergeMoves(
 
 function bestStartMinYMinX(
   contourCmds: readonly Cmd[],
-  VERB: VerbMap,
+  VERB: VerbMap
 ): Point | null {
   let best: Point | null = null;
   for (const cmd of contourCmds) {
@@ -482,7 +484,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
   function normalizeSortRotateContours(
     cmds: Cmd[],
     h: WrappedPath,
-    preferStrokeCanonical = false,
+    preferStrokeCanonical = false
   ): Cmd[] {
     const moves = (h.meta?.moves || []).map((m) => normPt([m[0], m[1]]));
     const used = new Array(moves.length).fill(false);
@@ -503,7 +505,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
     // - all subsequent contours CW (negative area)
     const ensureOrient = (
       obj: { cmds: Cmd[]; explicitCloseWanted: boolean },
-      wantCCW: boolean,
+      wantCCW: boolean
     ) => {
       const a = approxSignedAreaFromContourCmds(obj.cmds, VERB);
       const isCCW = a > 0;
@@ -511,7 +513,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
         obj.cmds = reverseClosedContourKeepStart(
           obj.cmds,
           obj.explicitCloseWanted,
-          VERB,
+          VERB
         );
       }
     };
@@ -534,7 +536,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
         const target = moves[i]!;
         const { segs } = contourToSegments(cc, VERB);
         const found = segs.some(
-          (s) => eqPt(s.start, target) || eqPt(s.end, target),
+          (s) => eqPt(s.start, target) || eqPt(s.end, target)
         );
         if (found) {
           used[i] = true;
@@ -542,7 +544,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
             cc,
             target,
             obj.explicitCloseWanted,
-            VERB,
+            VERB
           );
           break;
         }
@@ -556,7 +558,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
             cc,
             best,
             obj.explicitCloseWanted,
-            VERB,
+            VERB
           );
         }
       }
@@ -606,7 +608,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
       x1: number,
       y1: number,
       x2: number,
-      y2: number,
+      y2: number
     ): void {
       h.p.quadTo(x1, y1, x2, y2);
     },
@@ -618,7 +620,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
       x2: number,
       y2: number,
       x3: number,
-      y3: number,
+      y3: number
     ): void {
       h.p.cubicTo(x1, y1, x2, y2, x3, y3);
     },
@@ -655,24 +657,24 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
       joinInt: number,
       miterLimit: number,
       dashArray: unknown,
-      dashOffset: number,
+      dashOffset: number
     ): WrappedPath {
       const Caps = PathKit.StrokeCap ?? {};
       const Joins = PathKit.StrokeJoin ?? {};
 
       const cap =
         capInt === 1
-          ? (Caps.ROUND ?? 1)
+          ? Caps.ROUND ?? 1
           : capInt === 2
-            ? (Caps.SQUARE ?? 2)
-            : (Caps.BUTT ?? 0);
+          ? Caps.SQUARE ?? 2
+          : Caps.BUTT ?? 0;
 
       const join =
         joinInt === 1
-          ? (Joins.ROUND ?? 1)
+          ? Joins.ROUND ?? 1
           : joinInt === 2
-            ? (Joins.BEVEL ?? 2)
-            : (Joins.MITER ?? 0);
+          ? Joins.BEVEL ?? 2
+          : Joins.MITER ?? 0;
 
       const work = PathKit.NewPath(h.p);
 
@@ -680,12 +682,12 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
         if (
           Array.isArray(dashArray) &&
           dashArray.length === 2 &&
-          typeof work.dash === "function"
+          typeof work.dash === 'function'
         ) {
           work.dash(
             Number(dashArray[0]),
             Number(dashArray[1]),
-            dashOffset || 0,
+            dashOffset || 0
           );
         }
 
@@ -695,7 +697,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
           join,
           miter_limit: miterLimit,
         });
-        if (!stroked || typeof stroked.toCmds !== "function") stroked = work;
+        if (!stroked || typeof stroked.toCmds !== 'function') stroked = work;
 
         if (stroked !== work) work.delete?.();
 
@@ -720,14 +722,14 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
       c: number,
       d: number,
       e: number,
-      f: number,
+      f: number
     ): WrappedPath {
       const p = PathKit.NewPath(h.p);
       p.transform(a, c, e, b, d, f, 0, 0, 1);
 
       const wrapped = wrapPath(p);
       wrapped.meta.moves = (h.meta?.moves || []).map(([x, y]) =>
-        normPt([a * x + c * y + e, b * x + d * y + f]),
+        normPt([a * x + c * y + e, b * x + d * y + f])
       );
       return wrapped;
     },
@@ -735,16 +737,16 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
     op(
       aHandle: WrappedPath,
       bHandle: WrappedPath,
-      opInt: number,
+      opInt: number
     ): WrappedPath | null {
       try {
         const Ops = PathKit.PathOp ?? {};
         const op =
           opInt === 1
-            ? (Ops.INTERSECT ?? 1)
+            ? Ops.INTERSECT ?? 1
             : opInt === 2
-              ? (Ops.DIFFERENCE ?? 2)
-              : (Ops.UNION ?? 0);
+            ? Ops.DIFFERENCE ?? 2
+            : Ops.UNION ?? 0;
 
         const out = PathKit.MakeFromOp(aHandle.p, bHandle.p, op);
         if (!out) return null;
@@ -752,7 +754,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
         const wrapped = wrapPath(out);
         wrapped.meta.moves = mergeMoves(
           aHandle.meta?.moves,
-          bHandle.meta?.moves,
+          bHandle.meta?.moves
         );
         return wrapped;
       } catch {
@@ -786,7 +788,7 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
       const normalized = normalizeSortRotateContours(
         cmds,
         h,
-        preferStrokeCanonical,
+        preferStrokeCanonical
       );
       return cmdsToVerbPoints(normalized, VERB);
     },

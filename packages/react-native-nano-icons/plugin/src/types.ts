@@ -8,7 +8,7 @@ export interface IconSetConfig {
   fontFamily: string;
   /** Units per em (default 1024). */
   upm?: number;
-  /** Safe zone inside UPM for glyphs (default 896). */
+  /** Safe zone inside UPM for glyphs (default 1020). */
   safeZone?: number;
   /** First Unicode codepoint for glyphs (default 0xe900). Hex string or number. */
   startUnicode?: number | string;

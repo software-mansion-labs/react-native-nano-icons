@@ -1,6 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
-import parseArgs from "minimist";
+import fs from 'node:fs';
+import path from 'node:path';
+import parseArgs from 'minimist';
 
 export type PipelineConfig = {
   fontFamily: string;
@@ -24,18 +24,18 @@ export function readCliConfigAndPaths(argvRaw = process.argv.slice(2)): {
 
   if (!inputFolderName) {
     console.error(
-      "❌ Error: You must provide the input folder name as the first argument.",
+      '❌ Error: You must provide the input folder name as the first argument.'
     );
     console.log(
-      "Usage: tsx src/core/build_wasm.ts <folder_name> [--upm 1024] [--safeZone 896] [--startUnicode 0xe900]",
+      'Usage: tsx src/core/build_wasm.ts <folder_name> [--upm 1024] [--safeZone 1020] [--startUnicode 0xe900]'
     );
     process.exit(1);
   }
 
   const inputDir = path.resolve(inputFolderName);
   const parentDir = path.dirname(inputDir);
-  const outputDir = path.join(parentDir, "nanoicons");
-  const tempDir = path.join(process.cwd(), ".temp_layers");
+  const outputDir = path.join(parentDir, 'nanoicons');
+  const tempDir = path.join(process.cwd(), '.temp_layers');
 
   if (!fs.existsSync(inputDir)) {
     console.error(`❌ Error: Input directory "${inputDir}" does not exist.`);
@@ -43,11 +43,11 @@ export function readCliConfigAndPaths(argvRaw = process.argv.slice(2)): {
   }
 
   const config: PipelineConfig = {
-    fontFamily: inputFolderName.split(path.sep).pop() || "Icons",
+    fontFamily: inputFolderName.split(path.sep).pop() || 'Icons',
     upm: Number(argv.upm ?? 1024),
-    safeZone: Number(argv.safeZone ?? 896),
+    safeZone: Number(argv.safeZone ?? 1020),
     startUnicode: Number(
-      argv.startUnicode ? parseInt(String(argv.startUnicode)) : 0xe900,
+      argv.startUnicode ? parseInt(String(argv.startUnicode)) : 0xe900
     ),
   };
 

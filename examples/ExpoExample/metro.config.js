@@ -25,4 +25,21 @@ config.resolver.blockList = baseBlockList.concat([
   new RegExp(`^${escapeRegExp(bareExampleRoot)}[/\\\\].*`),
 ]);
 
+// Force single copies of React/RN
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (
+    moduleName === "react" ||
+    moduleName === "react-native" ||
+    moduleName.startsWith("react/") ||
+    moduleName.startsWith("react-native/")
+  ) {
+    return context.resolveRequest(
+      { ...context, originModulePath: path.join(projectRoot, "_entry.js") },
+      moduleName,
+      platform
+    );
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;

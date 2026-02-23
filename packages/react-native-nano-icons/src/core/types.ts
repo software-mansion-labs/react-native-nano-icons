@@ -28,7 +28,7 @@ export interface PathKitPath {
     x2: number,
     y2: number,
     x3: number,
-    y3: number,
+    y3: number
   ) => void;
   close: () => void;
 
@@ -63,7 +63,7 @@ export interface PathKitPath {
     f: number,
     g: number,
     h: number,
-    i: number,
+    i: number
   ) => void;
 }
 
@@ -90,7 +90,7 @@ export interface PathKitModule {
   MakeFromOp: (
     a: PathKitPath,
     b: PathKitPath,
-    op: number,
+    op: number
   ) => PathKitPath | null;
 }
 
