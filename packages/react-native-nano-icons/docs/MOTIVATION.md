@@ -1,4 +1,63 @@
-## 💡🔨 Architecture & Pipeline — Decision-Making Process
+Table of contents:
+
+- [💡🔨 Architecture \& Pipeline — Decision-Making Process](#-architecture--pipeline--decision-making-process)
+  - [0. The Problem: SVGs in React Native](#0-the-problem-svgs-in-react-native)
+  - [1. Scope and non-goals](#1-scope-and-non-goals)
+  - [2. Requirements and constraints](#2-requirements-and-constraints)
+    - [Functional requirements](#functional-requirements)
+    - [Key technical constraints](#key-technical-constraints)
+  - [3. Rendering strategy and color model](#3-rendering-strategy-and-color-model)
+    - [Why native fonts (instead of SVG rendering at runtime)](#why-native-fonts-instead-of-svg-rendering-at-runtime)
+    - [Why we intentionally do _not_ ship COLR/CPAL (COLRv0 / COLRv1) today](#why-we-intentionally-do-not-ship-colrcpal-colrv0--colrv1-today)
+    - [Our approach (core design)](#our-approach-core-design)
+  - [4. Architecture overview (current implementation)](#4-architecture-overview-current-implementation)
+    - [Pipeline stages](#pipeline-stages)
+    - [Summary](#summary)
+  - [5. The geometry challenge: why pathops matters](#5-the-geometry-challenge-why-pathops-matters)
+  - [6. Pyodide as proof of concept; long-term geometry strategy](#6-pyodide-as-proof-of-concept-long-term-geometry-strategy)
+    - [Current decision](#current-decision)
+    - [Future possibility](#future-possibility)
+- [⚒️🔍 Tooling analysis: existing solutions vs our pipeline](#️-tooling-analysis-existing-solutions-vs-our-pipeline)
+  - [1. Fantasticon (Node CLI)](#1-fantasticon-node-cli)
+    - [Strengths](#strengths)
+    - [Limitations for our requirements](#limitations-for-our-requirements)
+    - [Bottom line](#bottom-line)
+  - [2. IcoMoon (web app; v2 beta)](#2-icomoon-web-app-v2-beta)
+    - [Strengths relevant to our evaluation](#strengths-relevant-to-our-evaluation)
+    - [Cons](#cons)
+    - [Bottom line](#bottom-line-1)
+  - [3. Terminal / CI tooling for COLRv0](#3-terminal--ci-tooling-for-colrv0)
+    - [What we found](#what-we-found)
+    - [Practical downside](#practical-downside)
+    - [Implication](#implication)
+- [🕵🏻‍♂️🎨 Practical comparisons](#️-practical-comparisons)
+  - [Goals](#goals)
+  - [Font table listings (`ttx -l` via `fonttools` CLI)](#font-table-listings-ttx--l-via-fonttools-cli)
+    - [Fantasticon — `Fantasticon.ttf`](#fantasticon--fantasticonttf)
+    - [IcoMoon (new-app-beta) — `Icomoon.ttf`](#icomoon-new-app-beta--icomoonttf)
+    - [Ours — `RNNanoIcons.ttf`](#ours--rnnanoiconsttf)
+  - [Key interpretation from tables](#key-interpretation-from-tables)
+    - [Native color vs non-color](#native-color-vs-non-color)
+    - [Sizes are largely “glyf driven”](#sizes-are-largely-glyf-driven)
+  - [Cross-platform rendering notes observed in this test run](#cross-platform-rendering-notes-observed-in-this-test-run)
+    - [Android font-metrics padding (Fantasticon + IcoMoon)](#android-font-metrics-padding-fantasticon--icomoon)
+    - [Inline baseline alignment (RNNanoIcons)](#inline-baseline-alignment-rnnanoicons)
+  - [Example SVG set](#example-svg-set)
+    - [Legend for “what a font pipeline must do”](#legend-for-what-a-font-pipeline-must-do)
+  - [Monochrome / single-glyph test cases](#monochrome--single-glyph-test-cases)
+    - [1) `star.svg` — polygon + `fill-rule="evenodd"`](#1-starsvg--polygon--fill-ruleevenodd)
+    - [2) `triangle.svg` (a.k.a. `triangleCropped.svg`) — viewBox clipping + fill-rule stress](#2-trianglesvg-aka-trianglecroppedsvg--viewbox-clipping--fill-rule-stress)
+    - [3) `complicated-icon-1.svg` — complex path data](#3-complicated-icon-1svg--complex-path-data)
+    - [4) `complicated-icon-2.svg` — complex path data (variant)](#4-complicated-icon-2svg--complex-path-data-variant)
+  - [Multicolor test cases](#multicolor-test-cases)
+    - [Important note on color](#important-note-on-color)
+    - [5) `AO.svg` (Angola flag) — multicolor flag](#5-aosvg-angola-flag--multicolor-flag)
+    - [6) `usFlag.svg` (USA flag) — multicolor flag](#6-usflagsvg-usa-flag--multicolor-flag)
+    - [7) `person-walking.svg` — multicolor illustration icon](#7-person-walkingsvg--multicolor-illustration-icon)
+  - [Visual comparison matrix (actual results from this run)](#visual-comparison-matrix-actual-results-from-this-run)
+  - [Appendix: References](#appendix-references)
+
+# 💡🔨 Architecture & Pipeline — Decision-Making Process
 
 ### 0. The Problem: SVGs in React Native
 
@@ -23,8 +82,6 @@ This document describes the technical decisions behind our **SVG → font + meta
 
 Non-goals:
 
-- Full fidelity support for all SVG features (e.g., filters, clipPaths, fill-rule winding)
-- Supporting **SVG masks** as a first-class construct in the simplification step (currently not reliably supported by common simplification pipelines, including ours)
 - nessesity to use any external web-based tooling
 
 ---
@@ -44,11 +101,12 @@ Non-goals:
 #### Key technical constraints
 
 1. **Font engines accept a strict subset of SVG geometry.** Real-world SVGs often include:
+
    - transforms (`transform="matrix(...)"`)
    - clipping paths (`<clipPath>`)
    - masks (`<mask>`) — **not reliably supported by simplification pipelines** in general, including our own
    - winding/overlap behaviors that must be resolved into simple contours  
-     Most XML-level tooling only rewrites markup; it doesn’t _compute_ geometry.
+     Most XML-level tooling like `svgo` only rewrites markup; it doesn’t _compute_ geometry.
 
 2. **Color font format fragmentation and API limitations**
    - Advanced color font formats are not uniformly supported across platform versions and app stacks.
@@ -60,7 +118,7 @@ Non-goals:
 
 #### Why native fonts (instead of SVG rendering at runtime)
 
-Native text rendering is one of the most optimized pipelines on mobile OSes. Rendering a glyph from a font file is synchronous, cached, and avoids the cost of parsing XML and building a native vector tree at runtime.
+Native text rendering is one of the most optimized pipelines on mobile OSes. Rendering a glyph from a static font file is synchronous, cached, and avoids the cost of parsing XML and building a native vector tree at runtime.
 
 #### Why we intentionally do _not_ ship COLR/CPAL (COLRv0 / COLRv1) today
 
@@ -68,16 +126,15 @@ Even though COLRv0 is widely compatible and COLRv1 adds richer paint features, *
 
 Key reasons:
 
-- **Runtime layer control:** We need to change a specific part of the icon (e.g., skin tone) without re-exporting or maintaining multiple variants.
 - **Predictability:** The same composition logic runs in our code, not inside platform-specific color-font stacks.
 - **Tooling availability:** Node-first, deterministic COLRv0 compilation is not well supported by OSS CLI tools; the most reliable terminal tool we found is `nanoemoji`, but it relies on a heavier native toolchain ( it is a python lib with c/c++ bindings to `skia/pathops` via `picosvg` python lib and a font engine called `ninja`).
+- **Runtime layer control:** We need to change a specific part of the icon (e.g., skin tone) without re-exporting or maintaining multiple variants.
 
 #### Our approach (core design)
 
 We represent each multi-color icon as:
 
-- one **base icon glyph** (simple glyph format)
-- plus a set of **subglyph layers**, each mapped to a private-use codepoint
+- a set of **subglyph layers** (simple glyph format), each mapped to a private-use codepoint
 - a generated **glyph map** describing:
 
 ```
@@ -114,7 +171,8 @@ We keep the font format simple and universal (a `glyf` + `cmap` tables is the si
 
 #### Pipeline stages
 
-1. **SVG → flattened, normalized, simplified paths (Pyodide + picosvg + PathKit)**
+1. **SVG → flattened, normalized, simplified paths (Pyodide + picosvg + PathKit via WASM)**
+
    - Input: arbitrary SVGs (often complex Figma exports)
    - Output: path-only geometry suitable for downstream font conversion tools
    - Responsibilities:
@@ -126,6 +184,7 @@ We keep the font format simple and universal (a `glyf` + `cmap` tables is the si
      - SVG **mask** resolution/simplification is not reliably supported today (but fortunately, vast majority of icons do not rely on it)
 
 2. **Flattened geometry → layer glyph extraction (Node)**
+
    - Parse flattened SVG DOM
    - Split shapes into layers based on fill color (multi-color decomposition)
    - Compute placement rules (viewBox normalization, UPM scaling, safe zone)
@@ -157,7 +216,7 @@ Simple “SVG optimizers”, like the very popular `svgo` library, mostly manipu
 This is the main reason our pipeline can handle complicated exports: **we compute the geometry instead of hoping the font compiler tolerates it.**
 
 **Limitations:**  
-Mask semantics remain a hard gap. Even with PathOps, reliably resolving `<mask>` into equivalent contours is not solved any piplines.
+Mask semantics remain a hard gap. Even with PathOps, reliably resolving `<mask>` into equivalent contours is not solved by any piplines.
 
 ---
 
@@ -182,7 +241,7 @@ Revisit a pure TS/JS geometry implementation if:
 
 ---
 
-## ⚒️🔍 Tooling analysis: existing solutions vs our pipeline
+# ⚒️🔍 Tooling analysis: existing solutions vs our pipeline
 
 ### 1. Fantasticon (Node CLI)
 
@@ -227,6 +286,7 @@ Announcement: https://icomoon.io/news/new-app-beta
 - **Web app** workflow: hard to automate deterministically in CI
 - Not a composable Node library
 - Does not directly solve our runtime requirement (layer-specific color overrides)
+- **no multicolor support on Android API level < 33.0**
 
 #### Bottom line
 
@@ -243,7 +303,7 @@ Source: https://github.com/googlefonts/nanoemoji
 
 #### Practical downside
 
-nanoemoji depends on a relatively heavy native toolchain (C++ build dependencies). In practice, this can include build tools not readily available in constrained or WASM-oriented environments (e.g., when building dependencies or related components).
+nanoemoji depends on a relatively heavy native toolchain bindings (C++ build dependencies) invoked from python. In practice, this can include build tools not readily available in constrained or WASM-oriented environments (e.g., when building dependencies or related components) and thus, not supported in a Node environment.
 
 #### Implication
 
@@ -271,7 +331,7 @@ Tested rendering targets (screenshots captured):
 - **iOS 26.2**
 - **Android API 36.1**
 - **Android API 28** (minimum supported)
-  - Note: **API < 33 is known to not support COLRv1**, and has **limited COLRv0** support.
+  - Note: **API < 33.0 is known to not support COLRv1**
 
 ---
 
@@ -379,11 +439,11 @@ This padding behavior appears to be consistent across:
 - Android API 36.1
 - Android API 28
 
-(And should be treated as a pipeline + font-metrics interaction rather than an SVG-specific issue.)
+(And should be treated as a pipeline + font-metrics interaction rather than an SVG-specific issue. It can be disabled with `includeFontPadding: false` style prop tho.)
 
 ### Inline baseline alignment (RNNanoIcons)
 
-RNNanoIcons render **pixel-perfect geometry**, but inline-in-text rendering is **slightly off the baseline by ~1px**. This is consistent with embedded views inside text in React Native and affects all nanoicons inline examples. Plan: compensate at the renderer/layout layer.
+RNNanoIcons render **pixel-perfect geometry**, including inline-in-text rendering since we have a full power over font metrics like baseline during font compilation.
 
 ---
 
@@ -426,12 +486,6 @@ For a given SVG to become a font glyph reliably, a pipeline generally needs to:
   - Android shows the **extra font-metrics padding** behavior; inline displays correctly.
 - **RNNanoIcons (ours)**
   - Pixel-perfect representation; fill rule resolved correctly.
-  - Inline is ~1px off baseline (known RN inline-view issue).
-
-**Normalization recommendation**
-
-- Prefer polygon→path conversion before font build (preserve winding/fill rule).
-- If a toolchain cannot preserve `evenodd`, bake geometry into an equivalent nonzero-wound path.
 
 ---
 
@@ -454,12 +508,7 @@ For a given SVG to become a font glyph reliably, a pipeline generally needs to:
   - Inline displays correctly (subject to Android padding behavior).
 - **RNNanoIcons (ours)**
   - Pixel-perfect; viewBox behavior matches expected crop.
-  - Inline baseline is slightly off (same ~1px pattern as all nanoicons inline).
-
-**Normalization recommendation**
-
-- Deterministically crop/trim geometry to the viewBox before conversion (do not rely on tool import semantics).
-- Keep final geometry strictly within expected bounds.
+  - Inline displays correctly
 
 ---
 
@@ -474,7 +523,7 @@ For a given SVG to become a font glyph reliably, a pipeline generally needs to:
 **Observed results**
 
 - **All pipelines**: path rendering looks correct across all platforms.
-- **Android**: Fantasticon and IcoMoon show the **extra bottom padding** behavior; RNNanoIcons does not show this specific font padding issue (but still has the inline baseline note).
+- **Android**: Fantasticon and IcoMoon show the **extra bottom padding** behavior; RNNanoIcons does not show this specific font padding issue.
 
 ---
 
@@ -500,7 +549,7 @@ For a given SVG to become a font glyph reliably, a pipeline generally needs to:
 
 - IcoMoon can encode color in the font (COLR/CPAL).
 - Our approach typically represents multicolor as **multiple glyph layers** with a glyphmap to compose them (or another deterministic runtime composition strategy).
-- Fantasticon output is generally monochrome; multicolor SVGs are typically unsupported or degrade.
+- Fantasticon output is generally monochrome; multicolor SVGs are unsupported and degrade to single glyphs.
 
 ---
 
@@ -522,7 +571,7 @@ For a given SVG to become a font glyph reliably, a pipeline generally needs to:
 
 **Notes**
 
-- The IcoMoon behavior here indicates a viewBox/fit strategy that prioritizes fitting into the glyph box at the expense of original aspect ratio.
+- The IcoMoon behavior here indicates a viewBox/fit strategy that prioritizes fitting into the glyph box at the expense of original aspect ratio - the flag seems cropped on sides.
 
 ---
 
@@ -550,21 +599,21 @@ For a given SVG to become a font glyph reliably, a pipeline generally needs to:
 - **IcoMoon**
   - Correctly displayed, but with additional padding on Android + **unsupported on API 28**
 - **RNNanoIcons (ours)**
-  - Pixel-perfect (inline baseline note still applies in inline variant).
+  - Pixel-perfect.
 
 ---
 
 ## Visual comparison matrix (actual results from this run)
 
-| Example              | SVG features stressed        | Fantasticon                                                   | IcoMoon (new-app-beta)                                                                              | RNNanoIcons (ours)                      |
-| -------------------- | ---------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| `star.svg`           | polygon, `evenodd` fill-rule | ❌ fill-rule ignored (fully filled)                           | ⚠️ fill OK, shape artifact from point/join simplification                                           | ✅ pixel-perfect (inline ~1px baseline) |
-| `triangle.svg`       | viewBox crop + fill-rule     | ❌ viewBox ignored → oversized glyph; fill-rule not respected | ❌ viewBox ignored → oversized glyph; fill-rule respected                                           | ✅ pixel-perfect (inline ~1px baseline) |
-| `complicated-icon-1` | complex paths                | ✅ path OK; Android adds bottom padding                       | ✅ path OK; Android adds bottom padding                                                             | ✅ path OK (inline ~1px baseline)       |
-| `complicated-icon-2` | complex paths                | ✅ path OK; Android adds bottom padding                       | ✅ path OK; Android adds bottom padding                                                             | ✅ path OK (inline ~1px baseline)       |
-| `AO.svg`             | multicolor                   | ❌ not supported                                              | ⚠️ rendered but width cropped / proportions not preserved; Android padding + no support on API<33.0 | ✅ pixel-perfect (inline ~1px baseline) |
-| `usFlag.svg`         | multicolor                   | ❌ not supported                                              | ⚠️ rendered but width cropped / proportions not preserved; Android padding + no support on API<33.0 | ✅ pixel-perfect (inline ~1px baseline) |
-| `person-walking.svg` | multicolor, many layers      | ❌ not supported                                              | ⚠️ correct; Android padding + no support on API<33.0                                                | ✅ pixel-perfect (inline ~1px baseline) |
+| Example              | SVG features stressed        | Fantasticon                                                   | IcoMoon (new-app-beta)                                                                              | RNNanoIcons (ours) |
+| -------------------- | ---------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------ |
+| `star.svg`           | polygon, `evenodd` fill-rule | ❌ fill-rule ignored (fully filled)                           | ⚠️ fill OK, shape artifact from point/join simplification                                           | ✅ pixel-perfect   |
+| `triangle.svg`       | viewBox crop + fill-rule     | ❌ viewBox ignored → oversized glyph; fill-rule not respected | ❌ viewBox ignored → oversized glyph; fill-rule respected                                           | ✅ pixel-perfect   |
+| `complicated-icon-1` | complex paths                | ✅ path OK; Android adds bottom padding                       | ✅ path OK; Android adds bottom padding                                                             | ✅ pixel-perfect   |
+| `complicated-icon-2` | complex paths                | ✅ path OK; Android adds bottom padding                       | ✅ path OK; Android adds bottom padding                                                             | ✅ pixel-perfect   |
+| `AO.svg`             | multicolor                   | ❌ not supported                                              | ⚠️ rendered but width cropped / proportions not preserved; Android padding + no support on API<33.0 | ✅ pixel-perfect   |
+| `usFlag.svg`         | multicolor                   | ❌ not supported                                              | ⚠️ rendered but width cropped / proportions not preserved; Android padding + no support on API<33.0 | ✅ pixel-perfect   |
+| `person-walking.svg` | multicolor, many layers      | ❌ not supported                                              | ⚠️ correct; Android padding + no support on API<33.0                                                | ✅ pixel-perfect   |
 
 Legend:
 
