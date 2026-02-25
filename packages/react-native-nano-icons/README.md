@@ -31,8 +31,8 @@ The library uses an Expo Config Plugin to hook into the prebuild phase. This aut
         {
           "iconSets": [
             {
-              "inputDir": "./assets/icons/user",
-            },
+              "inputDir": "./assets/icons/user"
+            }
           ]
         }
       ]
@@ -75,8 +75,8 @@ Bare apps don’t have a prebuild step, so you run the same pipeline via the CLI
     {
       "iconSets": [
         {
-          "inputDir": "./assets/icons/user",
-        },
+          "inputDir": "./assets/icons/user"
+        }
       ]
     }
     ```
@@ -138,17 +138,18 @@ export default function App() {
 Your color icons can have as many colors as your original svg has, therefore you should experiment to establish which element of the array corresponds to the layer you aim to change the color of.
 If the icon is single-color by design (which results in creating a single glyph during build-time) only the first element is took into consideration, and if the `colorPalette` array is too short - the last color is repeated.
 
-> [!IMPORTANT] > **You should always verify your icons visually.**
+> [!IMPORTANT]
+> **You should always verify your icons visually.**
 
 ---
 
-## 💡 Architecture & Pipeline
+## 💡 Architecture & Pipeline & Examples
 
 see [MOTIVATION.md](docs/MOTIVATION.md)
 
 ---
 
-# License
+## License
 
 `react-native-nano-icons` is released under the **MIT License**. See [LICENSE](LICENSE) for the full text.
 
