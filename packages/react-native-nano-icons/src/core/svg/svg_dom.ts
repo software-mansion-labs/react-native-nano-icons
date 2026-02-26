@@ -1,8 +1,55 @@
 import { JSDOM } from 'jsdom';
+import { parseColor } from '../../utils/parse';
 
 export type ParsedFlatSvg = {
   viewBox: [number, number, number, number];
   paths: Array<{ d: string; fill: string | null }>;
+};
+
+// if the fill is implicit, walk ancestors for the first explicit fill value
+function resolveInheritedFill(el: Element): string {
+  let current: Element | null = el.parentElement;
+  while (current !== null) {
+    const fill = current.getAttribute('fill');
+    if (fill !== null && fill !== 'inherit') return fill;
+    current = current.parentElement;
+  }
+  return 'black';
+}
+
+// bake opacity into the fill as an rgba(...)
+export function calculateOpColor(
+  fill: string | null,
+  opacity: number,
+  el: Element
+): `rgba(${number},${number},${number},${number})` {
+  const resolvedFill = fill ?? resolveInheritedFill(el);
+  const [r, g, b, a] = parseColor(resolvedFill);
+  const finalAlpha = +(a * opacity).toFixed(4);
+  return `rgba(${r},${g},${b},${finalAlpha})`;
+}
+
+export const parsePath = (p: Element): { d: string; fill: string | null } => {
+  const d = p.getAttribute('d') ?? '';
+
+  const op = p.getAttribute('opacity');
+  const fillOp = p.getAttribute('fill-opacity');
+  const fill = p.getAttribute('fill');
+
+  if (op !== null || fillOp !== null) {
+    const opVal = op !== null ? parseFloat(op) : 1;
+    const fillOpVal = fillOp !== null ? parseFloat(fillOp) : 1;
+    const combinedOpacity = opVal * fillOpVal;
+    return {
+      d,
+      fill: calculateOpColor(fill, combinedOpacity, p),
+    };
+  }
+
+  return {
+    d,
+    fill,
+  };
 };
 
 export function parseFlattenedSvg(flattenedSvg: string): ParsedFlatSvg {
@@ -21,12 +68,8 @@ export function parseFlattenedSvg(flattenedSvg: string): ParsedFlatSvg {
       : [0, 0, 100, 100];
 
   const pathEls = Array.from(doc.querySelectorAll('path'));
-  const paths = pathEls
-    .map((p) => ({
-      d: p.getAttribute('d') ?? '',
-      fill: p.getAttribute('fill'),
-    }))
-    .filter((p) => p.d.trim() !== '');
+
+  const paths = pathEls.map(parsePath).filter((p) => p.d.trim() !== '');
 
   return { viewBox, paths };
 }

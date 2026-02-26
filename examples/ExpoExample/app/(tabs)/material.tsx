@@ -1,4 +1,4 @@
-import { FlatList, StyleSheet } from "react-native";
+import { FlatList } from "react-native";
 
 import { Text, View } from "@/components/Themed";
 import materialIconGlyphMap from "@/assets/test_icons/material_icons/nanoicons/MaterialIconsTwotone.glyphmap.json";
@@ -18,7 +18,7 @@ const Row = ({ icon }: { icon: keyof typeof materialIconGlyphMap.icons }) => {
         alignItems: "center",
       }}
     >
-      <MaterialIcon name={icon} size={42} colorPalette={["rgba(0, 0, 0, 0.54)"]}/>
+      <MaterialIcon name={icon} size={42} />
       <Text style={{ fontSize: 24 }}>{icon}</Text>
     </View>
   );
@@ -30,23 +30,10 @@ export default function MaterialScreen() {
       data={iconSubset}
       keyExtractor={(item) => item}
       renderItem={({ item }) => <Row icon={item} />}
+      contentContainerStyle={{
+        paddingHorizontal: 10,
+        backgroundColor: "white",
+      }}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: "80%",
-  },
-});

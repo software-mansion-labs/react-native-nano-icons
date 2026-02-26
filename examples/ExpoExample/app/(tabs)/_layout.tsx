@@ -44,7 +44,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="material"
         options={{
-          title: "(Nano) Material Icons",
+          title: "(Nano)Material TwoTone Icons",
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />

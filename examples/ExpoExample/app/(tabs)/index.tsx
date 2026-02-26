@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Icon } from "@/components/Icon";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Icon } from "@/components/Icon";
 
 export default function TabOneScreen() {
   return (
