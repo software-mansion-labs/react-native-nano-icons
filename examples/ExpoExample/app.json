@@ -29,7 +29,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      ["expo-font", { "fonts": [] }],
+      [
+        "expo-font",
+        {
+          "fonts": []
+        }
+      ],
       [
         "react-native-nano-icons",
         {
@@ -38,17 +43,27 @@
               "inputDir": "./assets/testicons",
               "fontFamily": "Testicons",
               "upm": 1024,
-              "startUnicode": "0xe900"
+              "startUnicode": "0xe900",
+              "outputDir": "./assets/nanoicons"
             },
             {
-              "inputDir": "./assets/differentIcons",
-              "fontFamily": "DifferentIcons",
+              "inputDir": "./assets/test_icons/material_icons/twotone",
+              "fontFamily": "MaterialIconsTwotone",
               "upm": 1024,
-              "startUnicode": "0xe900"
+              "startUnicode": "0xe900",
+              "outputDir": "./assets/nanoicons"
+            },
+            {
+              "inputDir": "./assets/test_icons/swm_icons/broken",
+              "fontFamily": "SWMIconsBroken",
+              "upm": 1024,
+              "startUnicode": "0xe900",
+              "outputDir": "./assets/nanoicons"
             }
           ]
         }
-      ]
+      ],
+      "expo-router"
     ]
   }
 }

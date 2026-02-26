@@ -1,8 +1,8 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Icon } from "./Icon";
+import { Icon } from "@/components/Icon";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-export default function App() {
+export default function TabOneScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView edges={["top"]} style={[styles.container]}>
@@ -126,7 +126,8 @@ export default function App() {
                     ]}
                   />
                   <Text style={{ textAlign: "center", maxWidth: "60%" }}>
-                    ⬆️ "person-walking" shirt color override via colorPalette prop
+                    ⬆️ "person-walking" shirt color override via colorPalette
+                    prop
                   </Text>
                 </View>
               </View>

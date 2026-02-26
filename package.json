@@ -17,7 +17,8 @@
     "build:bare:android": "yarn workspace bare-react-native-nano-icons-example android",
     "start:bare": "yarn workspace bare-react-native-nano-icons-example start",
     "start:expo": "yarn workspace expo-nano-icons-example start",
-    "prebuild": "yarn workspace expo-nano-icons-example expo prebuild --clean"
+    "prebuild": "yarn workspace expo-nano-icons-example expo prebuild --clean",
+    "test": "yarn workspace react-native-nano-icons test"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6"

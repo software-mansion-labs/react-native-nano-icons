@@ -164,6 +164,10 @@
   },
   "jest": {
     "preset": "react-native",
+    "testTimeout": 180000,
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.+)\\.js$": "$1"
+    },
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
