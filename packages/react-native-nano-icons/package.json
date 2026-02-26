@@ -4,21 +4,30 @@
   "description": "Use any svg as font. High-performance, build-time icon font generation for React Native & Expo.",
   "react-native": "src/index.ts",
   "source": "src/index.ts",
-  "bin": "build/scripts/cli.js",
-  "main": "./lib/commonjs/index.js",
-  "types": "./lib/typescript/commonjs/src/index.d.ts",
+  "bin": "lib/commonjs/scripts/cli.js",
+  "main": "./lib/module/index.js",
+  "types": "./lib/typescript/src/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/index.tsx",
       "default": "./lib/module/index.js",
-      "require": {
-        "types": "./lib/typescript/commonjs/src/index.d.ts",
-        "default": "./lib/commonjs/index.js"
-      },
-      "bin": "./build/scripts/cli.js",
       "import": {
-        "types": "./lib/typescript/module/src/index.d.ts",
+        "types": "./lib/typescript/src/index.d.ts",
         "default": "./lib/module/index.js"
+      }
+    },
+    "./cli": {
+      "source": "./cli/index.ts",
+      "types": "./lib/commonjs/cli/index.d.ts",
+      "require": {
+        "default": "./lib/commonjs/cli/index.js"
+      }
+    },
+    "./pipeline": {
+      "source": "./src/core/pipeline/index.ts",
+      "require": {
+        "types": "./lib/commonjs/src/core/pipeline/index.d.ts",
+        "default": "./lib/commonjs/src/core/pipeline/index.js"
       }
     },
     "./app.plugin": "./app.plugin.js",
@@ -27,7 +36,6 @@
   },
   "files": [
     "app.plugin.js",
-    "build",
     "src/core/shims",
     "bin",
     "src",
@@ -36,10 +44,12 @@
     "scripts"
   ],
   "scripts": {
-    "build": "bob build && yarn build:plugin && yarn build:scripts",
+    "build": "bob build && yarn build:core && yarn build:cli && yarn build:plugin && yarn build:scripts",
+    "build:core": "tsc -p src/core/tsconfig.json",
+    "build:cli": "tsc -p cli/tsconfig.json",
     "build:plugin": "tsc -p plugin/tsconfig.json",
     "build:scripts": "tsc -p scripts/tsconfig.json",
-    "clean": "del-cli lib build",
+    "clean": "del-cli lib",
     "prepare": "yarn build",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
@@ -49,9 +59,10 @@
   },
   "dependencies": {
     "@expo/config-plugins": ">=9.0.0",
+    "chalk": "^5.6.2",
     "fonteditor-core": "^2.6.3",
     "jsdom": "^28.1.0",
-    "minimist": "^1.2.8",
+    "ora": "^9.3.0",
     "pathkit-wasm": "^1.0.0",
     "plist": "^3.0.5",
     "pyodide": "^0.29.3",
@@ -81,7 +92,6 @@
     "@react-native/eslint-config": "0.83.0",
     "@release-it/conventional-changelog": "^10.0.1",
     "@types/jest": "^29.5.14",
-    "@types/minimist": "^1.2.5",
     "@types/node": "^25.2.3",
     "@types/plist": "^3.0.5",
     "@types/react": "~19.1.0",
@@ -142,8 +152,7 @@
         {
           "project": "tsconfig.build.json"
         }
-      ],
-      "commonjs"
+      ]
     ]
   },
   "prettier": {

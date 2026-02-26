@@ -4437,13 +4437,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/minimist@npm:^1.2.5":
-  version: 1.2.5
-  resolution: "@types/minimist@npm:1.2.5"
-  checksum: 10c0/3f791258d8e99a1d7d0ca2bda1ca6ea5a94e5e7b8fc6cde84dd79b0552da6fb68ade750f0e17718f6587783c24254bbca0357648dd59dc3812c150305cabdc46
-  languageName: node
-  linkType: hard
-
 "@types/node@npm:*, @types/node@npm:^25.2.3":
   version: 25.2.3
   resolution: "@types/node@npm:25.2.3"
@@ -12653,6 +12646,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ora@npm:^9.3.0":
+  version: 9.3.0
+  resolution: "ora@npm:9.3.0"
+  dependencies:
+    chalk: "npm:^5.6.2"
+    cli-cursor: "npm:^5.0.0"
+    cli-spinners: "npm:^3.2.0"
+    is-interactive: "npm:^2.0.0"
+    is-unicode-supported: "npm:^2.1.0"
+    log-symbols: "npm:^7.0.1"
+    stdin-discarder: "npm:^0.3.1"
+    string-width: "npm:^8.1.0"
+  checksum: 10c0/1d25c0f43e20389757285f740686958bce78ccb9d03dda190ecc92ae585cbc498fa54cf13933fea2f96cb97a0be82e927cf0fd8c96217459f9c43d915a380531
+  languageName: node
+  linkType: hard
+
 "os-name@npm:6.1.0":
   version: 6.1.0
   resolution: "os-name@npm:6.1.0"
@@ -13494,12 +13503,12 @@ __metadata:
     "@react-native/eslint-config": "npm:0.83.0"
     "@release-it/conventional-changelog": "npm:^10.0.1"
     "@types/jest": "npm:^29.5.14"
-    "@types/minimist": "npm:^1.2.5"
     "@types/node": "npm:^25.2.3"
     "@types/plist": "npm:^3.0.5"
     "@types/react": "npm:~19.1.0"
     "@types/svg2ttf": "npm:^5.0.3"
     babel-plugin-module-resolver: "npm:^5.0.2"
+    chalk: "npm:^5.6.2"
     commitlint: "npm:^19.8.1"
     del-cli: "npm:^6.0.0"
     eslint: "npm:^9.35.0"
@@ -13510,7 +13519,7 @@ __metadata:
     jest: "npm:^29.7.0"
     jsdom: "npm:^28.1.0"
     lefthook: "npm:^2.0.3"
-    minimist: "npm:^1.2.8"
+    ora: "npm:^9.3.0"
     patch-package: "npm:^8.0.0"
     pathkit-wasm: "npm:^1.0.0"
     plist: "npm:^3.0.5"
@@ -13534,7 +13543,7 @@ __metadata:
     expo:
       optional: true
   bin:
-    react-native-nano-icons: build/scripts/cli.js
+    react-native-nano-icons: lib/commonjs/scripts/cli.js
   languageName: unknown
   linkType: soft
 
@@ -14702,6 +14711,13 @@ __metadata:
   version: 0.2.2
   resolution: "stdin-discarder@npm:0.2.2"
   checksum: 10c0/c78375e82e956d7a64be6e63c809c7f058f5303efcaf62ea48350af072bacdb99c06cba39209b45a071c1acbd49116af30df1df9abb448df78a6005b72f10537
+  languageName: node
+  linkType: hard
+
+"stdin-discarder@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "stdin-discarder@npm:0.3.1"
+  checksum: 10c0/2fda9b230e72f092a933dbc755fadbfd53b721b103acddd06c2642a81793565f1673f249dc54fc0c63b141f222e9d09494cdf4db6ab7998f54e0b0be8526cba5
   languageName: node
   linkType: hard
 

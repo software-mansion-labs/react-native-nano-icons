@@ -1,1 +1,1 @@
-module.exports = require('./build/plugin/src/index').default;
+module.exports = require('./lib/commonjs/plugin/src/index').default;

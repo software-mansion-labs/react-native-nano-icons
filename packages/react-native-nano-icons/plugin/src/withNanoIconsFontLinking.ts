@@ -21,7 +21,7 @@ function getBuiltFonts(config: {
 
 /**
  * Add TTFs to the iOS project (Resources group + UIAppFonts in Info.plist).
- * Reads built font paths from config._nanoIconsBuilt (set by the build mod).
+ * Reads cached built font paths from config._nanoIconsBuilt (set by the build mod) to prevent redundant builds for iOS and Android.
  */
 export function withNanoIconsIos(
   config: Parameters<typeof withXcodeProject>[0]

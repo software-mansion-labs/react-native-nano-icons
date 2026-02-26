@@ -1,17 +1,13 @@
 import { loadPyodide } from 'pyodide';
-import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import type { PathKitModule, PyodideModule } from '../types.js';
 import { buildPathopsBackend } from '../svg/svg_pathops.js';
 
-const require = createRequire(import.meta.url);
-
 /** Package root (where package.json lives). */
 function getPackageRoot(): string {
-  const dir = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(dir, '..', '..', '..', '..');
+  // Compiled to lib/commonjs/src/core/pipeline/managers.js — 5 dirs up is package root.
+  return path.resolve(__dirname, '../../../../..');
 }
 
 export class PathKitManager {
@@ -72,7 +68,7 @@ export class PyodideManager {
     const pathopsPy = await fs.readFile(pathopsPyPath, 'utf8');
     py.FS.writeFile('/pathops.py', pathopsPy);
 
-    await py.loadPackage(['micropip', 'lxml']);
+    await py.loadPackage(['micropip', 'lxml'], { messageCallback: () => {} });
 
     await py.runPythonAsync(`
       import sys
@@ -116,4 +112,8 @@ export class PyodideManager {
 
     return out;
   }
+}
+
+export async function picoFromFile(hostFilePath: string): Promise<string> {
+  return PyodideManager.picoFromFile(hostFilePath);
 }

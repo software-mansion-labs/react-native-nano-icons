@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "rootDir": "..",
-    "outDir": "../lib/commonjs",
+    "rootDir": "../..",
+    "outDir": "../../lib/commonjs",
 
     "target": "ES2022",
     "module": "NodeNext",
@@ -15,11 +15,18 @@
     "skipLibCheck": true,
 
     "noEmit": false,
-    "declaration": false,
+    "declaration": true,
+    "declarationMap": false,
 
     "sourceMap": false,
-    "inlineSources": false
+    "inlineSources": false,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true
   },
-  "include": ["./**/*.ts"],
-  "exclude": ["**/*.test.ts", "**/__tests__/**"]
+  "include": [
+    "./pipeline/**/*.ts",
+    "./font/**/*.ts",
+    "./svg/**/*.ts"
+  ]
 }

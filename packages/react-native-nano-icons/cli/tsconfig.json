@@ -15,10 +15,14 @@
     "skipLibCheck": true,
 
     "noEmit": false,
-    "declaration": false,
+    "declaration": true,
+    "declarationMap": false,
 
     "sourceMap": false,
-    "inlineSources": false
+    "inlineSources": false,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true
   },
   "include": ["./**/*.ts"],
   "exclude": ["**/*.test.ts", "**/__tests__/**"]

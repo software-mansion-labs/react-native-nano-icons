@@ -4,7 +4,7 @@ import type {
 } from '@expo/config-plugins';
 import { withDangerousMod } from '@expo/config-plugins';
 import { buildAllFonts } from './buildFonts.js';
-import { withNanoIconsFontLinking } from './linkFonts.js';
+import { withNanoIconsFontLinking } from './withNanoIconsFontLinking.js';
 import type {
   NanoIconsPluginOptions,
   IconSetConfig,
