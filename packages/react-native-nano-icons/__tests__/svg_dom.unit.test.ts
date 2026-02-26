@@ -1,11 +1,8 @@
 /** @jest-environment node */
 
 import { JSDOM } from 'jsdom';
-import {
-  parseColor,
-  calculateOpColor,
-  parseFlattenedSvg,
-} from '../src/core/svg/svg_dom';
+import { calculateOpColor, parseFlattenedSvg } from '../src/core/svg/svg_dom';
+import { parseColor } from '../src/utils/parse';
 
 // ---------------------------------------------------------------------------
 // parseColor

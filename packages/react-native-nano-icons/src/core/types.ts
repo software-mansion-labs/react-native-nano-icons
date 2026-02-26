@@ -117,6 +117,10 @@ export type PyodideModule = {
   runPythonAsync: (code: string) => Promise<unknown>;
   runPython: (code: string) => string;
   FS: { writeFile: (path: string, data: string) => void };
+  globals: {
+    set: (key: string, value: unknown) => void;
+    get: (key: string) => unknown;
+  };
 };
 
 export type GlyphLayer = { codepoint: number; color: string };

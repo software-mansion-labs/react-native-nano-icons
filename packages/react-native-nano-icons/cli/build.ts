@@ -8,6 +8,8 @@ export type IconSetConfig = {
   inputDir: string;
   /** Font family name (used for TTF and glyphmap filenames). */
   fontFamily: string;
+  /** Path where .ttf and .glyphmap.json will be saved. Defaults to a sibling nanoicons folder relative to inputDir. */
+  outputDir?: string;
   /** Units per em (default 1024). */
   upm?: number;
   /** Safe zone inside UPM for glyphs (default 1020). */
@@ -60,8 +62,9 @@ export async function buildAllFonts(
       );
     }
 
-    const parentDir = path.dirname(inputDir);
-    const outputDir = path.join(parentDir, 'nanoicons');
+    const outputDir = set.outputDir
+      ? path.resolve(projectRoot, set.outputDir)
+      : path.join(path.dirname(inputDir), 'nanoicons');
     const ttfPath = path.join(outputDir, `${set.fontFamily}.ttf`);
     const glyphmapPath = path.join(
       outputDir,
