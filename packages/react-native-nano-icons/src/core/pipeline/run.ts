@@ -30,6 +30,7 @@ export async function runPipeline(
   paths: PipelinePaths,
   options?: { logger?: NanoLogger }
 ): Promise<PipelineResult> {
+  const startTime = Date.now();
   const logger = options?.logger;
 
   logger?.update(`Building "${config.fontFamily}"…`);
@@ -120,7 +121,10 @@ export async function runPipeline(
   }
 
   const iconCount = Object.keys(glyphMap.icons).length;
-  logger?.succeed(`Built ${config.fontFamily}.ttf  (${iconCount} icons)`);
+  const elapsed = Date.now() - startTime;
+  logger?.succeed(
+    `Built ${config.fontFamily}.ttf [${iconCount} icons in ${elapsed}ms]`
+  );
 
   return { ttfPath, glyphmapPath };
 }

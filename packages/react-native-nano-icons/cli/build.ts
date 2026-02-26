@@ -107,9 +107,7 @@ export async function buildAllFonts(
   }
 
   if (allSkipped && results.length > 0) {
-    logger?.succeed(
-      '🔬 Your icons are flight-tuned with react-native-nano-icons'
-    );
+    logger?.succeed('Your icons are flight-tuned with react-native-nano-icons');
   }
 
   return results;

@@ -1,7 +1,7 @@
 import { FlatList } from "react-native";
 
 import { Text, View } from "@/components/Themed";
-import swmIconGlyphMap from "@/assets/test_icons/swm_icons/nanoicons/SWMIconsBroken.glyphmap.json";
+import swmIconGlyphMap from "@/assets/nanoicons/SWMIconsBroken.glyphmap.json";
 import { SWMIconsBroken } from "@/components/Icon";
 
 const iconSubset = Object.keys(

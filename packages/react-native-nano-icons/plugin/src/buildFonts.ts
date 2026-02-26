@@ -1,6 +1,6 @@
 import {
   buildAllFonts as coreBuildAllFonts,
-  createOraLogger,
+  createQuietLogger,
   detectExpoLogLevel,
 } from '../../cli/index.js';
 import type { IconSetConfig, BuiltFont } from './types.js';
@@ -15,7 +15,7 @@ export async function buildAllFonts(
   projectRoot: string
 ): Promise<BuiltFont[]> {
   const level = detectExpoLogLevel();
-  const logger = await createOraLogger(level);
+  const logger = await createQuietLogger(level);
 
   try {
     return await coreBuildAllFonts(iconSets, projectRoot, { logger });

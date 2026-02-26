@@ -10,7 +10,7 @@ export type NanoLogger = {
   warn: (msg: string) => void;
 };
 
-const PREFIX = '🔬 react-native-nano-icons';
+const PREFIX = 'react-native-nano-icons';
 
 /**
  * Create an ora spinner-backed logger.
@@ -23,7 +23,7 @@ export async function createOraLogger(level: LogLevel): Promise<NanoLogger> {
     import('chalk'),
   ]);
 
-  const spinner = ora({ prefixText: chalk.dim(PREFIX) });
+  const spinner = ora({ prefixText: `🔬 ${chalk.dim(PREFIX)}` });
   const dimPrefix = chalk.dim(`  ℹ  `);
 
   return {
@@ -47,6 +47,40 @@ export async function createOraLogger(level: LogLevel): Promise<NanoLogger> {
     },
     warn(msg) {
       spinner.warn(chalk.yellow(msg));
+    },
+  };
+}
+
+/**
+ * Create a plain-text logger suitable for Expo prebuild context.
+ * No ora spinner — only success/error lines are printed to avoid
+ * disrupting Expo's own output.
+ */
+export async function createQuietLogger(level: LogLevel): Promise<NanoLogger> {
+  const { default: chalk } = await import('chalk');
+  const dimPrefix = `🔬 ${chalk.dim(PREFIX)}`;
+  const tick = chalk.green('✓');
+  const cross = chalk.red('✗');
+  const info = chalk.blue('ℹ');
+  const warning = chalk.yellow('⚠');
+  return {
+    start(_msg) {
+      /* no-op */
+    },
+    update(_msg) {
+      /* no-op */
+    },
+    succeed(msg) {
+      console.log(`${dimPrefix} ${tick} ${msg}`);
+    },
+    fail(msg) {
+      console.error(`${dimPrefix} ${cross} ${msg}`);
+    },
+    info(msg) {
+      if (level === 'verbose') console.log(`${dimPrefix} ${info} ${msg}`);
+    },
+    warn(msg) {
+      console.warn(`${dimPrefix} ${warning} ${msg}`);
     },
   };
 }
