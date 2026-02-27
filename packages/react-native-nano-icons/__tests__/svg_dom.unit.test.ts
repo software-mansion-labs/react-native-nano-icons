@@ -1,7 +1,12 @@
 /** @jest-environment node */
 
 import { JSDOM } from 'jsdom';
-import { calculateOpColor, parseFlattenedSvg } from '../src/core/svg/svg_dom';
+import {
+  calculateOpColor,
+  parseFlattenedSvg,
+  preprocessSvg,
+  validateSvg,
+} from '../src/core/svg/svg_dom';
 import { parseColor } from '../src/utils/parse';
 
 // ---------------------------------------------------------------------------
@@ -160,5 +165,66 @@ describe('parseFlattenedSvg opacity integration', () => {
     </svg>`;
     const { paths } = parseFlattenedSvg(svg);
     expect(paths[0]!.fill).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateSvg
+// ---------------------------------------------------------------------------
+
+describe('validateSvg', () => {
+  test('plain SVG without unsupported elements is valid', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>';
+    expect(validateSvg(svg)).toEqual({ valid: true });
+  });
+
+  test('SVG with <mask …> is invalid and reason mentions mask', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg"><mask id="m"><rect/></mask><path d="M0 0"/></svg>';
+    const result = validateSvg(svg);
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toMatch(/mask/i);
+    }
+  });
+
+  test('SVG with <filter> is invalid and reason mentions filter', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg"><filter id="f"/><path d="M0 0"/></svg>';
+    const result = validateSvg(svg);
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toMatch(/filter/i);
+    }
+  });
+
+  test('SVG with <clipPath> is valid', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="c"><path d="M0 0h24v24H0z"/></clipPath></defs><g clip-path="url(#c)"><path d="M1 1"/></g></svg>';
+    expect(validateSvg(svg)).toEqual({ valid: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// preprocessSvg
+// ---------------------------------------------------------------------------
+
+describe('preprocessSvg', () => {
+  test('SVG without xmlns gets it injected', () => {
+    const svg = '<svg viewBox="0 0 24 24"><path d="M0 0"/></svg>';
+    const result = preprocessSvg(svg);
+    expect(result).toContain('xmlns="http://www.w3.org/2000/svg"');
+  });
+
+  test('SVG that already has xmlns is returned unchanged', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0"/></svg>';
+    expect(preprocessSvg(svg)).toBe(svg);
+  });
+
+  test('string without <svg tag is returned unchanged', () => {
+    const s = '<g><path d="M0 0"/></g>';
+    expect(preprocessSvg(s)).toBe(s);
   });
 });

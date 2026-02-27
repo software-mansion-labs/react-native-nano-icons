@@ -6,8 +6,11 @@ import { buildPathopsBackend } from '../svg/svg_pathops.js';
 
 /** Package root (where package.json lives). */
 function getPackageRoot(): string {
-  // Compiled to lib/commonjs/src/core/pipeline/managers.js — 5 dirs up is package root.
-  return path.resolve(__dirname, '../../../../..');
+  // Compiled to lib/commonjs/src/core/pipeline/ — 5 dirs up is package root.
+  // Running from source (Jest/ts-node) in src/core/pipeline/ — 3 dirs up is package root.
+  return __dirname.includes(`${path.sep}lib${path.sep}`)
+    ? path.resolve(__dirname, '../../../../..')
+    : path.resolve(__dirname, '../../..');
 }
 
 export class PathKitManager {
@@ -86,9 +89,12 @@ export class PyodideManager {
     return py;
   }
 
-  static async picoFromFile(hostFilePath: string): Promise<string> {
+  static async picoFromFile(
+    hostFilePath: string,
+    content?: string
+  ): Promise<string> {
     const py = await this.getInstance();
-    const svgContent = await fs.readFile(hostFilePath, 'utf-8');
+    const svgContent = content ?? (await fs.readFile(hostFilePath, 'utf-8'));
     py.globals.set('_svg_content', svgContent);
     const out = py.runPython(`
       from picosvg.svg import SVG
@@ -100,6 +106,9 @@ export class PyodideManager {
   }
 }
 
-export async function picoFromFile(hostFilePath: string): Promise<string> {
-  return PyodideManager.picoFromFile(hostFilePath);
+export async function picoFromFile(
+  hostFilePath: string,
+  content?: string
+): Promise<string> {
+  return PyodideManager.picoFromFile(hostFilePath, content);
 }

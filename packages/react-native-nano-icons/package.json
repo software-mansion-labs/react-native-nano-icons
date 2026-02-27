@@ -7,33 +7,6 @@
   "bin": "lib/commonjs/scripts/cli.js",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
-  "exports": {
-    ".": {
-      "source": "./src/index.tsx",
-      "default": "./lib/module/index.js",
-      "import": {
-        "types": "./lib/typescript/src/index.d.ts",
-        "default": "./lib/module/index.js"
-      }
-    },
-    "./cli": {
-      "source": "./cli/index.ts",
-      "types": "./lib/commonjs/cli/index.d.ts",
-      "require": {
-        "default": "./lib/commonjs/cli/index.js"
-      }
-    },
-    "./pipeline": {
-      "source": "./src/core/pipeline/index.ts",
-      "require": {
-        "types": "./lib/commonjs/src/core/pipeline/index.d.ts",
-        "default": "./lib/commonjs/src/core/pipeline/index.js"
-      }
-    },
-    "./app.plugin": "./app.plugin.js",
-    "./app.plugin.js": "./app.plugin.js",
-    "./package.json": "./package.json"
-  },
   "files": [
     "app.plugin.js",
     "src/core/shims",
@@ -113,6 +86,33 @@
     "release-it": "^19.0.4",
     "typescript": "^5.9.3"
   },
+  "exports": {
+    ".": {
+      "source": "./src/index.tsx",
+      "default": "./lib/module/index.js",
+      "import": {
+        "types": "./lib/typescript/src/index.d.ts",
+        "default": "./lib/module/index.js"
+      }
+    },
+    "./cli": {
+      "source": "./cli/index.ts",
+      "types": "./lib/commonjs/cli/index.d.ts",
+      "require": {
+        "default": "./lib/commonjs/cli/index.js"
+      }
+    },
+    "./pipeline": {
+      "source": "./src/core/pipeline/index.ts",
+      "require": {
+        "types": "./lib/commonjs/src/core/pipeline/index.d.ts",
+        "default": "./lib/commonjs/src/core/pipeline/index.js"
+      }
+    },
+    "./app.plugin": "./app.plugin.js",
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
   "keywords": [
     "react-native",
     "expo",
@@ -130,7 +130,7 @@
   "bugs": {
     "url": "https://github.com/stachbial/react-native-nano-icons/issues"
   },
-  "author": "Stanislaw Bialecki <stanislaw.bialecki@swmansion.com> (https://github.com/stachbial)",
+  "author": "Stanisław Białecki <stanislaw.bialecki@swmansion.com> (https://github.com/stachbial)",
   "license": "MIT",
   "homepage": "https://github.com/stachbial/react-native-nano-icons#readme",
   "publishConfig": {
@@ -166,11 +166,18 @@
     "preset": "react-native",
     "testTimeout": 180000,
     "moduleNameMapper": {
+      "^file://(.+)$": "$1",
       "^(\\.{1,2}/.+)\\.js$": "$1"
     },
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
+    ],
+    "transform": {
+      "^.+\\.(js|mjs|cjs|ts|tsx)$": "babel-jest"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|@exodus/bytes|@csstools|parse5|pyodide|svgicons2svgfont|svg-pathdata|yerror)/|jsdom/node_modules/)"
     ]
   },
   "commitlint": {

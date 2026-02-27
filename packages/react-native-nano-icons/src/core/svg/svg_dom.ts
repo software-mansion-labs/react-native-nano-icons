@@ -79,3 +79,21 @@ export function shouldSkipPath(d: string, fill: string | null): boolean {
   const f = (fill ?? '').trim().toLowerCase();
   return f === 'transparent' || f === 'none';
 }
+
+export type SvgValidation = { valid: true } | { valid: false; reason: string };
+
+export function validateSvg(content: string): SvgValidation {
+  if (/<mask[\s>]/i.test(content)) {
+    return { valid: false, reason: '<mask> is not supported yet' };
+  }
+  if (/<filter[\s>]/i.test(content)) {
+    return { valid: false, reason: '<filter> is not supported yet' };
+  }
+  return { valid: true };
+}
+
+// ensure the svg has a xmlns attribute
+export function preprocessSvg(content: string): string {
+  if (/xmlns\s*=/.test(content)) return content;
+  return content.replace(/<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
+}

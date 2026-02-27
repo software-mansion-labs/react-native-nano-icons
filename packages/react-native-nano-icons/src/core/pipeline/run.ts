@@ -11,7 +11,12 @@ import {
   type PipelineConfig,
   type PipelinePaths,
 } from './config.js';
-import { parseFlattenedSvg, shouldSkipPath } from '../svg/svg_dom.js';
+import {
+  parseFlattenedSvg,
+  preprocessSvg,
+  shouldSkipPath,
+  validateSvg,
+} from '../svg/svg_dom.js';
 import { computePlacement, writeLayerSvg } from '../svg/layers.js';
 import type { GlyphEntry, NanoGlyphMap } from '../types.js';
 import type { NanoLogger } from '../types.js';
@@ -60,7 +65,18 @@ export async function runPipeline(
 
     logger?.info(`Processing ${file}`);
 
-    const flattenedSvg = await picoFromFile(filePath);
+    const rawContent = await fsp.readFile(filePath, 'utf-8');
+
+    const validation = validateSvg(rawContent);
+    if (validation.valid === false) {
+      logger?.warn(
+        `Skipping "${config.fontFamily}:${file}": ${validation.reason}`
+      );
+      continue;
+    }
+
+    const preprocessed = preprocessSvg(rawContent);
+    const flattenedSvg = await picoFromFile(filePath, preprocessed);
     const parsed = parseFlattenedSvg(flattenedSvg);
 
     const { vx, vy, scale, xOff, yOff, adv } = computePlacement({
@@ -123,7 +139,9 @@ export async function runPipeline(
   const iconCount = Object.keys(glyphMap.icons).length;
   const elapsed = Date.now() - startTime;
   logger?.succeed(
-    `Built ${config.fontFamily}.ttf [${iconCount} icons in ${elapsed}ms]`
+    `Built ${config.fontFamily}.ttf [${iconCount} icon${
+      iconCount === 1 ? '' : 's'
+    } in ${elapsed}ms]`
   );
 
   return { ttfPath, glyphmapPath };
