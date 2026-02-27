@@ -2,31 +2,35 @@ Third-Party Notices
 
 This project bundles or depends on the following third-party software:
 
-1. fonteditor-core
+1. @react-native-vector-icons/common
+   License: MIT
+   Source: https://github.com/oblador/react-native-vector-icons
+
+2. fonteditor-core
    License: MIT
    Source: https://www.npmjs.com/package/fonteditor-core
 
-2. jsdom
+3. jsdom
    License: MIT
    Source: https://github.com/jsdom/jsdom
 
-3. minimist
+4. minimist
    License: MIT
    Source: https://github.com/minimistjs/minimist
 
-4. svgicons2svgfont
+5. svgicons2svgfont
    License: MIT
    Source: https://github.com/nfroidure/svgicons2svgfont
 
-5. svg2ttf
+6. svg2ttf
    License: MIT
    Source: https://www.npmjs.com/package/svg2ttf
 
-6. pathkit-wasm
+7. pathkit-wasm
    License: BSD-3-Clause
    Source: https://www.npmjs.com/package/pathkit-wasm
 
-7. pyodide
+8. pyodide
    License: MPL-2.0
    Source: https://www.npmjs.com/package/pyodide
 

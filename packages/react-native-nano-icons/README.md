@@ -141,6 +141,9 @@ If the icon is single-color by design (which results in creating a single glyph 
 > [!IMPORTANT]
 > **You should always verify your icons visually.**
 
+> [!NOTE]
+> `<filter>` and `<mask>` are not yet supported
+
 ---
 
 ## 💡 Architecture & Pipeline & Examples
