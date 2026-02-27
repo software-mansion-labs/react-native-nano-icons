@@ -33,7 +33,7 @@ export type PipelineResult = {
 export async function runPipeline(
   config: PipelineConfig,
   paths: PipelinePaths,
-  options?: { logger?: NanoLogger }
+  options?: { logger?: NanoLogger; inputHash?: string }
 ): Promise<PipelineResult> {
   const startTime = Date.now();
   const logger = options?.logger;
@@ -118,6 +118,9 @@ export async function runPipeline(
     `${config.fontFamily}.glyphmap.json`
   );
 
+  if (options?.inputHash) {
+    glyphMap.meta.hash = options.inputHash;
+  }
   await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap, null, 2), 'utf8');
 
   logger?.info(`Compiling TTF…`);

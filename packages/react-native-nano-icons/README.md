@@ -138,6 +138,10 @@ export default function App() {
 Your color icons can have as many colors as your original svg has, therefore you should experiment to establish which element of the array corresponds to the layer you aim to change the color of.
 If the icon is single-color by design (which results in creating a single glyph during build-time) only the first element is took into consideration, and if the `colorPalette` array is too short - the last color is repeated.
 
+### 5. Font Regeneration
+
+The script detects changes in path and contents of the SVGs in your input directory based on a fingerprint hash. If anything changed, or the output font files are deleted, a given icon-set is regenerated.
+
 > [!IMPORTANT]
 > **You should always verify your icons visually.**
 

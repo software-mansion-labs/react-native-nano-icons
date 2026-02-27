@@ -145,6 +145,12 @@ describe('Pipeline E2E — outline (single-colour)', () => {
     }
   });
 
+  // ── inputHash ─────────────────────────────────────────────────────────────
+
+  test('glyphmap meta.hash is absent when inputHash is not provided', () => {
+    expect(glyphmap.meta.hash).toBeUndefined();
+  });
+
   // ── TTF binary validity ───────────────────────────────────────────────────
 
   test('TTF magic bytes are 00 01 00 00 (TrueType sfVersion)', () => {
@@ -184,5 +190,47 @@ describe('Pipeline E2E — outline (single-colour)', () => {
     const data = font.get();
     expect(data.hhea!.ascent).toBe(UPM);
     expect(data.hhea!.descent).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite 2 — inputHash embedding
+// ---------------------------------------------------------------------------
+
+describe('Pipeline E2E — inputHash embedding', () => {
+  let outputDir: string;
+  let tempDir: string;
+  let glyphmap: NanoGlyphMap;
+
+  const INPUT_HASH = 'deadbeef123';
+
+  beforeAll(async () => {
+    outputDir = path.join(os.tmpdir(), `nano-e2e-hash-${Date.now()}`);
+    tempDir = path.join(os.tmpdir(), `nano-e2e-hash-tmp-${Date.now()}`);
+
+    await runPipeline(
+      {
+        fontFamily: FONT_FAMILY,
+        upm: UPM,
+        safeZone: SAFE_ZONE,
+        startUnicode: START_UNICODE,
+      },
+      { inputDir: INPUT_DIR, outputDir, tempDir },
+      { inputHash: INPUT_HASH }
+    );
+
+    const glyphmapPath = path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`);
+    const raw = await fsp.readFile(glyphmapPath, 'utf8');
+    glyphmap = JSON.parse(raw) as NanoGlyphMap;
+  });
+
+  afterAll(() => {
+    if (fs.existsSync(outputDir)) {
+      fs.rmSync(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  test('glyphmap meta.hash equals the inputHash passed to runPipeline', () => {
+    expect(glyphmap.meta.hash).toBe(INPUT_HASH);
   });
 });

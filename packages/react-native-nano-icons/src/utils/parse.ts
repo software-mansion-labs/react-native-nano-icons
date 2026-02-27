@@ -6,6 +6,7 @@ export function parseCodepointFromFilename(filename: string): number {
   if (!m) throw new Error(`Unexpected glyph filename: ${filename}`);
   return parseInt(m[1]!, 16);
 }
+
 // e.g. #ff0000 -> [255, 0, 0, 1], rgba(255, 0, 0, 0.5) -> [255, 0, 0, 0.5], rgb(255, 0, 0) -> [255, 0, 0, 1], blue -> [0, 0, 255, 1] etc.
 export function parseColor(
   color: string

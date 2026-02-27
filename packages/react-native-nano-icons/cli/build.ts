@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { runPipeline } from '../src/core/pipeline/index.js';
 import type { NanoLogger } from './logger.js';
+import { getFingerprintSync } from '../src/utils/fingerPrint.js';
 
 export type IconSetConfig = {
   /** Path to folder of SVG files (relative to project root). */
@@ -28,14 +29,32 @@ const DEFAULT_SAFE_ZONE = 1020;
 const DEFAULT_UPM = 1024;
 const DEFAULT_START_UNICODE = 0xe900;
 
-function shouldSkipGeneration(outputDir: string, fontFamily: string): boolean {
+function shouldSkipGeneration(
+  inputHash: string,
+  outputDir: string,
+  fontFamily: string,
+  logger?: NanoLogger
+): boolean {
   const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
   const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
-  return (
-    fs.existsSync(outputDir) &&
-    fs.existsSync(ttfPath) &&
-    fs.existsSync(glyphmapPath)
-  );
+
+  if (
+    !fs.existsSync(outputDir) ||
+    !fs.existsSync(ttfPath) ||
+    !fs.existsSync(glyphmapPath)
+  ) {
+    return false;
+  }
+
+  const glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
+  const storedHash: string | undefined = glyphmap?.meta?.hash;
+
+  if (storedHash && storedHash === inputHash) {
+    logger?.info(`${fontFamily}: SVG fingerprint unchanged, skipping build.`);
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -71,10 +90,15 @@ export async function buildAllFonts(
       `${set.fontFamily}.glyphmap.json`
     );
 
-    if (shouldSkipGeneration(outputDir, set.fontFamily)) {
+    const inputHash = getFingerprintSync(inputDir);
+
+    if (shouldSkipGeneration(inputHash, outputDir, set.fontFamily, logger)) {
       results.push({ fontFamily: set.fontFamily, ttfPath, glyphmapPath });
       continue;
     }
+
+    if (fs.existsSync(ttfPath)) fs.unlinkSync(ttfPath);
+    if (fs.existsSync(glyphmapPath)) fs.unlinkSync(glyphmapPath);
 
     allSkipped = false;
     const tempDir = path.join(projectRoot, '.temp_layers', set.fontFamily);
@@ -96,7 +120,7 @@ export async function buildAllFonts(
     const out = await runPipeline(
       config,
       { inputDir, outputDir, tempDir },
-      { logger }
+      { logger, inputHash }
     );
 
     results.push({

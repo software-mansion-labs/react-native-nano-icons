@@ -132,6 +132,7 @@ export type NanoGlyphMap = {
     upm: number;
     safeZone: number;
     startUnicode: number;
+    hash?: string;
   };
   icons: IconsMap;
 };
