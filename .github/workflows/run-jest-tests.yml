@@ -1,0 +1,22 @@
+name: Run Jest tests
+on:
+  pull_request:
+    paths: ['**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx']
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    if: github.repository == 'stachbial/react-native-nano-icons'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: jest-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+      - run: yarn --immutable
+      - run: yarn workspace react-native-nano-icons test

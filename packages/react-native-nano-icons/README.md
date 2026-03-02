@@ -12,6 +12,10 @@
 - [x] Android
 - [x] Web
 
+> [!NOTE]
+> `<filter>` and `<mask>` are not yet supported, due to native fonts' glyph limitations.
+> In order to leverage those features, use [`react-native-svg`](https://github.com/software-mansion/react-native-svg) or [`expo-image`](https://docs.expo.dev/versions/latest/sdk/image/)
+
 ## 🚀 Usage
 
 ### 1. Installation
@@ -150,10 +154,6 @@ The script detects changes in path and contents of the SVGs in your input direct
 
 > [!IMPORTANT]
 > **You should always verify your icons visually.**
-
-> [!NOTE]
-> `<filter>` and `<mask>` are not yet supported, due to native fonts' glyph limitations.
-> In order to leverage those features, use [`react-native-svg`](https://github.com/software-mansion/react-native-svg) or [`expo-image`](https://docs.expo.dev/versions/latest/sdk/image/)
 
 ---
 
