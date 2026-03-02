@@ -56,7 +56,7 @@ The library uses an Expo Config Plugin to hook into the prebuild phase. This aut
 
 The plugin accepts an object with an `iconSets` array, allowing you to generate multiple distinct fonts in a single build.
 
-| Property       | Type     | Mandatory | Default        | Description                                                                                                                |
+| Property       | Type     | Required  | Default        | Description                                                                                                                |
 | :------------- | :------- | :-------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
 | `inputDir`     | `string` | **Yes**   | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`).                                            |
 | `fontFamily`   | `string` | No        | Folder Name    | The name of the generated font family and file. If omitted, the name of the `inputDir` folder is used (e.g., `ui`).        |
@@ -71,9 +71,9 @@ The plugin accepts an object with an `iconSets` array, allowing you to generate 
 - **Input:** `./assets/icons/user`
 - **Resulting Output:** `./assets/icons/nanoicons/user.ttf` & `user.glyphmap.json`
   </details>
-</details>
+  </details>
 
-#### 2.2 Bare React Native (no Expo)
+#### 2.2 Bare React Native/React Native Web (no Expo)
 
 Bare apps don’t have a prebuild step, so you run the same pipeline via the CLI and ship the built fonts into the native project yourself:
 
