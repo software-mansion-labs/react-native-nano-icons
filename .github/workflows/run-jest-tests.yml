@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    if: github.repository == 'stachbial/react-native-nano-icons'
+    if: github.repository == 'software-mansion-labs/react-native-nano-icons'
     runs-on: ubuntu-latest
     concurrency:
       group: jest-${{ github.ref }}

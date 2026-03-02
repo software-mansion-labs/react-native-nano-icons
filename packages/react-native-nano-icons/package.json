@@ -115,13 +115,13 @@
     "svg-to-ttf",
     "svg-to-glyph"
   ],
-  "repository": "https://github.com/stachbial/react-native-nano-icons",
+  "repository": "https://github.com/software-mansion-labs/react-native-nano-icons",
   "bugs": {
-    "url": "https://github.com/stachbial/react-native-nano-icons/issues"
+    "url": "https://github.com/software-mansion-labs/react-native-nano-icons/issues"
   },
   "author": "Stanisław Białecki <stanislaw.bialecki@swmansion.com> (https://github.com/stachbial)",
   "license": "MIT",
-  "homepage": "https://github.com/stachbial/react-native-nano-icons#readme",
+  "homepage": "https://github.com/software-mansion-labs/react-native-nano-icons#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

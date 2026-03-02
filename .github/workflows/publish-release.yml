@@ -27,7 +27,7 @@ on:
 
 jobs:
   npm-build:
-    if: github.repository == 'stachbial/react-native-nano-icons'
+    if: github.repository == 'software-mansion-labs/react-native-nano-icons'
     runs-on: ubuntu-latest
 
     permissions:
@@ -73,5 +73,5 @@ jobs:
           package-json-path: 'packages/react-native-nano-icons/package.json'
           install-dependencies-command: 'yarn install --immutable'
           release-type: 'nightly'
-          version: "1.0.0"
+          version: '1.0.0'
           dry-run: false
