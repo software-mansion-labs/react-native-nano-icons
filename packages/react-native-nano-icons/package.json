@@ -17,7 +17,7 @@
     "scripts"
   ],
   "scripts": {
-    "build": "bob build && yarn build:node-entry && yarn build:core && yarn build:cli && yarn build:plugin && yarn build:scripts",
+    "build": "yarn build:node-entry && bob build && yarn build:core && yarn build:cli && yarn build:plugin && yarn build:scripts",
     "build:node-entry": "tsc -p tsconfig.node.json",
     "build:core": "tsc -p src/core/tsconfig.json",
     "build:cli": "tsc -p cli/tsconfig.json",
