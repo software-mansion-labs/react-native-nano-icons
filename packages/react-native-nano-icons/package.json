@@ -1,6 +1,6 @@
 {
   "name": "react-native-nano-icons",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Use any svg as font. High-performance, build-time icon font generation for React Native & Expo.",
   "react-native": "src/index.ts",
   "source": "src/index.ts",
