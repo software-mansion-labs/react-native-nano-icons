@@ -8,7 +8,7 @@ export type IconSetConfig = {
   /** Path to folder of SVG files (relative to project root). */
   inputDir: string;
   /** Font family name (used for TTF and glyphmap filenames). */
-  fontFamily: string;
+  fontFamily?: string;
   /** Path where .ttf and .glyphmap.json will be saved. Defaults to a sibling nanoicons folder relative to inputDir. */
   outputDir?: string;
   /** Units per em (default 1024). */
@@ -74,6 +74,7 @@ export async function buildAllFonts(
   for (let i = 0; i < iconSets.length; i++) {
     const set = iconSets[i]!;
     const inputDir = path.resolve(projectRoot, set.inputDir);
+    const fontFamily = set.fontFamily ?? path.basename(inputDir);
 
     if (!fs.existsSync(inputDir)) {
       throw new Error(
@@ -84,16 +85,13 @@ export async function buildAllFonts(
     const outputDir = set.outputDir
       ? path.resolve(projectRoot, set.outputDir)
       : path.join(path.dirname(inputDir), 'nanoicons');
-    const ttfPath = path.join(outputDir, `${set.fontFamily}.ttf`);
-    const glyphmapPath = path.join(
-      outputDir,
-      `${set.fontFamily}.glyphmap.json`
-    );
+    const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
+    const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
 
     const inputHash = getFingerprintSync(inputDir);
 
-    if (shouldSkipGeneration(inputHash, outputDir, set.fontFamily, logger)) {
-      results.push({ fontFamily: set.fontFamily, ttfPath, glyphmapPath });
+    if (shouldSkipGeneration(inputHash, outputDir, fontFamily, logger)) {
+      results.push({ fontFamily, ttfPath, glyphmapPath });
       continue;
     }
 
@@ -101,10 +99,10 @@ export async function buildAllFonts(
     if (fs.existsSync(glyphmapPath)) fs.unlinkSync(glyphmapPath);
 
     allSkipped = false;
-    const tempDir = path.join(projectRoot, '.temp_layers', set.fontFamily);
+    const tempDir = path.join(projectRoot, '.temp_layers', fontFamily);
 
     const config = {
-      fontFamily: set.fontFamily,
+      fontFamily,
       upm: set.upm ?? DEFAULT_UPM,
       safeZone: set.safeZone ?? DEFAULT_SAFE_ZONE,
       startUnicode:
@@ -115,7 +113,7 @@ export async function buildAllFonts(
           : DEFAULT_START_UNICODE,
     };
 
-    logger?.start(`Building ${set.fontFamily} (${i + 1}/${iconSets.length})…`);
+    logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
 
     const out = await runPipeline(
       config,
@@ -124,7 +122,7 @@ export async function buildAllFonts(
     );
 
     results.push({
-      fontFamily: set.fontFamily,
+      fontFamily,
       ttfPath: out.ttfPath,
       glyphmapPath: out.glyphmapPath,
     });
