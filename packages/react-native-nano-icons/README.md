@@ -56,13 +56,13 @@ The library uses an Expo Config Plugin to hook into the prebuild phase. This aut
 
 The plugin accepts an object with an `iconSets` array, allowing you to generate multiple distinct fonts in a single build.
 
-| Property       | Type     | Required  | Default        | Description                                                                                                                |
-| :------------- | :------- | :-------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| `inputDir`     | `string` | **Yes**   | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`).                                            |
-| `fontFamily`   | `string` | No        | Folder Name    | The name of the generated font family and file. If omitted, the name of the `inputDir` folder is used (e.g., `ui`).        |
-| `outputDir`    | `string` | No        | `../nanoicons` | Path where the `.ttf` and `.json` artifacts will be saved. Defaults to a sibling `nanoicons` folder relative to the input. |
-| `upm`          | `number` | No        | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
-| `startUnicode` | `string` | No        | `0xe900`       | The starting Hex Unicode point for the first icon glyph.                                                                   |
+| Property       | Type     | Required | Default        | Description                                                                                                                |
+| :------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`).                                            |
+| `fontFamily`   | `string` | No       | Folder Name    | The name of the generated font family and file. If omitted, the name of the `inputDir` folder is used (e.g., `ui`).        |
+| `outputDir`    | `string` | No       | `../nanoicons` | Path where the `.ttf` and `.json` artifacts will be saved. Defaults to a sibling `nanoicons` folder relative to the input. |
+| `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
+| `startUnicode` | `string` | No       | `0xe900`       | The starting Hex Unicode point for the first icon glyph.                                                                   |
 
   <details>
   <summary>Default Dir Path Behavior</summary>
@@ -131,14 +131,14 @@ export default function App() {
   return (
     <>
       // Renders the icon with its original multi-color layers from the SVG
-      <Icon name="avatar-1" size={32} />
+      <UserIcon name="avatar-1" size={32} />
 
       // Overrides all color layers with the provided colors respectively
-      <Icon name="avatar-1" size={24} colorPalette={["blue", "#ffffff", "#fc2930"]} />
+      <UserIcon name="avatar-1" size={24} colorPalette={["blue", "#ffffff", "#fc2930"]} />
 
       // Renders icon inline within a paragraph
       <Text>
-        User <Icon name="avatar-1" size={12}  /> liked your photo!
+        User <UserIcon name="avatar-1" size={12}  /> liked your photo!
       </Text>
     </>
   );
