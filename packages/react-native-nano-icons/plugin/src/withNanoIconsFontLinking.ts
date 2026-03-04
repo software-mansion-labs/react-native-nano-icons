@@ -4,31 +4,25 @@ import {
   withXcodeProject,
   withDangerousMod,
 } from '@expo/config-plugins';
+import type { InfoPlist } from '@expo/config-plugins';
 import fs from 'fs/promises';
 import path from 'path';
-import type { BuiltFont } from './types.js';
-type InfoPlist = Record<string, unknown>;
+import { getOrBuildFonts } from './buildFonts.js';
+import type { IconSetConfig } from './types.js';
 
 const ANDROID_ASSETS_FONTS_DIR = 'app/src/main/assets/fonts';
 
-const BUILT_FONTS_KEY = '_nanoIconsBuilt' as const;
-
-function getBuiltFonts(config: {
-  [key: string]: unknown;
-}): BuiltFont[] | undefined {
-  return config[BUILT_FONTS_KEY] as BuiltFont[] | undefined;
-}
-
 /**
  * Add TTFs to the iOS project (Resources group + UIAppFonts in Info.plist).
- * Reads cached built font paths from config._nanoIconsBuilt (set by the build mod) to prevent redundant builds for iOS and Android.
  */
 export function withNanoIconsIos(
-  config: Parameters<typeof withXcodeProject>[0]
+  config: Parameters<typeof withXcodeProject>[0],
+  iconSets: IconSetConfig[]
 ): ReturnType<typeof withXcodeProject> {
   config = withXcodeProject(config, async (config) => {
-    const built = getBuiltFonts(
-      config as unknown as { [key: string]: unknown }
+    const built = await getOrBuildFonts(
+      config.modRequest.projectRoot,
+      iconSets
     );
     if (!built?.length) return config;
     const ttfPaths = built.map((b) => b.ttfPath);
@@ -51,8 +45,9 @@ export function withNanoIconsIos(
   config = withInfoPlist(
     config as Parameters<typeof withInfoPlist>[0],
     async (config) => {
-      const built = getBuiltFonts(
-        config as unknown as { [key: string]: unknown }
+      const built = await getOrBuildFonts(
+        config.modRequest.projectRoot,
+        iconSets
       );
       if (!built?.length) return config;
       const ttfPaths = built.map((b) => b.ttfPath);
@@ -80,16 +75,18 @@ function getUIAppFonts(infoPlist: InfoPlist): string[] {
 }
 
 /**
- * Copy TTFs to Android assets/fonts. Reads paths from config._nanoIconsBuilt.
+ * Copy TTFs to Android assets/fonts.
  */
 export function withNanoIconsAndroid(
-  config: Parameters<typeof withDangerousMod>[0]
+  config: Parameters<typeof withDangerousMod>[0],
+  iconSets: IconSetConfig[]
 ): ReturnType<typeof withDangerousMod> {
   return withDangerousMod(config, [
     'android',
     async (config) => {
-      const built = getBuiltFonts(
-        config as unknown as { [key: string]: unknown }
+      const built = await getOrBuildFonts(
+        config.modRequest.projectRoot,
+        iconSets
       );
       if (!built?.length) return config;
       const fontsDir = path.join(
@@ -108,12 +105,13 @@ export function withNanoIconsAndroid(
 }
 
 /**
- * Apply iOS and Android font linking. Built font list is read from config (set by build mod).
+ * Apply iOS and Android font linking.
  */
 export function withNanoIconsFontLinking(
-  config: Parameters<typeof withNanoIconsIos>[0]
+  config: Parameters<typeof withNanoIconsIos>[0],
+  iconSets: IconSetConfig[]
 ): ReturnType<typeof withNanoIconsAndroid> {
-  config = withNanoIconsIos(config);
-  config = withNanoIconsAndroid(config);
+  config = withNanoIconsIos(config, iconSets);
+  config = withNanoIconsAndroid(config, iconSets);
   return config;
 }

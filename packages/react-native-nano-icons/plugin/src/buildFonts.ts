@@ -27,3 +27,16 @@ export async function buildAllFonts(
     return [];
   }
 }
+
+// Single build run per process; reused across ios/android mods.
+let _buildPromise: Promise<BuiltFont[]> | null = null;
+
+export function getOrBuildFonts(
+  projectRoot: string,
+  iconSets: IconSetConfig[]
+): Promise<BuiltFont[]> {
+  if (!_buildPromise) {
+    _buildPromise = buildAllFonts(iconSets, projectRoot);
+  }
+  return _buildPromise;
+}
