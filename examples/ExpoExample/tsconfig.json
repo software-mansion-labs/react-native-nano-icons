@@ -10,7 +10,8 @@
       ],
       "react-native-nano-icons/*": [
         "../../packages/react-native-nano-icons/src/*"
-      ]
+      ],
+      "@/*": ["./*"]
     },
     "resolveJsonModule": true
   },

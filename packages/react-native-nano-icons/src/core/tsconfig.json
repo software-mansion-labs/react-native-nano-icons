@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "../../lib/commonjs",
+
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    "lib": ["ES2022"],
+    "types": ["node"],
+
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": false,
+
+    "sourceMap": false,
+    "inlineSources": false,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "include": [
+    "./pipeline/**/*.ts",
+    "./font/**/*.ts",
+    "./svg/**/*.ts"
+  ]
+}

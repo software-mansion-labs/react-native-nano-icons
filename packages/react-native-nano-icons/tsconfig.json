@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-nano-icons": ["./src/index", "./plugin/src", "./scripts"]
+      "react-native-nano-icons": ["./src/index", "./plugin/src", "./scripts"],
+      "react-native-nano-icons/pipeline": ["./src/core/pipeline/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

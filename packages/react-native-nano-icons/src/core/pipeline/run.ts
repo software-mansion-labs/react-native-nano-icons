@@ -2,19 +2,24 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-import { picoFromFile } from '../index.js';
 import { compileTtfFromGlyphSVGs } from '../font/compile.js';
+import { picoFromFile } from './managers.js';
 
 import {
   ensureDir,
   ensureEmptyDir,
-  readCliConfigAndPaths,
   type PipelineConfig,
   type PipelinePaths,
 } from './config.js';
-import { parseFlattenedSvg, shouldSkipPath } from '../svg/svg_dom.js';
+import {
+  parseFlattenedSvg,
+  preprocessSvg,
+  shouldSkipPath,
+  validateSvg,
+} from '../svg/svg_dom.js';
 import { computePlacement, writeLayerSvg } from '../svg/layers.js';
 import type { GlyphEntry, NanoGlyphMap } from '../types.js';
+import type { NanoLogger } from '../types.js';
 
 export type PipelineResult = {
   ttfPath: string;
@@ -28,13 +33,12 @@ export type PipelineResult = {
 export async function runPipeline(
   config: PipelineConfig,
   paths: PipelinePaths,
-  options?: { silent?: boolean }
+  options?: { logger?: NanoLogger; inputHash?: string }
 ): Promise<PipelineResult> {
-  const log = options?.silent ? () => {} : (msg: string) => console.log(msg);
+  const startTime = Date.now();
+  const logger = options?.logger;
 
-  log(
-    `🚀 Building font "${config.fontFamily}" from ${paths.inputDir} (PathKit+Pyodide picosvg)...`
-  );
+  logger?.update(`Building "${config.fontFamily}"…`);
 
   ensureEmptyDir(paths.tempDir);
   ensureDir(paths.outputDir);
@@ -59,7 +63,20 @@ export async function runPipeline(
     const iconName = path.parse(file).name;
     const filePath = path.join(paths.inputDir, file);
 
-    const flattenedSvg = await picoFromFile(filePath);
+    logger?.info(`Processing ${file}`);
+
+    const rawContent = await fsp.readFile(filePath, 'utf-8');
+
+    const validation = validateSvg(rawContent);
+    if (validation.valid === false) {
+      logger?.warn(
+        `Skipping "${config.fontFamily}:${file}": ${validation.reason}`
+      );
+      continue;
+    }
+
+    const preprocessed = preprocessSvg(rawContent);
+    const flattenedSvg = await picoFromFile(filePath, preprocessed);
     const parsed = parseFlattenedSvg(flattenedSvg);
 
     const { vx, vy, scale, xOff, yOff, adv } = computePlacement({
@@ -101,9 +118,12 @@ export async function runPipeline(
     `${config.fontFamily}.glyphmap.json`
   );
 
+  if (options?.inputHash) {
+    glyphMap.meta.hash = options.inputHash;
+  }
   await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap, null, 2), 'utf8');
 
-  log('🎨➡️✒️ 🔨 Compiling TTF with svgicons2svgfont + svg2ttf (Node)...');
+  logger?.info(`Compiling TTF…`);
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
 
   await compileTtfFromGlyphSVGs({
@@ -119,16 +139,13 @@ export async function runPipeline(
     fs.rmSync(paths.tempDir, { recursive: true, force: true });
   }
 
-  if (!options?.silent) {
-    log(
-      `🎨➡️✒️ ✅ ${config.fontFamily} Build Complete!\n   - Font: ${ttfPath}\n   - Map:  ${glyphmapPath}`
-    );
-  }
+  const iconCount = Object.keys(glyphMap.icons).length;
+  const elapsed = Date.now() - startTime;
+  logger?.succeed(
+    `Built ${config.fontFamily}.ttf [${iconCount} icon${
+      iconCount === 1 ? '' : 's'
+    } in ${elapsed}ms]`
+  );
 
   return { ttfPath, glyphmapPath };
-}
-
-export async function runFromCli(): Promise<void> {
-  const { config, paths } = readCliConfigAndPaths();
-  await runPipeline(config, paths);
 }

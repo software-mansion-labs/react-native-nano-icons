@@ -40,18 +40,22 @@
             {
               "inputDir": "./assets/testicons",
               "fontFamily": "Testicons",
-              "upm": 1024,
-              "startUnicode": "0xe900"
+              "outputDir": "./assets/nanoicons"
             },
             {
-              "inputDir": "./assets/differentIcons",
-              "fontFamily": "DifferentIcons",
-              "upm": 1024,
-              "startUnicode": "0xe900"
+              "inputDir": "../../packages/react-native-nano-icons/test_icons/material_icons/twotone",
+              "fontFamily": "MaterialIconsTwotone",
+              "outputDir": "./assets/nanoicons"
+            },
+            {
+              "inputDir": "../../packages/react-native-nano-icons/test_icons/swm_icons/broken",
+              "fontFamily": "SWMIconsBroken",
+              "outputDir": "./assets/nanoicons"
             }
           ]
         }
-      ]
+      ],
+      "expo-router"
     ]
   }
 }

@@ -5,4 +5,3 @@ export {
   type IconProps,
 } from './createNanoIconsSet';
 export type { ColorValue } from 'react-native';
-export { getPackageName } from './utils/packageName';

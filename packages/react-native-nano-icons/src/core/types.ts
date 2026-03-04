@@ -1,3 +1,13 @@
+export type NanoLogger = {
+  start: (msg: string) => void;
+  update: (msg: string) => void;
+  succeed: (msg: string) => void;
+  fail: (msg: string) => void;
+  /** Only printed when level is 'verbose'. */
+  info: (msg: string) => void;
+  warn: (msg: string) => void;
+};
+
 export type Point = readonly [number, number];
 
 export type Cmd = readonly number[];
@@ -97,10 +107,20 @@ export interface PathKitModule {
 export type PyodideModule = {
   mountNodeFS: (mountpoint: string, hostPath: string) => void;
   registerJsModule: (name: string, mod: unknown) => void;
-  loadPackage: (pkgs: string[]) => Promise<void>;
+  loadPackage: (
+    pkgs: string[],
+    options?: {
+      messageCallback?: (msg: string) => void;
+      errorCallback?: (msg: string) => void;
+    }
+  ) => Promise<void>;
   runPythonAsync: (code: string) => Promise<unknown>;
   runPython: (code: string) => string;
   FS: { writeFile: (path: string, data: string) => void };
+  globals: {
+    set: (key: string, value: unknown) => void;
+    get: (key: string) => unknown;
+  };
 };
 
 export type GlyphLayer = { codepoint: number; color: string };
@@ -112,6 +132,7 @@ export type NanoGlyphMap = {
     upm: number;
     safeZone: number;
     startUnicode: number;
+    hash?: string;
   };
   icons: IconsMap;
 };

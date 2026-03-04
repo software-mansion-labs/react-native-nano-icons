@@ -1,14 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { once } from 'node:events';
+import { type Transform } from 'node:stream';
 
 import { forceTtfMetrics } from './metrics.js';
 import svg2ttf from 'svg2ttf';
-import { SVGIcons2SVGFontStream } from 'svgicons2svgfont';
 import { parseCodepointFromFilename } from '../../utils/parse.js';
 
 async function writeGlyphStreamToFont(
-  fontStream: SVGIcons2SVGFontStream,
+  fontStream: Transform,
   svgPath: string,
   filename: string
 ): Promise<void> {
@@ -40,6 +40,8 @@ export async function compileTtfFromGlyphSVGs(opts: {
   descent: number;
   lineGap?: number;
 }): Promise<void> {
+  const { SVGIcons2SVGFontStream } = await import('svgicons2svgfont');
+
   const { glyphDir, outTtfPath, fontName, upm, ascent, descent } = opts;
   const lineGap = opts.lineGap ?? 0;
 

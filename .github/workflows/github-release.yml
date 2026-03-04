@@ -1,0 +1,66 @@
+name: Build and release on GitHub
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release (e.g. 0.1.0). Defaults to version in package.json.
+        type: string
+        required: false
+        default: ''
+      draft:
+        description: Create release as a draft.
+        type: boolean
+        default: true
+
+jobs:
+  build-and-release:
+    if: github.repository == 'software-mansion-labs/react-native-nano-icons'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    concurrency:
+      group: github-release-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: echo "YARN_ENABLE_HARDENED_MODE=0" >> $GITHUB_ENV
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build package
+        run: yarn workspace react-native-nano-icons build
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "value=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=$(jq -r .version packages/react-native-nano-icons/package.json)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Pack package
+        working-directory: packages/react-native-nano-icons
+        run: npm pack --pack-destination ../../
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          name: v${{ steps.version.outputs.value }}
+          draft: ${{ inputs.draft }}
+          files: react-native-nano-icons-${{ steps.version.outputs.value }}.tgz

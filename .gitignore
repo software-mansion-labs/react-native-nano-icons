@@ -84,3 +84,5 @@ playwright/.cache/
 **/nanoicons/**
 
 *.tsbuildinfo
+
+1export

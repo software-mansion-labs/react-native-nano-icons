@@ -6,6 +6,8 @@ export interface IconSetConfig {
   inputDir: string;
   /** Font family name (used for TTF and glyphmap filenames). */
   fontFamily: string;
+  /** Path where .ttf and .glyphmap.json will be saved. Defaults to a sibling nanoicons folder relative to inputDir. */
+  outputDir?: string;
   /** Units per em (default 1024). */
   upm?: number;
   /** Safe zone inside UPM for glyphs (default 1020). */

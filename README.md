@@ -5,9 +5,9 @@ This repository is a Yarn workspaces monorepo containing the library package and
 ## Package
 
 - **Library source + docs:** `packages/react-native-nano-icons/`
-  - Start here: `packages/react-native-nano-icons/README.md`
+  - Start here ➡️➡️➡️ [react-native-nano-icons README.md](packages/react-native-nano-icons/README.md) ⬅️⬅️⬅️
 
 ## Examples
 
-- **Bare React Native app:** `examples/BareReactNativeExample/`
-- **Expo app:** `examples/ExpoExample/`
+- **Bare React Native app:** [examples/BareReactNativeExample/](examples/BareReactNativeExample/)
+- **Expo app:** [examples/ExpoExample/](examples/ExpoExample/)

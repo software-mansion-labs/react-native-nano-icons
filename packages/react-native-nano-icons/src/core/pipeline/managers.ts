@@ -1,17 +1,16 @@
 import { loadPyodide } from 'pyodide';
-import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import type { PathKitModule, PyodideModule } from '../types.js';
 import { buildPathopsBackend } from '../svg/svg_pathops.js';
 
-const require = createRequire(import.meta.url);
-
 /** Package root (where package.json lives). */
 function getPackageRoot(): string {
-  const dir = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(dir, '..', '..', '..', '..');
+  // Compiled to lib/commonjs/src/core/pipeline/ — 5 dirs up is package root.
+  // Running from source (Jest/ts-node) in src/core/pipeline/ — 3 dirs up is package root.
+  return __dirname.includes(`${path.sep}lib${path.sep}`)
+    ? path.resolve(__dirname, '../../../../..')
+    : path.resolve(__dirname, '../../..');
 }
 
 export class PathKitManager {
@@ -72,7 +71,7 @@ export class PyodideManager {
     const pathopsPy = await fs.readFile(pathopsPyPath, 'utf8');
     py.FS.writeFile('/pathops.py', pathopsPy);
 
-    await py.loadPackage(['micropip', 'lxml']);
+    await py.loadPackage(['micropip', 'lxml'], { messageCallback: () => {} });
 
     await py.runPythonAsync(`
       import sys
@@ -90,30 +89,26 @@ export class PyodideManager {
     return py;
   }
 
-  static async picoFromFile(hostFilePath: string): Promise<string> {
+  static async picoFromFile(
+    hostFilePath: string,
+    content?: string
+  ): Promise<string> {
     const py = await this.getInstance();
-
-    const abs = path.resolve(hostFilePath);
-    const rel = path.relative(process.cwd(), abs);
-    const virtualPath = path.join('/app', rel).replaceAll('\\', '/');
-
+    const svgContent = content ?? (await fs.readFile(hostFilePath, 'utf-8'));
+    py.globals.set('_svg_content', svgContent);
     const out = py.runPython(`
       from picosvg.svg import SVG
-      import os
-
-      p = r"${virtualPath}"
-      if not os.path.exists(p):
-          raise FileNotFoundError(f"Could not find file at {p}")
-
-      with open(p, "rb") as f:
-          data = f.read()
-
-      text = data.decode("utf-8-sig", errors="replace")
-      svg = SVG.fromstring(text)
+      svg = SVG.fromstring(_svg_content)
       pico = svg.topicosvg()
       pico.tostring(pretty_print=True)
     `);
-
     return out;
   }
+}
+
+export async function picoFromFile(
+  hostFilePath: string,
+  content?: string
+): Promise<string> {
+  return PyodideManager.picoFromFile(hostFilePath, content);
 }
