@@ -30,8 +30,7 @@
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "lint-js": "eslint 'src/**/*.{js,ts,tsx}' && prettier --check 'src/**/*.{js,jsx,ts,tsx}'",
     "format-js": "prettier --write --list-different 'src/**/*.{js,jsx,ts,tsx}'",
-    "test": "jest",
-    "postinstall": "patch-package"
+    "test": "jest"
   },
   "dependencies": {
     "@expo/config-plugins": ">=9.0.0",
