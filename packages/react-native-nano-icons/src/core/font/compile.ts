@@ -31,6 +31,24 @@ async function writeGlyphStreamToFont(
   });
 }
 
+export function parseCompileTtfFromGlyphSVGsError(
+  err: unknown,
+  codepointToIcon: Map<number, string>
+) {
+  const msg = err instanceof Error ? err.message : String(err);
+  // Try to extract codepoint from error (e.g. 'glyph "ue906"')
+  const cpMatch = msg.match(/glyph\s+"u([0-9a-fA-F]+)"/);
+  if (cpMatch) {
+    const cp = parseInt(cpMatch[1]!, 16);
+    const iconName = codepointToIcon.get(cp);
+    const detail = iconName
+      ? `icon "${iconName}" (codepoint u${cpMatch[1]})`
+      : `codepoint u${cpMatch[1]}`;
+    throw new Error(`Font compilation failed for ${detail}: ${msg}`);
+  }
+  throw err;
+}
+
 export async function compileTtfFromGlyphSVGs(opts: {
   glyphDir: string;
   outTtfPath: string;

@@ -29,6 +29,29 @@ export function calculateOpColor(
   return `rgba(${r},${g},${b},${finalAlpha})`;
 }
 
+/**
+ * If a flattened path lost its initial moveto (e.g. picosvg dropped an empty
+ * `Mx y z` subpath), prepend `M` using the path's last coordinate pair.
+ * For closed icon shapes the endpoint equals the start point.
+ */
+export function sanitizePathData(d: string): { d: string; sanitized: boolean } {
+  const trimmed = d.trim();
+  if (!trimmed || /^[Mm]/.test(trimmed)) {
+    return { d: trimmed, sanitized: false };
+  }
+
+  // Strip trailing close commands, then grab the last two numbers as x,y
+  const withoutClose = trimmed.replace(/[Zz]\s*$/, '');
+  const nums = withoutClose.match(/-?\d+(?:\.\d+)?/g);
+  if (!nums || nums.length < 2) {
+    return { d: trimmed, sanitized: false };
+  }
+
+  const x = nums[nums.length - 2];
+  const y = nums[nums.length - 1];
+  return { d: `M${x},${y} ${trimmed}`, sanitized: true };
+}
+
 export const parsePath = (p: Element): { d: string; fill: string | null } => {
   const d = p.getAttribute('d') ?? '';
 
@@ -52,7 +75,10 @@ export const parsePath = (p: Element): { d: string; fill: string | null } => {
   };
 };
 
-export function parseFlattenedSvg(flattenedSvg: string): ParsedFlatSvg {
+export function parseFlattenedSvg(
+  flattenedSvg: string,
+  options?: { onSanitize?: (original: string) => void }
+): ParsedFlatSvg {
   const dom = new JSDOM(flattenedSvg);
   const doc = dom.window.document;
 
@@ -69,7 +95,16 @@ export function parseFlattenedSvg(flattenedSvg: string): ParsedFlatSvg {
 
   const pathEls = Array.from(doc.querySelectorAll('path'));
 
-  const paths = pathEls.map(parsePath).filter((p) => p.d.trim() !== '');
+  const paths = pathEls
+    .map(parsePath)
+    .filter((p) => p.d.trim() !== '')
+    .map((p) => {
+      const { d, sanitized } = sanitizePathData(p.d);
+      if (sanitized) {
+        options?.onSanitize?.(p.d);
+      }
+      return { ...p, d };
+    });
 
   return { viewBox, paths };
 }

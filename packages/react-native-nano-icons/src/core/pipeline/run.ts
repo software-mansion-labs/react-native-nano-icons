@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-import { compileTtfFromGlyphSVGs } from '../font/compile.js';
+import {
+  compileTtfFromGlyphSVGs,
+  parseCompileTtfFromGlyphSVGsError,
+} from '../font/compile.js';
 import { picoFromFile } from './managers.js';
 
 import {
@@ -58,6 +61,7 @@ export async function runPipeline(
   };
 
   let currentUnicode = config.startUnicode;
+  const codepointToIcon = new Map<number, string>();
 
   for (const file of files) {
     const iconName = path.parse(file).name;
@@ -77,7 +81,14 @@ export async function runPipeline(
 
     const preprocessed = preprocessSvg(rawContent);
     const flattenedSvg = await picoFromFile(filePath, preprocessed);
-    const parsed = parseFlattenedSvg(flattenedSvg);
+    const parsed = parseFlattenedSvg(flattenedSvg, {
+      onSanitize: (original) => {
+        logger?.info(
+          `  ⚠ Sanitized path in "${file}": path was missing initial moveto (prepended M from endpoint)`
+        );
+        logger?.info(`    Original: ${original.slice(0, 80)}…`);
+      },
+    });
 
     const { vx, vy, scale, xOff, yOff, adv } = computePlacement({
       upm: config.upm,
@@ -91,6 +102,7 @@ export async function runPipeline(
       if (shouldSkipPath(p.d, p.fill)) continue;
 
       const cp = currentUnicode++;
+      codepointToIcon.set(cp, iconName);
 
       await writeLayerSvg({
         tempDir: paths.tempDir,
@@ -126,14 +138,18 @@ export async function runPipeline(
   logger?.info(`Compiling TTF…`);
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
 
-  await compileTtfFromGlyphSVGs({
-    glyphDir: paths.tempDir,
-    outTtfPath: ttfPath,
-    fontName: config.fontFamily,
-    upm: config.upm,
-    ascent: config.upm,
-    descent: 0,
-  });
+  try {
+    await compileTtfFromGlyphSVGs({
+      glyphDir: paths.tempDir,
+      outTtfPath: ttfPath,
+      fontName: config.fontFamily,
+      upm: config.upm,
+      ascent: config.upm,
+      descent: 0,
+    });
+  } catch (err: unknown) {
+    parseCompileTtfFromGlyphSVGsError(err, codepointToIcon);
+  }
 
   if (fs.existsSync(paths.tempDir)) {
     fs.rmSync(paths.tempDir, { recursive: true, force: true });
