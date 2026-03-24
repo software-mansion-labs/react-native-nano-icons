@@ -21,7 +21,7 @@ import {
   validateSvg,
 } from '../svg/svg_dom.js';
 import { computePlacement, writeLayerSvg } from '../svg/layers.js';
-import type { GlyphEntry, NanoGlyphMap } from '../types.js';
+import type { GlyphLayer, NanoGlyphMap } from '../types.js';
 import type { NanoLogger } from '../types.js';
 
 export type PipelineResult = {
@@ -51,13 +51,13 @@ export async function runPipeline(
   );
 
   const glyphMap: NanoGlyphMap = {
-    meta: {
-      fontFamily: config.fontFamily,
-      upm: config.upm,
-      safeZone: config.safeZone,
-      startUnicode: config.startUnicode,
+    m: {
+      f: config.fontFamily,
+      u: config.upm,
+      z: config.safeZone,
+      s: config.startUnicode,
     },
-    icons: {},
+    i: {},
   };
 
   let currentUnicode = config.startUnicode;
@@ -96,7 +96,7 @@ export async function runPipeline(
       viewBox: parsed.viewBox,
     });
 
-    const entry: GlyphEntry = { adv, layers: [] };
+    const layers: GlyphLayer[] = [];
 
     for (const p of parsed.paths) {
       if (shouldSkipPath(p.d, p.fill)) continue;
@@ -117,11 +117,11 @@ export async function runPipeline(
         codepoint: cp,
       });
 
-      entry.layers.push({ codepoint: cp, color: p.fill || 'black' });
+      layers.push([cp, p.fill || 'black']);
     }
 
-    if (entry.layers.length > 0) {
-      glyphMap.icons[iconName] = entry;
+    if (layers.length > 0) {
+      glyphMap.i[iconName] = [adv, layers];
     }
   }
 
@@ -131,9 +131,9 @@ export async function runPipeline(
   );
 
   if (options?.inputHash) {
-    glyphMap.meta.hash = options.inputHash;
+    glyphMap.m.h = options.inputHash;
   }
-  await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap, null, 2), 'utf8');
+  await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap), 'utf8');
 
   logger?.info(`Compiling TTF…`);
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
@@ -155,7 +155,7 @@ export async function runPipeline(
     fs.rmSync(paths.tempDir, { recursive: true, force: true });
   }
 
-  const iconCount = Object.keys(glyphMap.icons).length;
+  const iconCount = Object.keys(glyphMap.i).length;
   const elapsed = Date.now() - startTime;
   logger?.succeed(
     `Built ${config.fontFamily}.ttf [${iconCount} icon${

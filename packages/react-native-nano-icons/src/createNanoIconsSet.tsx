@@ -8,7 +8,7 @@ import {
   type TextProps,
   useWindowDimensions,
 } from 'react-native';
-import type { GlyphEntry, NanoGlyphMap } from './core/types';
+import type { NanoGlyphMap } from './core/types';
 
 const DEFAULT_ICON_SIZE = 12;
 
@@ -23,7 +23,7 @@ export type IconProps<Name> = TextProps & {
 
 export type IconComponent<GM extends NanoGlyphMap> = React.FC<
   TextProps & {
-    name: keyof GM['icons'];
+    name: keyof GM['i'];
     size?: number;
     colorPalette?: ColorValue[];
     innerRef?: Ref<ViewRef>;
@@ -33,7 +33,7 @@ export type IconComponent<GM extends NanoGlyphMap> = React.FC<
 export function createIconSet<GM extends NanoGlyphMap>(
   glyphMap: GM
 ): IconComponent<GM> {
-  const fontBasename = glyphMap.meta.fontFamily;
+  const fontBasename = glyphMap.m.f;
 
   const fontReference = Platform.select({
     windows: `/Assets/${fontBasename}`,
@@ -50,12 +50,9 @@ export function createIconSet<GM extends NanoGlyphMap>(
     bottom: 0,
   };
 
-  const resolveEntry = (name: keyof GM['icons']): GlyphEntry => {
+  const resolveEntry = (name: keyof GM['i']) => {
     return (
-      glyphMap.icons[name as string] ?? {
-        adv: glyphMap.meta.upm,
-        layers: [{ codepoint: 63, color: 'black' }], // "?"
-      }
+      glyphMap.i[name as string] ?? ([glyphMap.m.u, [[63, 'black']]] as const)
     );
   };
 
@@ -67,14 +64,13 @@ export function createIconSet<GM extends NanoGlyphMap>(
     allowFontScaling = true,
     innerRef,
     ...props
-  }: IconProps<keyof GM['icons']>) => {
+  }: IconProps<keyof GM['i']>) => {
     const { fontScale } = useWindowDimensions();
 
-    const entry = resolveEntry(name);
-    const layers = entry.layers ?? [];
+    const [adv, layers] = resolveEntry(name);
 
     const scaledSize = allowFontScaling ? size * fontScale : size;
-    const width = (entry.adv / glyphMap.meta.upm) * scaledSize;
+    const width = (adv / glyphMap.m.u) * scaledSize;
 
     const containerProps: ViewProps = {
       style: {
@@ -94,7 +90,7 @@ export function createIconSet<GM extends NanoGlyphMap>(
         ref={innerRef}
         {...containerProps}
       >
-        {layers.map(({ codepoint, color: srcColor }, i) => {
+        {layers.map(([codepoint, srcColor], i) => {
           const layerColor =
             colorPalette?.[i] ?? lastPaletteColor ?? srcColor ?? 'black';
 
@@ -121,7 +117,7 @@ export function createIconSet<GM extends NanoGlyphMap>(
     );
   };
 
-  const WrappedIcon = forwardRef<ViewRef, IconProps<keyof GM['icons']>>(
+  const WrappedIcon = forwardRef<ViewRef, IconProps<keyof GM['i']>>(
     (props, ref) => <Icon innerRef={ref} {...props} />
   );
 

@@ -86,20 +86,20 @@ describe('Pipeline E2E — outline (single-colour)', () => {
 
   // ── Glyphmap meta ─────────────────────────────────────────────────────────
 
-  test('glyphmap meta.fontFamily matches config', () => {
-    expect(glyphmap.meta.fontFamily).toBe(FONT_FAMILY);
+  test('glyphmap m.f matches config', () => {
+    expect(glyphmap.m.f).toBe(FONT_FAMILY);
   });
 
-  test('glyphmap meta.upm matches config', () => {
-    expect(glyphmap.meta.upm).toBe(UPM);
+  test('glyphmap m.u matches config', () => {
+    expect(glyphmap.m.u).toBe(UPM);
   });
 
-  test('glyphmap meta.safeZone matches config', () => {
-    expect(glyphmap.meta.safeZone).toBe(SAFE_ZONE);
+  test('glyphmap m.z matches config', () => {
+    expect(glyphmap.m.z).toBe(SAFE_ZONE);
   });
 
-  test('glyphmap meta.startUnicode matches config', () => {
-    expect(glyphmap.meta.startUnicode).toBe(START_UNICODE);
+  test('glyphmap m.s matches config', () => {
+    expect(glyphmap.m.s).toBe(START_UNICODE);
   });
 
   // ── Glyphmap icons ───────────────────────────────────────────────────────
@@ -107,21 +107,21 @@ describe('Pipeline E2E — outline (single-colour)', () => {
   test('every SVG filename has a corresponding glyphmap entry', () => {
     const iconNames = svgFiles.map((f) => path.parse(f).name);
     for (const name of iconNames) {
-      expect(glyphmap.icons).toHaveProperty(name);
+      expect(glyphmap.i).toHaveProperty(name);
     }
   });
 
   test('icon count matches SVG file count', () => {
-    expect(Object.keys(glyphmap.icons).length).toBe(svgFiles.length);
+    expect(Object.keys(glyphmap.i).length).toBe(svgFiles.length);
   });
 
   // ── Codepoints ───────────────────────────────────────────────────────────
 
   test('all layer codepoints are sequential from startUnicode with no gaps', () => {
     const all: number[] = [];
-    for (const entry of Object.values(glyphmap.icons)) {
-      for (const layer of entry.layers) {
-        all.push(layer.codepoint);
+    for (const [, layers] of Object.values(glyphmap.i)) {
+      for (const [codepoint] of layers) {
+        all.push(codepoint);
       }
     }
     all.sort((a, b) => a - b);
@@ -135,20 +135,19 @@ describe('Pipeline E2E — outline (single-colour)', () => {
   // ── Advance widths ────────────────────────────────────────────────────────
 
   test('all advance widths are positive integers', () => {
-    for (const [name, entry] of Object.entries(glyphmap.icons)) {
-      expect(entry.adv).toBeGreaterThan(0);
-      expect(Number.isInteger(entry.adv)).toBe(true);
-      // Helpful failure label:
-      if (!Number.isInteger(entry.adv) || entry.adv <= 0) {
-        throw new Error(`${name} has invalid adv=${entry.adv}`);
+    for (const [name, [adv]] of Object.entries(glyphmap.i)) {
+      expect(adv).toBeGreaterThan(0);
+      expect(Number.isInteger(adv)).toBe(true);
+      if (!Number.isInteger(adv) || adv <= 0) {
+        throw new Error(`${name} has invalid adv=${adv}`);
       }
     }
   });
 
   // ── inputHash ─────────────────────────────────────────────────────────────
 
-  test('glyphmap meta.hash is absent when inputHash is not provided', () => {
-    expect(glyphmap.meta.hash).toBeUndefined();
+  test('glyphmap m.h is absent when inputHash is not provided', () => {
+    expect(glyphmap.m.h).toBeUndefined();
   });
 
   // ── TTF binary validity ───────────────────────────────────────────────────
@@ -230,7 +229,7 @@ describe('Pipeline E2E — inputHash embedding', () => {
     }
   });
 
-  test('glyphmap meta.hash equals the inputHash passed to runPipeline', () => {
-    expect(glyphmap.meta.hash).toBe(INPUT_HASH);
+  test('glyphmap m.h equals the inputHash passed to runPipeline', () => {
+    expect(glyphmap.m.h).toBe(INPUT_HASH);
   });
 });

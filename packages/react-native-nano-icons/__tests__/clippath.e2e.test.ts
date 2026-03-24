@@ -83,20 +83,21 @@ describe('Pipeline E2E — clipPath', () => {
   // ── teest icon ────────────────────────────────────────────────────────────
 
   test('glyphmap has a "teest" entry', () => {
-    expect(glyphmap.icons).toHaveProperty('teest');
+    expect(glyphmap.i).toHaveProperty('teest');
   });
 
   test('"teest" has at least 2 layers (clipped paths + red circle)', () => {
-    expect(glyphmap.icons['teest']!.layers.length).toBeGreaterThanOrEqual(2);
+    const [, layers] = glyphmap.i['teest']!;
+    expect(layers.length).toBeGreaterThanOrEqual(2);
   });
 
   // ── Codepoints ────────────────────────────────────────────────────────────
 
   test('all layer codepoints are sequential from startUnicode with no gaps', () => {
     const all: number[] = [];
-    for (const entry of Object.values(glyphmap.icons)) {
-      for (const layer of entry.layers) {
-        all.push(layer.codepoint);
+    for (const [, layers] of Object.values(glyphmap.i)) {
+      for (const [codepoint] of layers) {
+        all.push(codepoint);
       }
     }
     all.sort((a, b) => a - b);
@@ -110,9 +111,9 @@ describe('Pipeline E2E — clipPath', () => {
   // ── Advance widths ────────────────────────────────────────────────────────
 
   test('all advance widths are positive integers', () => {
-    for (const entry of Object.values(glyphmap.icons)) {
-      expect(entry.adv).toBeGreaterThan(0);
-      expect(Number.isInteger(entry.adv)).toBe(true);
+    for (const [adv] of Object.values(glyphmap.i)) {
+      expect(adv).toBeGreaterThan(0);
+      expect(Number.isInteger(adv)).toBe(true);
     }
   });
 });

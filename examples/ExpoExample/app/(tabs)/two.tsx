@@ -5,10 +5,10 @@ import swmIconGlyphMap from "@/assets/nanoicons/SWMIconsBroken.glyphmap.json";
 import { SWMIconsBroken } from "@/components/Icon";
 
 const iconSubset = Object.keys(
-  swmIconGlyphMap.icons,
-) as (keyof typeof swmIconGlyphMap.icons)[];
+  swmIconGlyphMap.i,
+) as (keyof typeof swmIconGlyphMap.i)[];
 
-const Row = ({ icon }: { icon: keyof typeof swmIconGlyphMap.icons }) => {
+const Row = ({ icon }: { icon: keyof typeof swmIconGlyphMap.i }) => {
   return (
     <View
       style={{

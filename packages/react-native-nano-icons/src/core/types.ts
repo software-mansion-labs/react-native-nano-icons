@@ -123,16 +123,21 @@ export type PyodideModule = {
   };
 };
 
-export type GlyphLayer = { codepoint: number; color: string };
-export type GlyphEntry = { adv: number; layers: GlyphLayer[] };
+export type GlyphLayer = [codepoint: number, color: string];
+export type GlyphEntry = [adv: number, layers: GlyphLayer[]];
 export type IconsMap = Record<string, GlyphEntry>;
+
+/**
+ * m - metadata,
+ *   f - font family,
+ *   u - units per em,
+ *   z - safe zone,
+ *   s - start unicode,
+ *   h - hash,
+ * i - icons,
+ *   adv - advance width,
+ */
 export type NanoGlyphMap = {
-  meta: {
-    fontFamily: string;
-    upm: number;
-    safeZone: number;
-    startUnicode: number;
-    hash?: string;
-  };
-  icons: IconsMap;
+  m: { f: string; u: number; z: number; s: number; h?: string };
+  i: IconsMap;
 };

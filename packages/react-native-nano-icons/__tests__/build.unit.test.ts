@@ -30,16 +30,16 @@ function writeFakeOutputs(
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, `${fontFamily}.ttf`), 'fake');
-  const meta = {
-    fontFamily,
-    upm: 1024,
-    safeZone: 1020,
-    startUnicode: 0xe900,
-    ...(hash !== undefined && { hash }),
+  const m = {
+    f: fontFamily,
+    u: 1024,
+    z: 1020,
+    s: 0xe900,
+    ...(hash !== undefined && { h: hash }),
   };
   fs.writeFileSync(
     path.join(outputDir, `${fontFamily}.glyphmap.json`),
-    JSON.stringify({ meta, icons: {} })
+    JSON.stringify({ m, i: {} })
   );
 }
 

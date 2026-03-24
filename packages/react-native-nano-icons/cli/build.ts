@@ -47,7 +47,7 @@ function shouldSkipGeneration(
   }
 
   const glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
-  const storedHash: string | undefined = glyphmap?.meta?.hash;
+  const storedHash: string | undefined = glyphmap?.m?.h;
 
   if (storedHash && storedHash === inputHash) {
     logger?.info(`${fontFamily}: SVG fingerprint unchanged, skipping build.`);

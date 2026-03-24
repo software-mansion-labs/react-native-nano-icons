@@ -5,10 +5,10 @@ import materialIconGlyphMap from "@/assets/nanoicons/MaterialIconsTwotone.glyphm
 import { MaterialIcon } from "@/components/Icon";
 
 const iconSubset = Object.keys(
-  materialIconGlyphMap.icons,
-) as (keyof typeof materialIconGlyphMap.icons)[];
+  materialIconGlyphMap.i,
+) as (keyof typeof materialIconGlyphMap.i)[];
 
-const Row = ({ icon }: { icon: keyof typeof materialIconGlyphMap.icons }) => {
+const Row = ({ icon }: { icon: keyof typeof materialIconGlyphMap.i }) => {
   return (
     <View
       style={{
