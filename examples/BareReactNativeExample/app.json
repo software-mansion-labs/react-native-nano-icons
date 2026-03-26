@@ -1,4 +1,7 @@
 {
   "name": "BareReactNativeExample",
-  "displayName": "BareReactNativeExample"
+  "displayName": "BareReactNativeExample",
+  "plugins": [
+    "expo-image"
+  ]
 }

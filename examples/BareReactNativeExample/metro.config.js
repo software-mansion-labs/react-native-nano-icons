@@ -1,6 +1,7 @@
 // examples/BareReactNativeExample/metro.config.js
 const path = require('path');
-const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
+const { mergeConfig } = require('@react-native/metro-config');
 
 const appRoot = __dirname;
 const repoRoot = path.resolve(appRoot, '../..');
@@ -26,7 +27,25 @@ const baseBlockList = Array.isArray(defaultConfig.resolver.blockList)
   ? defaultConfig.resolver.blockList
   : [defaultConfig.resolver.blockList].filter(Boolean);
 
+const { assetExts, sourceExts } = defaultConfig.resolver;
+
+const config = {
+  transformer: {
+    babelTransformerPath: require.resolve(
+      'react-native-svg-transformer/react-native',
+    ),
+    unstable_allowRequireContext: true,
+  },
+  resolver: {
+    assetExts: assetExts.filter(ext => ext !== 'svg'),
+    sourceExts: [...sourceExts, 'svg'],
+  },
+};
+
+// const rnsvgConfig = mergeConfig(defaultConfig, config);
+
 module.exports = mergeConfig(defaultConfig, {
+  // module.exports = mergeConfig(rnsvgConfig, {
   projectRoot: appRoot,
 
   // Metro must be able to watch+hash the patched dependency files
@@ -47,6 +66,25 @@ module.exports = mergeConfig(defaultConfig, {
     extraNodeModules: {
       react: path.resolve(appRoot, 'node_modules/react'),
       'react-native': path.resolve(appRoot, 'node_modules/react-native'),
+    },
+
+    // Force single copies of React/RN — extraNodeModules is only a fallback,
+    // so we also need resolveRequest to intercept imports that would otherwise
+    // resolve to the library's own node_modules.
+    resolveRequest: (context, moduleName, platform) => {
+      if (
+        moduleName === 'react' ||
+        moduleName === 'react-native' ||
+        moduleName.startsWith('react/') ||
+        moduleName.startsWith('react-native/')
+      ) {
+        return context.resolveRequest(
+          { ...context, originModulePath: path.join(appRoot, '_entry.js') },
+          moduleName,
+          platform,
+        );
+      }
+      return context.resolveRequest(context, moduleName, platform);
     },
 
     // Optional: prevent Metro from scanning the Expo example

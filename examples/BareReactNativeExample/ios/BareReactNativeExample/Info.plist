@@ -60,6 +60,8 @@
     <array>
       <string>Testicons.ttf</string>
       <string>DifferentIcons.ttf</string>
+      <string>MaterialIconsTwotone.ttf</string>
+      <string>SWMIconsBroken.ttf</string>
     </array>
   </dict>
 </plist>
