@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "expo.modules.nanoicons.example"
+      "bundleIdentifier": "expo.modules.nanoicons.example",
+      "icon": "./assets/NanoIcon.icon"
     },
     "android": {
       "adaptiveIcon": {
