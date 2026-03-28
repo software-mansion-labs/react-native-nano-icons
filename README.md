@@ -10,11 +10,13 @@
 
 `react-native-nano-icons` automates the conversion of SVG directories into optimized, **multi-color-aware** native fonts and strictly typed TypeScript component factories. It leverages a WebAssembly-powered skia pathops binary build pipeline to recaculate your vectors into a glyph-friendly manner ensuring pixel-perfect geometry and zero runtime overhead.
 
+<div align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="packages/react-native-nano-icons/docs/img/nano-icons-graph-inverted.png">
   <source media="(prefers-color-scheme: light)" srcset="packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png">
   <img alt="Nano Icons Graph" src="packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png" width="600">
 </picture>
+</div>
 
 <details>
 <summary>Repo Navigation</summary>
