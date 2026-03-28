@@ -3,13 +3,24 @@
 ![Nano Icons (light mode)](packages/react-native-nano-icons/docs/img/logo-nanoicons-default.svg#gh-light-mode-only)
 ![Nano Icons (dark mode)](packages/react-native-nano-icons/docs/img/logo-nanoicons-inverted.svg#gh-dark-mode-only)
 
-
 <br>
 </div>
 
 # High-performance, build-time icon font generation for React Native & Expo.
 
 `react-native-nano-icons` automates the conversion of SVG directories into optimized, **multi-color-aware** native fonts and strictly typed TypeScript component factories. It leverages a WebAssembly-powered skia pathops binary build pipeline to recaculate your vectors into a glyph-friendly manner ensuring pixel-perfect geometry and zero runtime overhead.
+
+ <picture>                          
+    <source media="(prefers-color-scheme: dark)"         
+  srcset="packages/react-native-nano-icons/docs/img/nano-
+  icons-graph-light-inverted.svg">
+    <source media="(prefers-color-scheme: light)"        
+  srcset="packages/react-native-nano-icons/docs/img/nano-
+  icons-graph-light-default.svg">                        
+    <img alt="Nano Icons Graph"                          
+  src="packages/react-native-nano-icons/docs/img/nano-ico
+  ns-graph-light-default.svg" height="300">
+  </picture>
 
 <details>
 <summary>Repo Navigation</summary>
