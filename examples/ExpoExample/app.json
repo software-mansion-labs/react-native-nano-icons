@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "expo.modules.nanoicons.example",
-      "icon": "./assets/NanoIcon.icon"
+      "icon": "./assets/app-icon.icon"
     },
     "android": {
       "adaptiveIcon": {

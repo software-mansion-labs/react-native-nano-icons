@@ -8,7 +8,7 @@ import {
   type TextProps,
   useWindowDimensions,
 } from 'react-native';
-import type { NanoGlyphMap } from './core/types';
+import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 
 const DEFAULT_ICON_SIZE = 12;
 
@@ -17,20 +17,38 @@ type ViewRef = ComponentRef<typeof View>;
 export type IconProps<Name> = TextProps & {
   name: Name;
   size?: number;
-  colorPalette?: ColorValue[];
+  color?: ColorValue | ColorValue[];
   innerRef?: Ref<ViewRef>;
+  style?: Omit<
+    TextProps['style'],
+    | 'fontFamily'
+    | 'fontWeight'
+    | 'fontStyle'
+    | 'position'
+    | 'includeFontPadding'
+    | 'color'
+  >;
 };
 
-export type IconComponent<GM extends NanoGlyphMap> = React.FC<
+export type IconComponent<GM extends NanoGlyphMapInput> = React.FC<
   TextProps & {
     name: keyof GM['i'];
     size?: number;
-    colorPalette?: ColorValue[];
+    color?: ColorValue | ColorValue[];
     innerRef?: Ref<ViewRef>;
+    style?: Omit<
+      TextProps['style'],
+      | 'fontFamily'
+      | 'fontWeight'
+      | 'fontStyle'
+      | 'position'
+      | 'includeFontPadding'
+      | 'color'
+    >;
   } & React.RefAttributes<ViewRef>
 >;
 
-export function createIconSet<GM extends NanoGlyphMap>(
+export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
 ): IconComponent<GM> {
   const fontBasename = glyphMap.m.f;
@@ -50,16 +68,17 @@ export function createIconSet<GM extends NanoGlyphMap>(
     bottom: 0,
   };
 
-  const resolveEntry = (name: keyof GM['i']) => {
-    return (
-      glyphMap.i[name as string] ?? ([glyphMap.m.u, [[63, 'black']]] as const)
-    );
+  const resolveEntry = (name: keyof GM['i']): GlyphEntry => {
+    return (glyphMap.i[name as string] ?? [
+      glyphMap.m.u,
+      [[63, 'black']],
+    ]) as GlyphEntry;
   };
 
   const Icon = ({
     name,
     size = DEFAULT_ICON_SIZE,
-    colorPalette,
+    color,
     style,
     allowFontScaling = true,
     innerRef,
@@ -80,19 +99,20 @@ export function createIconSet<GM extends NanoGlyphMap>(
       },
     };
 
-    const lastPaletteColor = colorPalette?.length
-      ? colorPalette[colorPalette.length - 1]
+    const colorArray = Array.isArray(color) ? color : [color];
+
+    const lastPaletteColor = colorArray?.length
+      ? colorArray[colorArray.length - 1]
       : undefined;
 
     return (
       <View
         nativeID={`nano-icon-container-${String(name)}`}
         ref={innerRef}
-        {...containerProps}
-      >
+        {...containerProps}>
         {layers.map(([codepoint, srcColor], i) => {
           const layerColor =
-            colorPalette?.[i] ?? lastPaletteColor ?? srcColor ?? 'black';
+            colorArray?.[i] ?? lastPaletteColor ?? srcColor ?? 'black';
 
           return (
             <Text
@@ -107,8 +127,7 @@ export function createIconSet<GM extends NanoGlyphMap>(
                   fontSize: size,
                   color: layerColor,
                 },
-              ]}
-            >
+              ]}>
               {String.fromCodePoint(codepoint)}
             </Text>
           );

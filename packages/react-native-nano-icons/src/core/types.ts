@@ -141,3 +141,9 @@ export type NanoGlyphMap = {
   m: { f: string; u: number; z: number; s: number; h?: string };
   i: IconsMap;
 };
+
+/** Accepts JSON-inferred types where arrays aren't tuples. */
+export type NanoGlyphMapInput = {
+  m: { f: string; u: number; z: number; s: number; h?: string };
+  i: Record<string, readonly unknown[]>;
+};

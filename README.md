@@ -151,9 +151,9 @@ export const UserIcon = createNanoIconSet(glyphMap);
 
 ### 4. Component Usage
 
-The generated component supports standard `Text` props **excluding** `style.color | .fontWeight | .fontFamily`.
+The generated component supports standard `Text` props **excluding** `style.color  | 'fontFamily' | 'fontWeight' | 'fontStyle' | 'position'  | 'includeFontPadding'`.
 
-To manipulate the color(s) of the icon you should provide `colorPalette: ColorValue[]`.
+To manipulate the color(s) of the icon you should provide `color: ColorValue | ColorValue[]`.
 
 The `name` prop corresponds to **the original name of the svg file** for a given icon.
 
@@ -168,7 +168,7 @@ export default function App() {
       <UserIcon name="avatar-1" size={32} />
 
       // Overrides all color layers with the provided colors respectively
-      <UserIcon name="avatar-1" size={24} colorPalette={["blue", "#ffffff", "#fc2930"]} />
+      <UserIcon name="avatar-1" size={24} color={["blue", "#ffffff", "#fc2930"]} />
 
       // Renders icon inline within a paragraph
       <Text>
@@ -180,7 +180,7 @@ export default function App() {
 ```
 
 Your color icon can have as many colors as your original svg has, therefore you should experiment to establish which element of the array corresponds to the layer you aim to change the color of.
-If the icon is single-color by design (which results in creating a single glyph during build-time) only the first element is took into consideration, and if the `colorPalette` array is too short - the last color is repeated.
+If the icon is single-color by design (which results in creating a single glyph during build-time) you can either pass a direct string or the array, but only the first element will be taken into consideration, and if the `color` array is too short - the last color is repeated.
 
 > [!IMPORTANT]
 > **You should always verify your icons visually.**

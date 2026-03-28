@@ -101,7 +101,6 @@ Non-goals:
 #### Key technical constraints
 
 1. **Font engines accept a strict subset of SVG geometry.** Real-world SVGs often include:
-
    - transforms (`transform="matrix(...)"`)
    - clipping paths (`<clipPath>`)
    - masks (`<mask>`) — **not reliably supported by simplification pipelines** in general, including our own
@@ -158,7 +157,7 @@ At runtime, the Icon component:
 
 - renders the subglyphs stacked (absolute positioning in a unified view box),
 - and allows per-layer color overrides via props:
-  ![colorPaletteExample](img/colorPaletteExample.png)
+  ![colorExample](img/colorExample.png)
 
 It is essentially a very small bunch of text in a simple container, fully embeddable inline in other `Text` components.
 
@@ -172,7 +171,6 @@ We keep the font format simple and universal (a `glyf` + `cmap` tables is the si
 #### Pipeline stages
 
 1. **SVG → flattened, normalized, simplified paths (Pyodide + picosvg + PathKit via WASM)**
-
    - Input: arbitrary SVGs (often complex Figma exports)
    - Output: path-only geometry suitable for downstream font conversion tools
    - Responsibilities:
@@ -184,7 +182,6 @@ We keep the font format simple and universal (a `glyf` + `cmap` tables is the si
      - SVG **mask** resolution/simplification is not reliably supported today (but fortunately, vast majority of icons do not rely on it)
 
 2. **Flattened geometry → layer glyph extraction (Node)**
-
    - Parse flattened SVG DOM
    - Split shapes into layers based on fill color (multi-color decomposition)
    - Compute placement rules (viewBox normalization, UPM scaling, safe zone)
