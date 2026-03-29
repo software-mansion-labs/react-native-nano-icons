@@ -1,9 +1,6 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import satya164 from 'eslint-config-satya164';
-
 export default [
-  ...satya164,
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {

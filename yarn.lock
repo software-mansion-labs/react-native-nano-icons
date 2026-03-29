@@ -7173,6 +7173,7 @@ __metadata:
     babel-preset-expo: "npm:~55.0.8"
     eslint: "npm:^8.19.0"
     expo: "npm:~55.0.8"
+    expo-font: "npm:^55.0.5-canary-20260328-bdc6273"
     expo-image: "npm:~55.0.6"
     expo-modules-core: "npm:^55.0.17"
     jest: "npm:^29.6.3"
@@ -10071,6 +10072,19 @@ __metadata:
     expo: "*"
     react-native: "*"
   checksum: 10c0/a9306f03fc5ccdb13944426503e1508781455a162efdbe1491376f405a0dc047eff1295c9491d2128701769e964ebc873cd6d6ae34b0bd7bad0396d705f48710
+  languageName: node
+  linkType: hard
+
+"expo-font@npm:^55.0.5-canary-20260328-bdc6273":
+  version: 55.0.5-canary-20260328-bdc6273
+  resolution: "expo-font@npm:55.0.5-canary-20260328-bdc6273"
+  dependencies:
+    fontfaceobserver: "npm:^2.1.0"
+  peerDependencies:
+    expo: 55.0.10-canary-20260328-bdc6273
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/1f25e9cc73707b4f389e42b982ac28d2e4ad814b54daae08c9645053fdb4fd2771034dbc0e70a0abff8a2c6bbd8adafcd802bf39acf44580ae99f6eb8c9b571b
   languageName: node
   linkType: hard
 

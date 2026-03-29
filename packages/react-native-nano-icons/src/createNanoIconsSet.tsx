@@ -1,53 +1,17 @@
-import { forwardRef, type ComponentRef, type Ref } from 'react';
-import {
-  Platform,
-  Text,
-  View,
-  type ViewProps,
-  type ColorValue,
-  type TextProps,
-  useWindowDimensions,
-} from 'react-native';
+import { memo, useMemo } from 'react';
+import { PixelRatio, Platform, Text, View, type TextProps } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
+import type { IconComponent, IconProps } from './types';
+import { shallowEqualColor } from './utils/shallowEqualColor';
+
+export type { IconComponent, IconProps };
+export { shallowEqualColor };
 
 const DEFAULT_ICON_SIZE = 12;
 
-type ViewRef = ComponentRef<typeof View>;
-
-export type IconProps<Name> = TextProps & {
-  name: Name;
-  size?: number;
-  color?: ColorValue | ColorValue[];
-  innerRef?: Ref<ViewRef>;
-  style?: Omit<
-    TextProps['style'],
-    | 'fontFamily'
-    | 'fontWeight'
-    | 'fontStyle'
-    | 'position'
-    | 'includeFontPadding'
-    | 'color'
-  >;
-};
-
-export type IconComponent<GM extends NanoGlyphMapInput> = React.FC<
-  TextProps & {
-    name: keyof GM['i'];
-    size?: number;
-    color?: ColorValue | ColorValue[];
-    innerRef?: Ref<ViewRef>;
-    style?: Omit<
-      TextProps['style'],
-      | 'fontFamily'
-      | 'fontWeight'
-      | 'fontStyle'
-      | 'position'
-      | 'includeFontPadding'
-      | 'color'
-    >;
-  } & React.RefAttributes<ViewRef>
->;
-
+/**
+ * Default / web implementation using <View> + <Text> layers.
+ */
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
 ): IconComponent<GM> {
@@ -55,7 +19,6 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   const fontReference = Platform.select({
     windows: `/Assets/${fontBasename}`,
-    android: fontBasename,
     default: fontBasename,
   });
 
@@ -68,79 +31,90 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
     bottom: 0,
   };
 
+  const unitsPerEm = glyphMap.m.u;
+
   const resolveEntry = (name: keyof GM['i']): GlyphEntry => {
     return (glyphMap.i[name as string] ?? [
-      glyphMap.m.u,
+      unitsPerEm,
       [[63, 'black']],
     ]) as GlyphEntry;
   };
 
-  const Icon = ({
-    name,
-    size = DEFAULT_ICON_SIZE,
-    color,
-    style,
-    allowFontScaling = true,
-    innerRef,
-    ...props
-  }: IconProps<keyof GM['i']>) => {
-    const { fontScale } = useWindowDimensions();
-
-    const [adv, layers] = resolveEntry(name);
-
-    const scaledSize = allowFontScaling ? size * fontScale : size;
-    const width = (adv / glyphMap.m.u) * scaledSize;
-
-    const containerProps: ViewProps = {
-      style: {
-        height: scaledSize,
-        width,
-        bottom: 0,
-      },
-    };
-
-    const colorArray = Array.isArray(color) ? color : [color];
-
-    const lastPaletteColor = colorArray?.length
-      ? colorArray[colorArray.length - 1]
-      : undefined;
-
-    return (
-      <View
-        nativeID={`nano-icon-container-${String(name)}`}
-        ref={innerRef}
-        {...containerProps}>
-        {layers.map(([codepoint, srcColor], i) => {
-          const layerColor =
-            colorArray?.[i] ?? lastPaletteColor ?? srcColor ?? 'black';
-
-          return (
-            <Text
-              key={`${codepoint}-${i}`}
-              selectable={false}
-              {...props}
-              allowFontScaling={allowFontScaling}
-              style={[
-                style,
-                styleOverrides,
-                {
-                  fontSize: size,
-                  color: layerColor,
-                },
-              ]}>
-              {String.fromCodePoint(codepoint)}
-            </Text>
-          );
-        })}
-      </View>
-    );
+  const codepointCache = new Map<number, string>();
+  const getChar = (codepoint: number): string => {
+    let ch = codepointCache.get(codepoint);
+    if (ch === undefined) {
+      ch = String.fromCodePoint(codepoint);
+      codepointCache.set(codepoint, ch);
+    }
+    return ch;
   };
 
-  const WrappedIcon = forwardRef<ViewRef, IconProps<keyof GM['i']>>(
-    (props, ref) => <Icon innerRef={ref} {...props} />
+  const Icon = memo(
+    ({
+      name,
+      size = DEFAULT_ICON_SIZE,
+      color,
+      style,
+      allowFontScaling = true,
+      accessible,
+      accessibilityLabel,
+      accessibilityRole = 'image',
+      testID,
+      ref,
+    }: IconProps<keyof GM['i']>) => {
+      const fontScale = allowFontScaling ? PixelRatio.getFontScale() : 1;
+      const [adv, layers] = resolveEntry(name);
+      const scaledSize = size * fontScale;
+      const width = (adv / unitsPerEm) * scaledSize;
+
+      const colorArray = Array.isArray(color) ? color : [color];
+      const lastPaletteColor = colorArray?.length
+        ? colorArray[colorArray.length - 1]
+        : undefined;
+
+      const containerStyle = useMemo(
+        () => [{ height: scaledSize, width, bottom: 0 as const }, style],
+        [scaledSize, width, style]
+      );
+
+      const sizeStyle = useMemo(() => ({ fontSize: size }), [size]);
+
+      return (
+        <View
+          ref={ref}
+          style={containerStyle}
+          accessible={accessible}
+          accessibilityRole={accessibilityRole}
+          accessibilityLabel={accessibilityLabel ?? (name as string)}
+          testID={testID}>
+          {layers.map(([codepoint, srcColor], i) => {
+            const layerColor =
+              colorArray?.[i] ?? lastPaletteColor ?? srcColor ?? 'black';
+
+            return (
+              <Text
+                key={i}
+                selectable={false}
+                accessible={false}
+                allowFontScaling={allowFontScaling}
+                style={[styleOverrides, sizeStyle, { color: layerColor }]}>
+                {getChar(codepoint)}
+              </Text>
+            );
+          })}
+        </View>
+      );
+    },
+    (prev, next) =>
+      prev.name === next.name &&
+      prev.size === next.size &&
+      prev.allowFontScaling === next.allowFontScaling &&
+      prev.style === next.style &&
+      shallowEqualColor(prev.color, next.color)
   );
 
-  WrappedIcon.displayName = `NanoIcon(${fontBasename})`;
+  Icon.displayName = `NanoIcon(${fontBasename})`;
 
-  return WrappedIcon;
+  return Icon;
 }

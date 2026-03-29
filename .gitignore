@@ -82,6 +82,7 @@ playwright-report/
 playwright/.cache/
 
 **/nanoicons/**
+!packages/react-native-nano-icons/android/src/main/java/com/nanoicons/**
 
 *.tsbuildinfo
 

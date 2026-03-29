@@ -9,9 +9,11 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// import NanoIconsScreen from './NanoIconsScreen';
+import NanoIconsScreen from './NanoIconsScreen';
+import { NanoTestIcons } from './Icon';
 // import SVGIconsScreen from './SVGIconsScreen';
-import ExpoImageIconsScreen from './ExpoImageIconsScreen';
+// import ExpoImageIconsScreen from './ExpoImageIconsScreen';
+// import ExpoVectorIconsScreen from './ExpoVectorIconsScreen';
 
 // import { startProfiling } from 'react-native-release-profiler';
 
@@ -26,7 +28,9 @@ function HomeScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <Pressable onPress={handlePress}>
-        <Text style={{ color: 'blue' }}>Go to Icons</Text>
+        <Text style={{ color: 'blue' }}>
+          Go to <NanoTestIcons name="AO" size={10} /> Icons
+        </Text>
       </Pressable>
     </View>
   );
@@ -36,9 +40,10 @@ const RootStack = createNativeStackNavigator({
   initialRouteName: 'Home',
   screens: {
     Home: HomeScreen,
-    // Icons: NanoIconsScreen,
+    Icons: NanoIconsScreen,
     // Icons: SVGIconsScreen,
-    Icons: ExpoImageIconsScreen,
+    // Icons: ExpoImageIconsScreen,
+    // Icons: ExpoVectorIconsScreen,
   },
 });
 
