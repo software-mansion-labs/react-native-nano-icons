@@ -9,6 +9,7 @@
 # High-performance, build-time icon font generation and rendering for React Native & Expo.
 
 `react-native-nano-icons` automates the conversion of SVG directories into optimized, **multi-color-aware** native fonts and strictly typed TypeScript component factories. It leverages a WebAssembly-powered [`skia/pathops`](https://github.com/google/skia/tree/main/src/pathops) binary build pipeline to recalculate your vectors into a glyph-friendly manner, ensuring **pixel-perfect geometry and zero runtime overhead**.
+<br>
 NanoIcons are rendered directly via [`CoreText`](https://developer.apple.com/documentation/coretext/) (iOS) and [`Canvas`](https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)) (Android), bypassing redundant `yoga` text layout calculations, resulting in **blazing-fast performance** 🔬⚡️
 
 <div align="center">
@@ -194,7 +195,7 @@ export default function App() {
 
 <br>
 
-Your color icon can have as many colors as your original SVG has; therefore, you should experiment to establish which element of the array corresponds to the layer you aim to change the color of.
+Your color icon can have as many colors as your original SVG has; therefore, you should experiment to establish which element of the array corresponds to the layer you aim to change the color of. <br>
 If the icon is single-color by design (which results in creating a single glyph at build time), you can either pass a direct string or the array, but only the first element is considered, and if the `color` array is too short — the last color is repeated.
 
 > [!IMPORTANT]
