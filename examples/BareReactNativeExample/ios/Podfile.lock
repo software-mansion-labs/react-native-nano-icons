@@ -40,7 +40,7 @@ PODS:
     - ExpoModulesCore
   - ExpoFileSystem (55.0.11):
     - ExpoModulesCore
-  - ExpoFont (55.0.4):
+  - ExpoFont (55.0.5-canary-20260328-bdc6273):
     - ExpoModulesCore
   - ExpoImage (55.0.6):
     - ExpoModulesCore
@@ -1996,6 +1996,34 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
+  - react-native-nano-icons (0.1.2):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
   - react-native-release-profiler (0.4.4):
     - boost
     - DoubleConversion
@@ -2854,6 +2882,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-nano-icons (from `../../../packages/react-native-nano-icons`)
   - react-native-release-profiler (from `../node_modules/react-native-release-profiler`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -3015,6 +3044,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-nano-icons:
+    :path: "../../../packages/react-native-nano-icons"
   react-native-release-profiler:
     :path: "../node_modules/react-native-release-profiler"
   react-native-safe-area-context:
@@ -3100,7 +3131,7 @@ SPEC CHECKSUMS:
   ExpoAsset: 4efd0227e808dfa84d286aa3663ded641ef73479
   ExpoDomWebView: f101fb3db4b6eec4163fca51f7507189b7e48661
   ExpoFileSystem: ccbe192dde132e6e97bedcd51018a1642f4fa01c
-  ExpoFont: 1aa465cf9f8ac6b670405becba8b15473581b2dd
+  ExpoFont: 031b98b7231701fbcec321de5196547b2b638100
   ExpoImage: 53ab717157f29bb5139f9f75b259f93f784b6847
   ExpoKeepAwake: 7f3b28c361c37389b18841bb52a58003b39fcb33
   ExpoLogBox: 89b634d5a8a64c4a6a7caad8f9985a28463c7002
@@ -3150,6 +3181,7 @@ SPEC CHECKSUMS:
   React-logger: 49a2029a7c055bf0ef005fec0955c2548fe88f12
   React-Mapbuffer: 2859d1e7202df918c8578db97deb5767b337dff9
   React-microtasksnativemodule: e811b68410bc71e77b91a700b527dc39661f6fc4
+  react-native-nano-icons: fe89d54655505d83fda368a658ba22da6afc2c1c
   react-native-release-profiler: 12729af9f7bd9b14426bd4610af28d5e4b4a0f0c
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   React-NativeModulesApple: 5327be5c0d9734f0c6db2219f3c20c13aef13884

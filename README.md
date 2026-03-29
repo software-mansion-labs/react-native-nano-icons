@@ -6,9 +6,11 @@
 <br>
 </div>
 
-# High-performance, build-time icon font generation for React Native & Expo.
+# High-performance, build-time icon font generation and rendering for React Native & Expo.
 
-`react-native-nano-icons` automates the conversion of SVG directories into optimized, **multi-color-aware** native fonts and strictly typed TypeScript component factories. It leverages a WebAssembly-powered skia pathops binary build pipeline to recaculate your vectors into a glyph-friendly manner ensuring pixel-perfect geometry and zero runtime overhead.
+`react-native-nano-icons` automates the conversion of SVG directories into optimized, **multi-color-aware** native fonts and strictly typed TypeScript component factories. It leverages a WebAssembly-powered [`skia/pathops`](https://github.com/google/skia/tree/main/src/pathops) binary build pipeline to recalculate your vectors into a glyph-friendly manner, ensuring **pixel-perfect geometry and zero runtime overhead**.
+<br>
+NanoIcons are rendered directly via [`CoreText`](https://developer.apple.com/documentation/coretext/) (iOS) and [`Canvas`](https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)) (Android), bypassing redundant `yoga` text layout calculations, resulting in **blazing-fast performance** 🔬⚡️
 
 <div align="center">
 <picture>
@@ -20,14 +22,11 @@
 
 <details>
 <summary>Repo Navigation</summary>
-This repository is a Yarn workspaces monorepo containing the library package and example apps.
 
+This repository is a yarn workspaces monorepo containing the library package and example apps.
 ##### Package
-
 - **Library source:** [`packages/react-native-nano-icons/`](packages/react-native-nano-icons/)
-
 ##### Examples
-
 - **Bare React Native app:** [`examples/BareReactNativeExample/`](examples/BareReactNativeExample/)
 - **Expo app:** [`examples/ExpoExample/`](examples/ExpoExample/)
 </details>
@@ -36,8 +35,8 @@ This repository is a Yarn workspaces monorepo containing the library package and
 
 ## 🧩 Platforms Supported
 
-- [x] iOS
-- [x] Android
+- [x] iOS 15.1+ (**Fiber Renderer Only**)
+- [x] Android API 24+ (**Fiber Renderer Only**)
 - [x] Web
 
 > [!NOTE]
@@ -80,7 +79,7 @@ The library uses an Expo Config Plugin to hook into the prebuild phase. This aut
 ```
 
 <details>
-<summary>All iconSets Entry Plugin Options</summary>
+<summary><u>All iconSets Entry Plugin Options</u></summary>
 
 The plugin accepts an object with an `iconSets` array, allowing you to generate multiple distinct fonts in a single build.
 
@@ -129,15 +128,15 @@ Bare apps don’t have a prebuild step, so you run the same pipeline via the CLI
 
    This works exactly like the config plugin, removing any necessity for manual Xcode/Android Studio font linking steps.
 
-> [!NOTE]
-> Linking the font on web is just as straightforward as always and does not require any other actions then usual font addition does.
-
 > [!TIP]
 > Run `EXPO_DEBUG=1 npx expo prebuild` or `npx react-native-nano-icons --verbose` to get font build-time logs.
 
+> [!NOTE]
+> Linking the font on web is just as straightforward as always and does not require any actions other than the usual font addition.
+
 ### 3. Creating an Icon Set Component
 
-Use the factory function to create a fully typed component for your specific icon set.
+Use the `createNanoIconSet` factory function to create a fully typed component for your specific icon set.
 
 `src/components/UserIcon.tsx`
 
@@ -151,11 +150,8 @@ export const UserIcon = createNanoIconSet(glyphMap);
 
 ### 4. Component Usage
 
-The generated component supports standard `Text` props **excluding** `style.color  | 'fontFamily' | 'fontWeight' | 'fontStyle' | 'position'  | 'includeFontPadding'`.
 
-To manipulate the color(s) of the icon you should provide `color: ColorValue | ColorValue[]`.
 
-The `name` prop corresponds to **the original name of the svg file** for a given icon.
 
 ```TypeScript
 import { Text } from 'react-native'
@@ -179,15 +175,35 @@ export default function App() {
 }
 ```
 
-Your color icon can have as many colors as your original svg has, therefore you should experiment to establish which element of the array corresponds to the layer you aim to change the color of.
-If the icon is single-color by design (which results in creating a single glyph during build-time) you can either pass a direct string or the array, but only the first element will be taken into consideration, and if the `color` array is too short - the last color is repeated.
+<details>
+<summary><strong><u>Props</u></strong></summary>
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `name` | `string` | **(required)** | Icon name — **corresponds to its original SVG filename**. Fully typed from the glyphmap. |
+| `size` | `number` | `12` | Icon size in points. |
+| `color` | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
+| `allowFontScaling` | `boolean` | `true` | Whether the icon size respects the system accessibility font scale. |
+| `style` | `ViewStyle` | — | Style applied to the icon container. |
+| `accessible` | `boolean` | — | Override the default accessibility behavior. |
+| `accessibilityLabel` | `string` | Icon `name` | Label announced by screen readers. Defaults to the icon name. |
+| `accessibilityRole` | `AccessibilityRole` | `"image"` | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text. |
+| `testID` | `string` | — | Test identifier for e2e testing frameworks. |
+| `ref` | `Ref<View>` | — | Ref to the underlying native view. |
+
+</details>
+
+<br>
+
+Your color icon can have as many colors as your original SVG has; therefore, you should experiment to establish which element of the array corresponds to the layer you aim to change the color of. <br>
+If the icon is single-color by design (which results in creating a single glyph at build time), you can either pass a direct string or the array, but only the first element is considered, and if the `color` array is too short — the last color is repeated.
 
 > [!IMPORTANT]
 > **You should always verify your icons visually.**
 
 ### 5. Font Regeneration
 
-The script detects changes in path and contents of the SVGs in your input directory based on a fingerprint hash. Had anything changed (i.e. file names, svg attributes/contents), or the output font files had been deleted, a given icon-set is regenerated during `prebuild` or manual script run.
+**The script detects changes in path and contents of the SVGs** in your input directory based on a fingerprint hash. Had anything changed (i.e. file names, svg attributes/nodes), or the output font/glyphmap files had been deleted, a given icon-set is regenerated during `prebuild` or manual script run.
 
 ---
 

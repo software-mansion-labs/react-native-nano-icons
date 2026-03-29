@@ -14,7 +14,10 @@
     "src",
     "lib",
     "plugin",
-    "scripts"
+    "scripts",
+    "ios",
+    "android",
+    "react-native-nano-icons.podspec"
   ],
   "scripts": {
     "build": "yarn build:node-entry && bob build && yarn build:core && yarn build:cli && yarn build:plugin && yarn build:scripts",
@@ -158,5 +161,20 @@
       "release-it"
     ],
     "version": "0.57.2"
+  },
+  "codegenConfig": {
+    "name": "RNNanoIconsSpec",
+    "type": "components",
+    "jsSrcsDir": "./src/specs",
+    "android": {
+      "javaPackageName": "com.nanoicons"
+    },
+    "ios": {
+      "components": {
+        "NanoIconView": {
+          "className": "NanoIconView"
+        }
+      }
+    }
   }
 }

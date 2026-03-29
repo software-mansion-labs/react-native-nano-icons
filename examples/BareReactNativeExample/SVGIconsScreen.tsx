@@ -1,6 +1,6 @@
 import React from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
-import { useStopProfiling } from 'useStopProfiling';
+import { ScrollView, View } from 'react-native';
+// import { useStopProfiling } from 'useStopProfiling';
 
 const svgContext = require.context('./assets/material', false, /\.svg$/);
 const svgKeys = svgContext.keys();
@@ -11,11 +11,11 @@ const Icons = svgKeys.map(key => {
 });
 
 export default function SVGIconsScreen() {
-  const path = useStopProfiling();
+  // const path = useStopProfiling();
 
   return (
     <View>
-      <TextInput value={path} />
+      {/* <TextInput value={path} /> */}
       <ScrollView>{Icons}</ScrollView>
     </View>
   );
