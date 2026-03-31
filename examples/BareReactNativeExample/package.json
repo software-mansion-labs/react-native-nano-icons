@@ -17,6 +17,7 @@
     "@react-navigation/native": "^7.2.0",
     "@react-navigation/native-stack": "^7.14.7",
     "expo": "~55.0.8",
+    "expo-font": "^55.0.5-canary-20260328-bdc6273",
     "expo-image": "~55.0.6",
     "expo-modules-core": "^55.0.17",
     "react": "19.2.0",

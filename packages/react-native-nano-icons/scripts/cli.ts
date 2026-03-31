@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   const projectRoot = process.cwd();
   const configRoot =
     pathIdx !== -1 && process.argv[pathIdx + 1]
-      ? path.resolve(projectRoot, process.argv[pathIdx + 1])
+      ? path.resolve(projectRoot, process.argv[pathIdx + 1]!)
       : projectRoot;
 
   const logger = await createOraLogger(level);
