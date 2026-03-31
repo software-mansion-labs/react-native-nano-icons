@@ -1,9 +1,10 @@
 import { JSDOM } from 'jsdom';
 import { parseColor } from '../../utils/parse';
+import type { PathKitModule } from '../types.js';
 
 export type ParsedFlatSvg = {
   viewBox: [number, number, number, number];
-  paths: Array<{ d: string; fill: string | null }>;
+  paths: Array<{ d: string; fill: string | null; fillRule?: 'evenodd' }>;
 };
 
 // if the fill is implicit, walk ancestors for the first explicit fill value
@@ -52,12 +53,20 @@ export function sanitizePathData(d: string): { d: string; sanitized: boolean } {
   return { d: `M${x},${y} ${trimmed}`, sanitized: true };
 }
 
-export const parsePath = (p: Element): { d: string; fill: string | null } => {
+export const parsePath = (
+  p: Element
+): { d: string; fill: string | null; fillRule?: 'evenodd' } => {
   const d = p.getAttribute('d') ?? '';
 
   const op = p.getAttribute('opacity');
   const fillOp = p.getAttribute('fill-opacity');
   const fill = p.getAttribute('fill');
+  // picosvg may drop fill-rule but preserve clip-rule; treat either as evenodd
+  const fillRule =
+    p.getAttribute('fill-rule') === 'evenodd' ||
+    p.getAttribute('clip-rule') === 'evenodd'
+      ? ('evenodd' as const)
+      : undefined;
 
   if (op !== null || fillOp !== null) {
     const opVal = op !== null ? parseFloat(op) : 1;
@@ -66,12 +75,14 @@ export const parsePath = (p: Element): { d: string; fill: string | null } => {
     return {
       d,
       fill: calculateOpColor(fill, combinedOpacity, p),
+      fillRule,
     };
   }
 
   return {
     d,
     fill,
+    fillRule,
   };
 };
 
@@ -131,4 +142,87 @@ export function validateSvg(content: string): SvgValidation {
 export function preprocessSvg(content: string): string {
   if (/xmlns\s*=/.test(content)) return content;
   return content.replace(/<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
+}
+
+/**
+ * Split an SVG `d` string into individual subpath `d` strings.
+ * Splits on `Z` followed by `M` (case-insensitive).
+ */
+export function splitSubpaths(d: string): string[] {
+  return d
+    .split(/Z\s*(?=M)/i)
+    .map((s) => (s.endsWith('Z') || s.endsWith('z') ? s : s + 'Z'))
+    .filter((s) => s.replace(/[Zz\s]/g, '').length > 0);
+}
+
+export type EvenoddResolution = {
+  /** Individual contour `d` strings (split from the evenodd path). */
+  contours: string[];
+};
+
+/**
+ * Extract fill-rule="evenodd" paths from the raw SVG and split each into
+ * individual contour `d` strings.
+ *
+ * Font glyphs use nonzero winding, and the font creation tools
+ * (svgicons2svgfont → svg2ttf) don't reliably handle multi-subpath glyphs
+ * with complex hole arrangements.  Splitting into single-contour layers
+ * guarantees each glyph is a simple filled shape.
+ *
+ * Returns one entry per evenodd path (in document order).
+ */
+export function extractEvenoddPaths(
+  svgContent: string,
+  _PathKit: PathKitModule
+): EvenoddResolution[] {
+  if (!/<[^>]*fill-rule\s*=\s*["']evenodd/i.test(svgContent)) {
+    return [];
+  }
+
+  const dom = new JSDOM(svgContent, { contentType: 'image/svg+xml' });
+  const doc = dom.window.document;
+  const results: EvenoddResolution[] = [];
+
+  const pathEls = doc.querySelectorAll('path[fill-rule="evenodd"]');
+  for (const el of pathEls) {
+    const d = el.getAttribute('d');
+    if (!d) continue;
+
+    const contours = splitSubpaths(d);
+    if (contours.length > 1) {
+      results.push({ contours });
+    }
+  }
+
+  return results;
+}
+
+
+/**
+ * Replace corrupted evenodd paths with individual single-contour paths.
+ * The first (largest) contour keeps the original fill; the remaining "hole"
+ * contours inherit the fill of the layer directly below, since they represent
+ * areas where the background should show through.
+ *
+ * Mutates `paths` in place.
+ */
+export function spliceEvenoddContours(
+  paths: ParsedFlatSvg['paths'],
+  evenoddResolved: EvenoddResolution[]
+): void {
+  let ri = 0;
+  for (let i = 0; i < paths.length && ri < evenoddResolved.length; i++) {
+    if (paths[i]!.fillRule === 'evenodd') {
+      const { contours } = evenoddResolved[ri]!;
+      const fill = paths[i]!.fill;
+      const bgFill = i > 0 ? paths[i - 1]!.fill : fill;
+      const contourPaths = contours.map((d, ci) => ({
+        d,
+        fill: ci === 0 ? fill : bgFill,
+      }));
+      paths.splice(i, 1, ...contourPaths);
+      i += contours.length - 1;
+      ri++;
+    }
+  }
 }

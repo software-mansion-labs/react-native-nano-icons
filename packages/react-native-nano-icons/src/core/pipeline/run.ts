@@ -6,7 +6,7 @@ import {
   compileTtfFromGlyphSVGs,
   parseCompileTtfFromGlyphSVGsError,
 } from '../font/compile.js';
-import { picoFromFile } from './managers.js';
+import { picoFromFile, PathKitManager } from './managers.js';
 
 import {
   ensureDir,
@@ -17,8 +17,10 @@ import {
 import {
   parseFlattenedSvg,
   preprocessSvg,
+  extractEvenoddPaths,
   shouldSkipPath,
   validateSvg,
+  spliceEvenoddContours,
 } from '../svg/svg_dom.js';
 import { computePlacement, writeLayerSvg } from '../svg/layers.js';
 import type { GlyphLayer, NanoGlyphMap } from '../types.js';
@@ -80,6 +82,17 @@ export async function runPipeline(
     }
 
     const preprocessed = preprocessSvg(rawContent);
+
+    const evenoddResolved = extractEvenoddPaths(
+      preprocessed,
+      await PathKitManager.getInstance()
+    );
+    if (evenoddResolved.length > 0) {
+      logger?.info(
+        `  ↻ Splitting ${evenoddResolved.length} evenodd path(s) into contour layers in "${file}"`
+      );
+    }
+
     const flattenedSvg = await picoFromFile(filePath, preprocessed);
     const parsed = parseFlattenedSvg(flattenedSvg, {
       onSanitize: (original) => {
@@ -89,6 +102,10 @@ export async function runPipeline(
         logger?.info(`    Original: ${original.slice(0, 80)}…`);
       },
     });
+
+    if (evenoddResolved.length > 0) {
+      spliceEvenoddContours(parsed.paths, evenoddResolved);
+    }
 
     const { vx, vy, scale, xOff, yOff, adv } = computePlacement({
       upm: config.upm,
