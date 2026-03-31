@@ -29,9 +29,7 @@ The following picture represents the average time taken to render the same 1k SV
 
 ---
 
-<h2 style="display: inline"> 🧩 Platforms Supported </h2> <a href="https://reactnative.dev/architecture/landing-page" style="font-size: 1rem; font-weight: normal">(New Arch Only)</a>
-
-<br>
+<h2>🧩 Platforms Supported <a href="https://reactnative.dev/architecture/landing-page"><sup><sub>(New Arch Only)</sub></sup></a></h2>
 
 - [x] iOS 15.1+
 - [x] Android API 24+
@@ -64,7 +62,7 @@ The library uses an Expo Config Plugin to hook into the prebuild phase. This aut
         {
           "iconSets": [
             {
-              "inputDir": "./assets/icons/user"
+              "inputDir": "./assets/icons/brand"
             }
           ]
         }
@@ -194,8 +192,8 @@ If the icon is single-color by design (which results in creating a single glyph 
 
 ## Contributing
 
-The main purpose of this repository is to fill the lack of CLI tooling around proper SVG->font conversion without having to leave your IDE, and to ensure as performant font icon rendering as possible.
-<br>We want to make contributing to this project as easy and transparent as possible, and we are grateful to the community for contributing bug fixes and improvements. Read below to learn how you can take part in improving React Native.
+The main purpose of this repository is to fill the gap in CLI tooling around proper SVG->font conversion without having to leave your IDE, and to ensure the most performant font icon rendering possible.
+<br>We want to make contributing to this project as easy and transparent as possible, and we are grateful to the community for contributing bug fixes and improvements. Read below to learn how you can take part in improving `react-native-nano-icons`.
 
 <details>
 <summary>Repo Navigation</summary>
