@@ -6,19 +6,14 @@
 <br>
 </div>
 
-# High-performance, build-time icon font generation and rendering for React Native & Expo.
+# High-performance, build-time icon font generation and rendering for React Native & Expo
 
 `react-native-nano-icons` automates the conversion of SVG directories into optimized, **multi-color-aware** native fonts and strictly typed TypeScript component factories. It leverages a WebAssembly-powered [`skia/pathops`](https://github.com/google/skia/tree/main/src/pathops) binary build pipeline to recalculate your vectors into a glyph-friendly manner, ensuring **pixel-perfect geometry and zero runtime overhead**.
-<br>
+<br><br>
 NanoIcons are rendered directly via [CoreText](https://developer.apple.com/documentation/coretext/) (iOS) and [Canvas](<https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)>) (Android), bypassing redundant [Yoga](http://github.com/facebook/yoga) text layout calculations, resulting in **blazing-fast performance** 🔬⚡️
 
-<div align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="packages/react-native-nano-icons/docs/img/nano-icons-graph-inverted.png">
-  <source media="(prefers-color-scheme: light)" srcset="packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png">
-  <img alt="Nano Icons Graph" src="packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png" width="600">
-</picture>
-</div>
+![Nano Icons Flow Graph (light mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png#gh-light-mode-only)
+![Nano Icons Flow Graph (dark mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-inverted.png#gh-dark-mode-only)
 
 <details>
 <summary><strong>Performance Benchmarks</strong></summary>
@@ -31,32 +26,18 @@ The following picture represents the average time taken to render the same 1k SV
 
 </details>
 
-<details>
-<summary>Repo Navigation</summary>
-
-This repository is a yarn workspaces monorepo containing the library package and example apps.
-
-##### Package
-
-- **Library source:** [`packages/react-native-nano-icons/`](packages/react-native-nano-icons/)
-
-##### Examples
-
-- **Bare React Native app:** [`examples/BareReactNativeExample/`](examples/BareReactNativeExample/)
-- **Expo app:** [`examples/ExpoExample/`](examples/ExpoExample/)
-</details>
 
 ---
 
-<h2> 🧩 Platforms Supported <a src="https://reactnative.dev/architecture/landing-page" style="font-size: 1rem; font-weight: normal">(New Arch Only)</a></h2>
+<h2 style="display: inline"> 🧩 Platforms Supported </h2> <a href="https://reactnative.dev/architecture/landing-page" style="font-size: 1rem; font-weight: normal">(New Arch Only)</a>
+
+<br>
 
 - [x] iOS 15.1+
 - [x] Android API 24+
 - [x] Web
+- [ ] Expo Go App
 
-> [!NOTE]
-> `<filter>` and `<mask>` are not yet supported, due to native fonts' glyph limitations.
-> In order to leverage those features, use [`react-native-svg`](https://github.com/software-mansion/react-native-svg) or [`expo-image`](https://docs.expo.dev/versions/latest/sdk/image/)
 
 ## 🚀 Usage
 
@@ -127,7 +108,7 @@ Bare apps don’t have a prebuild step, so you run the same pipeline via the CLI
     {
       "iconSets": [
         {
-          "inputDir": "./assets/icons/user"
+          "inputDir": "./assets/icons/brand"
         }
       ]
     }
@@ -149,46 +130,34 @@ Bare apps don’t have a prebuild step, so you run the same pipeline via the CLI
 > [!NOTE]
 > Linking the font on web is just as straightforward as always and does not require any actions other than the usual font addition.
 
-### 3. Creating an Icon Set Component
-
-Use the `createNanoIconSet` factory function to create a fully typed component for your specific icon set.
-
-`src/components/UserIcon.tsx`
+### 3. Component Usage
 
 ```TypeScript
+import { View, Text } from 'react-native'
 import { createNanoIconSet } from "react-native-nano-icons";
 // auto-generated during build-time in outputDir
-import glyphMap from "../../assets/nanoicons/UserIcons.glyphmap.json";
+import glyphMap from "./assets/icons/nanoicons/brand.glyphmap.json";
 
-export const UserIcon = createNanoIconSet(glyphMap);
-```
-
-### 4. Component Usage
-
-```TypeScript
-import { Text } from 'react-native'
-import { UserIcon } from './components/UserIcon';
+export const BrandIcon = createNanoIconSet(glyphMap);
 
 export default function App() {
   return (
-    <>
+    <View>
       // Renders the icon with its original multi-color layers from the SVG
-      <UserIcon name="avatar-1" size={32} />
+      <BrandIcon name="logo-light" size={32} />
 
       // Overrides all color layers with the provided colors respectively
-      <UserIcon name="avatar-1" size={24} color={["blue", "#ffffff", "#fc2930"]} />
+      <BrandIcon name="logo-light" size={24} color={["blue", "#ffffff", "#fc2930"]} />
 
       // Renders icon inline within a paragraph
       <Text>
-        User <UserIcon name="avatar-1" size={12} /> liked your photo!
+        Welcome to <BrandIcon name="logo-light" size={12} /> app!
       </Text>
-    </>
+    </View>
   );
 }
 ```
-
-<details>
-<summary><strong><u>Props</u></strong></summary>
+**Props:**
 
 | Prop                 | Type                         | Default           | Description                                                                                                                                  |
 | -------------------- | ---------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -203,19 +172,50 @@ export default function App() {
 | `testID`             | `string`                     | —                 | Test identifier for e2e testing frameworks.                                                                                                  |
 | `ref`                | `Ref<View>`                  | —                 | Ref to the underlying native view.                                                                                                           |
 
-</details>
-
-<br>
-
 Your color icon can have as many colors as your original SVG has; therefore, you should experiment to establish which element of the array corresponds to the layer you aim to change the color of. <br>
 If the icon is single-color by design (which results in creating a single glyph at build time), you can either pass a direct string or the array, but only the first element is considered, and if the `color` array is too short — the last color is repeated.
 
 > [!IMPORTANT]
-> **You should always verify your icons visually.**
+> You should always verify your icons visually.
 
-### 5. Font Regeneration
+### 4. Font Regeneration
 
 **The script detects changes in path and contents of the SVGs** in your input directory based on a fingerprint hash. Had anything changed (i.e. file names, svg attributes/nodes), or the output font/glyphmap files had been deleted, a given icon-set is regenerated during `prebuild` or manual script run.
+
+---
+
+## Limitations
+
+> [!NOTE]
+> `<filter>` and `<mask>` are not yet supported, due to native fonts' glyph limitations.
+> In order to leverage those features, use [`react-native-svg`](https://github.com/software-mansion/react-native-svg) or [`expo-image`](https://docs.expo.dev/versions/latest/sdk/image/)
+> 
+---
+
+## Contributing
+
+The main purpose of this repository is to fill the lack of CLI tooling around proper SVG->font conversion without having to leave your IDE, and to ensure as performant font icon rendering as possible.
+<br>We want to make contributing to this project as easy and transparent as possible, and we are grateful to the community for contributing bug fixes and improvements. Read below to learn how you can take part in improving React Native.
+
+<details>
+<summary>Repo Navigation</summary>
+<br>
+This repository is a yarn workspaces monorepo containing the library package and example apps.
+
+#### Package
+
+- **Library source:** [`packages/react-native-nano-icons/`](packages/react-native-nano-icons/)
+
+#### Examples
+
+- **Bare React Native app:** [`examples/BareReactNativeExample/`](examples/BareReactNativeExample/)
+- **Expo app:** [`examples/ExpoExample/`](examples/ExpoExample/)
+</details>
+
+
+#### Code of Conduct
+We adopted a Code of Conduct that we expect project participants to adhere to. Please read the [full text](CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
+
 
 ---
 
