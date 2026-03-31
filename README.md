@@ -10,7 +10,7 @@
 
 `react-native-nano-icons` automates the conversion of SVG directories into optimized, **multi-color-aware** native fonts and strictly typed TypeScript component factories. It leverages a WebAssembly-powered [`skia/pathops`](https://github.com/google/skia/tree/main/src/pathops) binary build pipeline to recalculate your vectors into a glyph-friendly manner, ensuring **pixel-perfect geometry and zero runtime overhead**.
 <br>
-NanoIcons are rendered directly via [`CoreText`](https://developer.apple.com/documentation/coretext/) (iOS) and [`Canvas`](https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)) (Android), bypassing redundant `yoga` text layout calculations, resulting in **blazing-fast performance** 🔬⚡️
+NanoIcons are rendered directly via [CoreText](https://developer.apple.com/documentation/coretext/) (iOS) and [Canvas](<https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)>) (Android), bypassing redundant [Yoga](http://github.com/facebook/yoga) text layout calculations, resulting in **blazing-fast performance** 🔬⚡️
 
 <div align="center">
 <picture>
@@ -21,22 +21,37 @@ NanoIcons are rendered directly via [`CoreText`](https://developer.apple.com/doc
 </div>
 
 <details>
+<summary><strong>Performance Benchmarks</strong></summary>
+
+The following picture represents the average time taken to render the same 1k SVG icon set input in a simple ScrollView using different libraries across both JS and UI (Main) thread for iOS (26.2) release app version. Same testcase results in similar output for most of the android devices depending on their hardware. Nano Icons present a significant adventage over similar libraries.
+
+<div align="center">
+  <img alt="Nano Icons Prformance Benchmark Comparison Graph" src="packages/react-native-nano-icons/docs/img/nano-icons-benchmarks.png" width="700">
+</div>
+
+</details>
+
+<details>
 <summary>Repo Navigation</summary>
 
 This repository is a yarn workspaces monorepo containing the library package and example apps.
+
 ##### Package
+
 - **Library source:** [`packages/react-native-nano-icons/`](packages/react-native-nano-icons/)
+
 ##### Examples
+
 - **Bare React Native app:** [`examples/BareReactNativeExample/`](examples/BareReactNativeExample/)
 - **Expo app:** [`examples/ExpoExample/`](examples/ExpoExample/)
 </details>
 
 ---
 
-## 🧩 Platforms Supported
+<h2> 🧩 Platforms Supported <a src="https://reactnative.dev/architecture/landing-page" style="font-size: 1rem; font-weight: normal">(New Arch Only)</a></h2>
 
-- [x] iOS 15.1+ (**Fiber Renderer Only**)
-- [x] Android API 24+ (**Fiber Renderer Only**)
+- [x] iOS 15.1+
+- [x] Android API 24+
 - [x] Web
 
 > [!NOTE]
@@ -150,9 +165,6 @@ export const UserIcon = createNanoIconSet(glyphMap);
 
 ### 4. Component Usage
 
-
-
-
 ```TypeScript
 import { Text } from 'react-native'
 import { UserIcon } from './components/UserIcon';
@@ -168,7 +180,7 @@ export default function App() {
 
       // Renders icon inline within a paragraph
       <Text>
-        User <UserIcon name="avatar-1" size={12}  /> liked your photo!
+        User <UserIcon name="avatar-1" size={12} /> liked your photo!
       </Text>
     </>
   );
@@ -178,18 +190,18 @@ export default function App() {
 <details>
 <summary><strong><u>Props</u></strong></summary>
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `name` | `string` | **(required)** | Icon name — **corresponds to its original SVG filename**. Fully typed from the glyphmap. |
-| `size` | `number` | `12` | Icon size in points. |
-| `color` | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
-| `allowFontScaling` | `boolean` | `true` | Whether the icon size respects the system accessibility font scale. |
-| `style` | `ViewStyle` | — | Style applied to the icon container. |
-| `accessible` | `boolean` | — | Override the default accessibility behavior. |
-| `accessibilityLabel` | `string` | Icon `name` | Label announced by screen readers. Defaults to the icon name. |
-| `accessibilityRole` | `AccessibilityRole` | `"image"` | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text. |
-| `testID` | `string` | — | Test identifier for e2e testing frameworks. |
-| `ref` | `Ref<View>` | — | Ref to the underlying native view. |
+| Prop                 | Type                         | Default           | Description                                                                                                                                  |
+| -------------------- | ---------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`               | `string`                     | **(required)**    | Icon name — **corresponds to its original SVG filename**. Fully typed from the glyphmap.                                                     |
+| `size`               | `number`                     | `12`              | Icon size in points.                                                                                                                         |
+| `color`              | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
+| `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                                          |
+| `style`              | `ViewStyle`                  | —                 | Style applied to the icon container.                                                                                                         |
+| `accessible`         | `boolean`                    | —                 | Override the default accessibility behavior.                                                                                                 |
+| `accessibilityLabel` | `string`                     | Icon `name`       | Label announced by screen readers. Defaults to the icon name.                                                                                |
+| `accessibilityRole`  | `AccessibilityRole`          | `"image"`         | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text.                                                         |
+| `testID`             | `string`                     | —                 | Test identifier for e2e testing frameworks.                                                                                                  |
+| `ref`                | `Ref<View>`                  | —                 | Ref to the underlying native view.                                                                                                           |
 
 </details>
 
@@ -221,7 +233,7 @@ Since 2012 [Software Mansion](https://swmansion.com) is a software agency with
 experience in building web and mobile apps. We are Core React Native
 Contributors and experts in dealing with all kinds of React Native issues. We
 can help you build your next dream product –
-[Hire us](https://swmansion.com/contact/projects?utm_source=typegpu&utm_medium=readme).
+[Hire us](https://swmansion.com/contact/projects?utm_source=react-native-nano-icons&utm_medium=readme).
 
 <!-- automd:contributors author="software-mansion" -->
 
