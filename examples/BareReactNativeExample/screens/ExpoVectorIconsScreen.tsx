@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { createIconSetFromIcoMoon } from '@expo/vector-icons';
-import icomoonJson from './assets/icomoon/materialtest.icomoon.json';
+import icomoonJson from '../assets/icomoon/materialtest.icomoon.json';
 
 // `true` to save the trace to the phone's downloads folder, `false` otherwise
 

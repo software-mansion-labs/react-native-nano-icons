@@ -1,7 +1,10 @@
 import { createNanoIconSet } from 'react-native-nano-icons';
-import glyphMap from './assets/nanoicons/MaterialIconsTwotone.glyphmap.json';
-import testGlyphMap from './assets/nanoicons/Testicons.glyphmap.json';
+import nanoGlyphMap from './assets/nanoicons/Testicons.glyphmap.json';
+import materialIconGlyphMap from './assets/nanoicons/MaterialIconsTwotone.glyphmap.json';
+import swmIconGlyphMap from './assets/nanoicons/SWMIconsOutline.glyphmap.json';
 
-export const NanoMaterialIcon = createNanoIconSet(glyphMap);
+export const Icon = createNanoIconSet(nanoGlyphMap);
 
-export const NanoTestIcons = createNanoIconSet(testGlyphMap);
+export const MaterialIcon = createNanoIconSet(materialIconGlyphMap);
+
+export const SWMIconsOutline = createNanoIconSet(swmIconGlyphMap);

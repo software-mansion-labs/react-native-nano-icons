@@ -1,14 +1,27 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React from 'react';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from '../App';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { Icon, SWMIconsOutline } from '@/components/Icon';
+import { Icon, SWMIconsOutline } from '../Icon';
 
-export default function TabOneScreen() {
+// import { startProfiling } from 'react-native-release-profiler';
+
+function HomeScreen() {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  const handlePress = () => {
+    // startProfiling();
+    navigation.navigate('Icons');
+  };
+
   return (
     <SafeAreaProvider>
       <SafeAreaView edges={['top']} style={styles.container}>
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}>
+          contentContainerStyle={styles.scrollContent}
+        >
           <View style={styles.section}>
             <Text style={styles.subtitle}>
               Inline <Icon name="SWM_logo" size={22} /> multicolor font icon
@@ -16,9 +29,9 @@ export default function TabOneScreen() {
 
             <Text style={styles.subtitle}>Standalone icon:</Text>
             <Icon name="react-logo" size={80} />
-            <Pressable style={styles.button}>
+            <Pressable style={styles.button} onPress={handlePress}>
               <SWMIconsOutline name="ZoomIn" size={28} color={'#007AFF'} />
-              <Text style={styles.buttonText}>Monochrome Button Icon</Text>
+              <Text style={styles.buttonText}>Go to 1k icons screen</Text>
             </Pressable>
           </View>
           <View style={styles.row}>
@@ -75,6 +88,8 @@ export default function TabOneScreen() {
     </SafeAreaProvider>
   );
 }
+
+export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {

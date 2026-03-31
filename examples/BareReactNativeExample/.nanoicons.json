@@ -6,13 +6,13 @@
       "outputDir": "./assets/nanoicons"
     },
     {
-      "inputDir": "./assets/material",
+      "inputDir": "../../packages/react-native-nano-icons/test_icons/material_icons/twotone",
       "fontFamily": "MaterialIconsTwotone",
       "outputDir": "./assets/nanoicons"
     },
     {
-      "inputDir": "../../packages/react-native-nano-icons/test_icons/swm_icons/broken",
-      "fontFamily": "SWMIconsBroken",
+      "inputDir": "../../packages/react-native-nano-icons/test_icons/swm_icons/outline",
+      "fontFamily": "SWMIconsOutline",
       "outputDir": "./assets/nanoicons"
     }
   ]
