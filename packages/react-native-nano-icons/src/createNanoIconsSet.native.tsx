@@ -1,25 +1,26 @@
 import { memo, useMemo } from 'react';
-import { PixelRatio, Platform, processColor } from 'react-native';
+import { PixelRatio, UIManager, processColor } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
 import { shallowEqualColor } from './utils/shallowEqualColor';
 import NanoIconViewNative from './specs/NanoIconViewNativeComponent';
+import { createJSIconSet } from './createNanoIconsSet.shared';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
 
 const DEFAULT_ICON_SIZE = 12;
 
+const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
+
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
 ): IconComponent<GM> {
-  const fontBasename = glyphMap.m.f;
+  if (!HAS_NATIVE_IMPL) {
+    return createJSIconSet(glyphMap);
+  }
 
-  const fontReference = Platform.select({
-    android: fontBasename,
-    default: fontBasename,
-  });
-
+  const fontFamilyBasename = glyphMap.m.f;
   const unitsPerEm = glyphMap.m.u;
 
   const resolveEntry = (name: keyof GM['i']): GlyphEntry => {
@@ -77,7 +78,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       return (
         <NanoIconViewNative
           ref={ref}
-          fontFamily={fontReference!}
+          fontFamily={fontFamilyBasename}
           codepoints={codepoints}
           colors={processedColors}
           fontSize={size}
@@ -101,7 +102,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       shallowEqualColor(prev.color, next.color)
   );
 
-  Icon.displayName = `NanoIcon(${fontBasename})`;
+  Icon.displayName = `NanoIcon(${fontFamilyBasename})`;
 
   return Icon;
 }
