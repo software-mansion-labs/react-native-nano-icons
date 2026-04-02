@@ -6,30 +6,26 @@
 <br>
 </div>
 
-# High-performance, build-time icon font generation and rendering for React Native & Expo
+`react-native-nano-icons`
 
-`react-native-nano-icons` **solves two problems:**
+# High-performance icon rendering for React Native & Expo.
 
-1. **CLI tooling gap** — <u>Reliable</u> conversion of SVG files (including complex multicolor ones) into font icons currently requires web-based tools, often paid. This library automates the entire SVG-to-font pipeline at build time, directly in your project — **no manual exports, no leaving your IDE**.
+Nano Icons is the fastest way to render icons in React Native. Point it at a folder of SVGs and get **blazing-fast, native icon rendering with near-zero overhead**. It works great for any app that uses icons, and is at its best when the same small symbols appear many times on screen — row icons in a list, tab bars, inline badges. [See benchmarks →](#-performance)
 
-2. **Rendering performance** — When your app displays **many** small icons (lists, tab bars, buttons, inline text), each SVG rendered via [`react-native-svg`](https://github.com/software-mansion/react-native-svg) inflates a full React component tree per icon, with native views, reconciliation, and [Yoga](http://github.com/facebook/yoga) layout on every mount ([read more](https://swmansion.com/blog/you-might-not-need-react-native-svg-b5c65646d01f)). Nano Icons skip all of that — they are rendered directly via [CoreText](https://developer.apple.com/documentation/coretext/) (iOS) and [Canvas](<https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)>) (Android), resulting in **blazing-fast performance** 🔬⚡️
+## Why not just use…
+`react-native-svg` — It works, but it wasn’t designed for icons. Every SVG component spins up a full React subtree that gets parsed, reconciled, and laid out on each mount. One icon is fine. Fifty in a scrollable list and your UI starts paying for it ([read more](https://swmansion.com/blog/you-might-not-need-react-native-svg-b5c65646d01f)).
 
-**Multicolor SVGs are supported out of the box**: each fill color in your SVG becomes a separate glyph layer, and you can override individual layer colors at runtime via `props`. Since all of that is actually simple text, you can use your beautiful multicolor SVG designs **inline within a regular** `<Text>` **component** without fighting the layout engine.
+`expo-image` and similar — A better choice for complex vector graphics, but each image goes through its own rasterization pipeline. That’s not optimized for drawing many copies of the same small symbol, and the per-image overhead makes it better suited for richer graphics than tiny repeated icons.
+
+`react-native-vector-icons` — Already font-based, so rendering is fast. Great if you’re using a bundled icon pack like MaterialIcons or FontAwesome. But if you need your own custom icons, you’re back to managing font files manually with external tools — exactly the workflow Nano Icons eliminates.
+
+## How Nano Icons works
+At build time, your SVGs are automatically converted into an optimized icon font. At runtime, each icon renders as a single native text glyph stack — bypassing React’s component tree entirely. The result is dramatically less work per icon, especially in screens with many repeated symbols: lists, tab bars, buttons, inline badges.
+Drop your SVGs in a folder. Use them as a fully typed component by name. 
+That’s it 🔬⚡️
 
 ![Nano Icons Platforms Showcase (light mode)](packages/react-native-nano-icons/docs/img/nano-icons-platforms-light.png#gh-light-mode-only)
 ![Nano Icons Platforms Showcase (dark mode)](packages/react-native-nano-icons/docs/img/nano-icons-platforms-inverted.png#gh-dark-mode-only)
-
-### When to use this
-
-- You have many small and static SVG icons repeated across your app (lists, tabs, buttons, menus, etc.) and **you want to make your app as fast as possible**
-- You want static multicolor icons (country flags, brand logos) with per-layer color control and **inline support**
-- You already use font-based icons converted from SVGs using third-party browser apps and are looking for **an automated workflow integrated directly with your project**
-
-### When to use something else
-
-- You want full control over **every** element and attribute in your SVG, i.e. to animate a `path` → [`react-native-svg`](https://github.com/software-mansion/react-native-svg)
-- SVGs with `<mask>` / `<filter>` that do not require **any** per-element attribute control → [`expo-image`](https://docs.expo.dev/versions/latest/sdk/image/)
-- Ready-made icon sets (FontAwesome, Ionicons, etc.) → [`@expo/vector-icons`](https://docs.expo.dev/versions/latest/sdk/vector-icons/)
 
 ---
 
@@ -40,7 +36,7 @@
 - [🎨 Multicolor Icons](#-multicolor-icons)
 - [📊 Performance](#-performance)
 - [⚠️ Known Limitations](#%EF%B8%8F-known-limitations)
-- [🔧 How It Works](#-how-it-works)
+- [🔧 Font Generation Pipeline](#-how-it-works)
 - [🤝 Contributing](#-contributing)
 
 ---
@@ -179,7 +175,7 @@ export default function App() {
 
       {/* Icons work inline with text */}
       <Text>
-        Tap <Icon name="heart" size={14} color="tomato" /> to save
+        Tap <Icon name="heart" size={12} color="tomato" /> to save
       </Text>
     </View>
   );
@@ -215,18 +211,18 @@ This makes the library well-suited for multicolor icons like country flags, bran
 
 ```TypeScript
 // Renders with the original SVG colors
-<Icon name="flag-us" size={32} />
+<Icon name="SWM_logo" size={52} />
 
 // Override individual layer colors
-<Icon name="flag-us" size={32} color={["navy", "white", "crimson"]} />
+<Icon name="SWM_logo" size={52} color={["#FFFFFF", "#001A72"]} />
 
 <Text>
-  US flag <Icon name="usFlag" size={32} /> Inline
+  Logo <Icon name="SWM_logo" size={32} /> Inline
 </Text>
 ```
 
 <div align="center">
-  <img alt="Multicolor icon example showing per-layer color overrides" src="packages/react-native-nano-icons/docs/img/nano-icon-color-showcase.png" height="200">
+  <img alt="Multicolor icon example showing per-layer color overrides" src="packages/react-native-nano-icons/docs/img/nano-icon-color-showcase.png" height="250">
 </div>
 <br>
 
@@ -237,6 +233,8 @@ This makes the library well-suited for multicolor icons like country flags, bran
 - **Omitted** — uses the original SVG colors stored in the glyphmap.
 
 An SVG with many distinct colors (e.g., a detailed vector image with 50 colors) produces at least 50 glyph layers. Each layer is a lightweight text glyph, so this is fine for typical icons (3–10 colors). For highly complex illustrations with dozens of colors, consider using `expo-image` instead.
+
+Since all of that is actually simple text, you can use your beautiful multicolor SVG designs **inline within a regular** `<Text>` **component** without fighting the layout engine.
 
 > [!IMPORTANT]
 > You should always verify your icons visually.
@@ -278,7 +276,7 @@ The chart shows time in milliseconds across three phases: **JS Thread** (JavaScr
 
 ---
 
-## 🔧 How It Works
+## 🔧 Font Generation Pipeline
 
 ![Nano Icons Pipeline (light mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png#gh-light-mode-only)
 ![Nano Icons Pipeline (dark mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-inverted.png#gh-dark-mode-only)
@@ -291,7 +289,7 @@ At build time, the pipeline processes your SVG directory through four stages:
 4. **Font compilation** — Layers are compiled into a standard `.ttf` font file, with each layer mapped to a private-use Unicode codepoint.
 5. **Glyphmap generation** — A compact `.glyphmap.json` is created, mapping icon names to their codepoints, default colors, and metrics.
 
-At runtime, the native component stacks glyph layers at the same position — one `drawGlyphs` call per layer via CoreText (iOS) or `drawText` via Canvas (Android). On web and Expo Go, a pure `react-native` fallback uses stacked `<Text>` elements.
+At runtime, the native component stacks glyph layers at the same position — one `drawGlyphs` call per layer via [CoreText](https://developer.apple.com/documentation/coretext/) (iOS) or `drawText` via [Canvas](<https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)>) (Android). On web and Expo Go, a pure `react-native` fallback uses stacked `<Text>` elements.
 
 ---
 
