@@ -8,46 +8,78 @@
 
 # High-performance, build-time icon font generation and rendering for React Native & Expo
 
-`react-native-nano-icons` automates the conversion of SVG directories into optimized, **multi-color-aware** native fonts and strictly typed TypeScript component factories. It leverages a WebAssembly-powered [`skia/pathops`](https://github.com/google/skia/tree/main/src/pathops) binary build pipeline to recalculate your vectors into a glyph-friendly manner, ensuring **pixel-perfect geometry and zero runtime overhead**.
-<br><br>
-NanoIcons are rendered directly via [CoreText](https://developer.apple.com/documentation/coretext/) (iOS) and [Canvas](<https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)>) (Android), bypassing redundant [Yoga](http://github.com/facebook/yoga) text layout calculations, resulting in **blazing-fast performance** 🔬⚡️
+`react-native-nano-icons` **solves two problems:**
 
-![Nano Icons Flow Graph (light mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png#gh-light-mode-only)
-![Nano Icons Flow Graph (dark mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-inverted.png#gh-dark-mode-only)
+1. **CLI tooling gap** — <u>Reliable</u> conversion of SVG files (including complex multicolor ones) into font icons currently requires web-based tools, often paid. This library automates the entire SVG-to-font pipeline at build time, directly in your project — **no manual exports, no leaving your IDE**.
 
-<details>
-<summary><strong>Performance Benchmarks</strong></summary>
+2. **Rendering performance** — When your app displays **many** small icons (lists, tab bars, buttons, inline text), each SVG rendered via [`react-native-svg`](https://github.com/software-mansion/react-native-svg) inflates a full React component tree per icon, with native views, reconciliation, and [Yoga](http://github.com/facebook/yoga) layout on every mount ([read more](https://swmansion.com/blog/you-might-not-need-react-native-svg-b5c65646d01f)). Nano Icons skip all of that — they are rendered directly via [CoreText](https://developer.apple.com/documentation/coretext/) (iOS) and [Canvas](<https://developer.android.com/reference/android/graphics/Canvas#drawText(java.lang.String,%20float,%20float,%20android.graphics.Paint)>) (Android), resulting in **blazing-fast performance** 🔬⚡️
 
-The following picture represents the average time taken to render the same 1k SVG icon set input in a simple ScrollView using different libraries across both JS and UI (Main) thread for iOS (26.2) release app version. Same testcase results in similar output for most of the android devices depending on their hardware. Nano Icons present a significant adventage over similar libraries.
+**Multicolor SVGs are supported out of the box**: each fill color in your SVG becomes a separate glyph layer, and you can override individual layer colors at runtime via `props`. Since all of that is actually simple text, you can use your beautiful multicolor SVG designs **inline within a regular** `<Text>` **component** without fighting the layout engine.
 
-<div align="center">
-  <img alt="Nano Icons Prformance Benchmark Comparison Graph" src="packages/react-native-nano-icons/docs/img/nano-icons-benchmarks.png" width="700">
-</div>
+![Nano Icons Platforms Showcase (light mode)](packages/react-native-nano-icons/docs/img/nano-icons-platforms-light.png#gh-light-mode-only)
+![Nano Icons Platforms Showcase (dark mode)](packages/react-native-nano-icons/docs/img/nano-icons-platforms-inverted.png#gh-dark-mode-only)
 
-</details>
+### When to use this
 
+- You have many small and static SVG icons repeated across your app (lists, tabs, buttons, menus, etc.) and **you want to make your app as fast as possible**
+- You want static multicolor icons (country flags, brand logos) with per-layer color control and **inline support**
+- You already use font-based icons converted from SVGs using third-party browser apps and are looking for **an automated workflow integrated directly with your project**
+
+### When to use something else
+
+- You want full control over **every** element and attribute in your SVG, i.e. to animate a `path` → [`react-native-svg`](https://github.com/software-mansion/react-native-svg)
+- SVGs with `<mask>` / `<filter>` that do not require **any** per-element attribute control → [`expo-image`](https://docs.expo.dev/versions/latest/sdk/image/)
+- Ready-made icon sets (FontAwesome, Ionicons, etc.) → [`@expo/vector-icons`](https://docs.expo.dev/versions/latest/sdk/vector-icons/)
 
 ---
 
-<h2>🧩 Platforms Supported <a href="https://reactnative.dev/architecture/landing-page"><sup><sub>(New Arch Only)</sub></sup></a></h2>
+## Table of Contents
 
+- [🧩 Platforms Supported](#-platforms-supported)
+- [🚀 Quick Start](#-quick-start)
+- [🎨 Multicolor Icons](#-multicolor-icons)
+- [📊 Performance](#-performance)
+- [⚠️ Known Limitations](#%EF%B8%8F-known-limitations)
+- [🔧 How It Works](#-how-it-works)
+- [🤝 Contributing](#-contributing)
+
+---
+
+## 🧩 Platforms Supported
+
+- [x] React Native 0.74+ [(New Arch Only)](https://reactnative.dev/architecture/landing-page)
 - [x] iOS 15.1+
 - [x] Android API 24+
 - [x] Web
-- [ ] Expo Go App
+- [x] Expo Go
 
+---
 
-## 🚀 Usage
+## 🚀 Quick Start
 
-### 1. Installation
+### 1. Install
 
 ```bash
 npm install react-native-nano-icons
 ```
 
-### 2. Configuration
+### 2. Add your SVGs
 
-#### 2.1. Expo
+Create a directory for your icon set and place your `.svg` files in it. Only `*.svg` format is supported.
+
+```
+assets/icons/my-icons/
+├── heart.svg
+├── search.svg
+├── flag-us.svg
+└── ...
+```
+
+File names become icon names: `heart.svg` is rendered with `<Icon name="heart" />`.
+
+### 3. Configure
+
+#### Expo (Development build)
 
 The library uses an Expo Config Plugin to hook into the prebuild phase. This automatically generates the `.ttf` and corresponding `glyphmap` files and links them to the native iOS/Android project's assets.
 
@@ -62,7 +94,7 @@ The library uses an Expo Config Plugin to hook into the prebuild phase. This aut
         {
           "iconSets": [
             {
-              "inputDir": "./assets/icons/brand"
+              "inputDir": "./assets/icons/my-icons"
             }
           ]
         }
@@ -94,24 +126,24 @@ The plugin accepts an object with an `iconSets` array, allowing you to generate 
   </details>
   </details>
 
-#### 2.2 Bare React Native/React Native Web (no Expo)
+#### Bare React Native / React Native Web / Expo Go
 
-Bare apps don’t have a prebuild step, so you run the same pipeline via the CLI yourself:
+Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 
-1. **Config** – Add a `.nanoicons.json` with the same `iconSets` shape as the Expo plugin (see "All iconSets Entry Plugin Options" above) to your project.
+1. **Config** – Add a `.nanoicons.json` with the same `iconSets` shape as the Expo plugin (see options above).
    <details>
     <summary>.nanoicons.json example</summary>
-    
-    ```JSON
-    {
-      "iconSets": [
-        {
-          "inputDir": "./assets/icons/brand"
-        }
-      ]
-    }
-    ```
-    
+
+   ```JSON
+   {
+     "iconSets": [
+       {
+         "inputDir": "./assets/icons/my-icons"
+       }
+     ]
+   }
+   ```
+
     </details>
 
 2. **Build and link** – From the app root run:
@@ -126,40 +158,39 @@ Bare apps don’t have a prebuild step, so you run the same pipeline via the CLI
 > Run `EXPO_DEBUG=1 npx expo prebuild` or `npx react-native-nano-icons --verbose` to get font build-time logs.
 
 > [!NOTE]
-> Linking the font on web is just as straightforward as always and does not require any actions other than the usual font addition.
+> Linking the font on web is just as straightforward as always and does not require any actions other than the usual web font addition.
+>
+> In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/). [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
 
-### 3. Component Usage
+### 4. Use
 
 ```TypeScript
 import { View, Text } from 'react-native'
 import { createNanoIconSet } from "react-native-nano-icons";
-// auto-generated during build-time in outputDir
-import glyphMap from "./assets/icons/nanoicons/brand.glyphmap.json";
+// auto-generated during build in outputDir
+import glyphMap from "./assets/icons/nanoicons/my-icons.glyphmap.json";
 
-export const BrandIcon = createNanoIconSet(glyphMap);
+export const Icon = createNanoIconSet(glyphMap);
 
 export default function App() {
   return (
     <View>
-      // Renders the icon with its original multi-color layers from the SVG
-      <BrandIcon name="logo-light" size={32} />
+      <Icon name="heart" size={24} color="tomato" />
 
-      // Overrides all color layers with the provided colors respectively
-      <BrandIcon name="logo-light" size={24} color={["blue", "#ffffff", "#fc2930"]} />
-
-      // Renders icon inline within a paragraph
+      {/* Icons work inline with text */}
       <Text>
-        Welcome to <BrandIcon name="logo-light" size={12} /> app!
+        Tap <Icon name="heart" size={14} color="tomato" /> to save
       </Text>
     </View>
   );
 }
 ```
-**Props:**
+
+#### Props
 
 | Prop                 | Type                         | Default           | Description                                                                                                                                  |
 | -------------------- | ---------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`               | `string`                     | **(required)**    | Icon name — **corresponds to its original SVG filename**. Fully typed from the glyphmap.                                                     |
+| `name`               | `string`                     | **(required)**    | Icon name — corresponds to the original SVG filename. Fully typed from the glyphmap.                                                         |
 | `size`               | `number`                     | `12`              | Icon size in points.                                                                                                                         |
 | `color`              | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
 | `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                                          |
@@ -170,30 +201,103 @@ export default function App() {
 | `testID`             | `string`                     | —                 | Test identifier for e2e testing frameworks.                                                                                                  |
 | `ref`                | `Ref<View>`                  | —                 | Ref to the underlying native view.                                                                                                           |
 
-Your color icon can have as many colors as your original SVG has; therefore, you should experiment to establish which element of the array corresponds to the layer you aim to change the color of. <br>
-If the icon is single-color by design (which results in creating a single glyph at build time), you can either pass a direct string or the array, but only the first element is considered, and if the `color` array is too short — the last color is repeated.
+### 5. Font Regeneration
+
+**The build script detects changes in path and contents of the SVGs** in your input directory based on a fingerprint hash. If anything changes (file names, SVG attributes/nodes) or the output font/glyphmap files are deleted, the icon set is regenerated during `prebuild` or manual script run.
+
+---
+
+## 🎨 Multicolor Icons
+
+At build time, each SVG is split by fill color — every distinct color becomes a separate glyph layer in the font. At render time, layers are stacked on top of each other to reconstruct the original image.
+
+This makes the library well-suited for multicolor icons like country flags, brand logos, or any icon with distinct color regions:
+
+```TypeScript
+// Renders with the original SVG colors
+<Icon name="flag-us" size={32} />
+
+// Override individual layer colors
+<Icon name="flag-us" size={32} color={["navy", "white", "crimson"]} />
+
+<Text>
+  US flag <Icon name="usFlag" size={32} /> Inline
+</Text>
+```
+
+<div align="center">
+  <img alt="Multicolor icon example showing per-layer color overrides" src="packages/react-native-nano-icons/docs/img/nano-icon-color-showcase.png" height="200">
+</div>
+<br>
+
+**Color prop behavior:**
+
+- **Single string** — applies to all layers.
+- **Array** — each element maps to a layer. If the array is shorter than the number of layers, the last color is repeated.
+- **Omitted** — uses the original SVG colors stored in the glyphmap.
+
+An SVG with many distinct colors (e.g., a detailed vector image with 50 colors) produces at least 50 glyph layers. Each layer is a lightweight text glyph, so this is fine for typical icons (3–10 colors). For highly complex illustrations with dozens of colors, consider using `expo-image` instead.
 
 > [!IMPORTANT]
 > You should always verify your icons visually.
 
-### 4. Font Regeneration
-
-**The script detects changes in path and contents of the SVGs** in your input directory based on a fingerprint hash. Had anything changed (i.e. file names, svg attributes/nodes), or the output font/glyphmap files had been deleted, a given icon-set is regenerated during `prebuild` or manual script run.
-
 ---
 
-## Limitations
+## 📊 Performance
+
+Native text engines are among the most optimized rendering pipelines in any OS. Rendering a glyph from a `.ttf` is synchronous and memory-efficient — unlike SVG, which requires XML parsing, native view tree creation, and Yoga layout calculation per icon instance.
+
+We measured the average time to render a screen with identical set of 1,000 different multicolor icons in a ScrollView on iOS (release build).
+
+| Library                                                                         | What it is                | Rendering approach               | Multicolor                                                                                                                           |
+| :------------------------------------------------------------------------------ | :------------------------ | :------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| [`react-native-svg`](https://github.com/software-mansion/react-native-svg)      | Full SVG renderer         | Native view tree per icon        | Yes (full SVG spec)                                                                                                                  |
+| [`expo-image`](https://docs.expo.dev/versions/latest/sdk/image/)                | Universal image component | Async image decode + cache       | N/A (raster)                                                                                                                         |
+| [`@expo/vector-icons`](https://docs.expo.dev/versions/latest/sdk/vector-icons/) | Icon fonts via IcoMoon    | Color Table Font glyph rendering | Limited - [not supported on Android API level below 33](https://developer.android.com/about/versions/13/features#color-vector-fonts) |
+| `react-native-nano-icons`                                                       | Build-time SVG-to-font    | Font glyph rendering (layered)   | Yes (full API support)                                                                                                               |
 
 > [!NOTE]
-> `<filter>` and `<mask>` are not yet supported, due to native fonts' glyph limitations.
-> In order to leverage those features, use [`react-native-svg`](https://github.com/software-mansion/react-native-svg) or [`expo-image`](https://docs.expo.dev/versions/latest/sdk/image/)
-> 
+> These libraries serve different primary purposes. `expo-image` is the go-to image library for photos and remote assets. `@expo/vector-icons` ships with many popular icon sets built in. `react-native-svg` handles the full SVG specification with fine-grained attribute control. We compare them here specifically on the use case of rendering many small, static icons.
+
+<div align="center">
+  <img alt="Performance benchmark: time to render 1k icons" src="packages/react-native-nano-icons/docs/img/nano-icons-benchmarks.png" width="900">
+</div>
+<br>
+
+The chart shows time in milliseconds across three phases: **JS Thread** (JavaScript execution), **UI Thread** (native rendering on the main thread), and **Microhang** (main thread stall during initial load that can cause visible UI freezes — see [Apple's documentation on hangs](https://developer.apple.com/documentation/xcode/understanding-hangs-in-your-app)).
+
+> [!NOTE]
+> For full methodology, device specifications, and reproduction steps see [BENCHMARKS.md](packages/react-native-nano-icons/docs/BENCHMARKS.md).
+
 ---
 
-## Contributing
+## ⚠️ Known Limitations
 
-The main purpose of this repository is to fill the gap in CLI tooling around proper SVG->font conversion without having to leave your IDE, and to ensure the most performant font icon rendering possible.
-<br>We want to make contributing to this project as easy and transparent as possible, and we are grateful to the community for contributing bug fixes and improvements. Read below to learn how you can take part in improving `react-native-nano-icons`.
+- SVG `<filter>` and `<mask>` elements are not supported — font glyphs cannot represent these effects.
+- Only `*.svg` input files are supported.
+
+---
+
+## 🔧 How It Works
+
+![Nano Icons Pipeline (light mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png#gh-light-mode-only)
+![Nano Icons Pipeline (dark mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-inverted.png#gh-dark-mode-only)
+
+At build time, the pipeline processes your SVG directory through four stages:
+
+1. **SVG optimization** - Simplifies the SVG structure removing unnecessary tags for further processing.
+2. **Geometry flattening** — Transforms, clip paths, and overlapping shapes are resolved into simple path-only geometry using a WebAssembly build of [`Skia/pathops`](https://github.com/google/skia/tree/main/src/pathops).
+3. **Color layer extraction** — Each distinct fill color in an SVG is separated into its own layer.
+4. **Font compilation** — Layers are compiled into a standard `.ttf` font file, with each layer mapped to a private-use Unicode codepoint.
+5. **Glyphmap generation** — A compact `.glyphmap.json` is created, mapping icon names to their codepoints, default colors, and metrics.
+
+At runtime, the native component stacks glyph layers at the same position — one `drawGlyphs` call per layer via CoreText (iOS) or `drawText` via Canvas (Android). On web and Expo Go, a pure `react-native` fallback uses stacked `<Text>` elements.
+
+---
+
+## 🤝 Contributing
+
+We want to make contributing to this project as easy and transparent as possible, and we are grateful to the community for contributing bug fixes and improvements. Read below to learn how you can take part in improving `react-native-nano-icons`.
 
 <details>
 <summary>Repo Navigation</summary>
@@ -210,10 +314,9 @@ This repository is a yarn workspaces monorepo containing the library package and
 - **Expo app:** [`examples/ExpoExample/`](examples/ExpoExample/)
 </details>
 
-
 #### Code of Conduct
-We adopted a Code of Conduct that we expect project participants to adhere to. Please read the [full text](CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
+We adopted a Code of Conduct that we expect project participants to adhere to. Please read the [full text](CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
 ---
 

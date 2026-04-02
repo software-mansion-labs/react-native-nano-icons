@@ -14610,6 +14610,49 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nano-icons-benchmarking@workspace:examples/NanoIconsBenchmarking":
+  version: 0.0.0-use.local
+  resolution: "nano-icons-benchmarking@workspace:examples/NanoIconsBenchmarking"
+  dependencies:
+    "@babel/core": "npm:^7.25.2"
+    "@babel/preset-env": "npm:^7.25.3"
+    "@babel/runtime": "npm:^7.29.2"
+    "@expo/vector-icons": "npm:^15.0.2"
+    "@react-native-community/cli": "npm:20.1.0"
+    "@react-native-community/cli-platform-android": "npm:20.1.0"
+    "@react-native-community/cli-platform-ios": "npm:20.1.0"
+    "@react-native/babel-preset": "npm:0.84.0"
+    "@react-native/eslint-config": "npm:0.84.0"
+    "@react-native/metro-config": "npm:0.84.0"
+    "@react-native/new-app-screen": "npm:0.84.0"
+    "@react-native/typescript-config": "npm:0.84.0"
+    "@react-navigation/elements": "npm:^2.9.12"
+    "@react-navigation/native": "npm:^7.2.0"
+    "@react-navigation/native-stack": "npm:^7.14.7"
+    "@types/jest": "npm:^29.5.13"
+    "@types/react": "npm:^19.2.0"
+    "@types/react-test-renderer": "npm:^19.1.0"
+    babel-preset-expo: "npm:~55.0.8"
+    eslint: "npm:^8.19.0"
+    expo: "npm:~55.0.8"
+    expo-font: "npm:^55.0.5-canary-20260328-bdc6273"
+    expo-image: "npm:~55.0.6"
+    expo-modules-core: "npm:^55.0.17"
+    jest: "npm:^29.6.3"
+    prettier: "npm:2.8.8"
+    react: "npm:19.2.0"
+    react-native: "npm:0.83.2"
+    react-native-nano-icons: "workspace:*"
+    react-native-release-profiler: "npm:^0.4.4"
+    react-native-safe-area-context: "npm:~5.6.2"
+    react-native-screens: "npm:~4.23.0"
+    react-native-svg: "npm:15.15.3"
+    react-native-svg-transformer: "npm:^1.5.3"
+    react-test-renderer: "npm:19.2.3"
+    typescript: "npm:^5.8.3"
+  languageName: unknown
+  linkType: soft
+
 "nanoid@npm:^3.3.11, nanoid@npm:^3.3.7, nanoid@npm:^3.3.8":
   version: 3.3.11
   resolution: "nanoid@npm:3.3.11"
