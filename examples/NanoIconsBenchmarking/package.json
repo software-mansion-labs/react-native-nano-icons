@@ -1,0 +1,56 @@
+{
+  "name": "nano-icons-benchmarking",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "cd ios && bundle install && bundle exec pod update",
+    "android": "react-native run-android",
+    "ios": "yarn build && react-native run-ios",
+    "lint": "eslint .",
+    "start": "react-native start",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native/new-app-screen": "0.84.0",
+    "@react-navigation/elements": "^2.9.12",
+    "@react-navigation/native": "^7.2.0",
+    "@react-navigation/native-stack": "^7.14.7",
+    "expo": "~55.0.8",
+    "expo-font": "^55.0.5-canary-20260328-bdc6273",
+    "expo-image": "~55.0.6",
+    "expo-modules-core": "^55.0.17",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-nano-icons": "workspace:*",
+    "react-native-release-profiler": "^0.4.4",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-svg": "15.15.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/runtime": "^7.29.2",
+    "@react-native-community/cli": "20.1.0",
+    "@react-native-community/cli-platform-android": "20.1.0",
+    "@react-native-community/cli-platform-ios": "20.1.0",
+    "@react-native/babel-preset": "0.84.0",
+    "@react-native/eslint-config": "0.84.0",
+    "@react-native/metro-config": "0.84.0",
+    "@react-native/typescript-config": "0.84.0",
+    "@types/jest": "^29.5.13",
+    "@types/react": "^19.2.0",
+    "@types/react-test-renderer": "^19.1.0",
+    "babel-preset-expo": "~55.0.8",
+    "eslint": "^8.19.0",
+    "jest": "^29.6.3",
+    "prettier": "2.8.8",
+    "react-native-svg-transformer": "^1.5.3",
+    "react-test-renderer": "19.2.3",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">= 22.11.0"
+  }
+}

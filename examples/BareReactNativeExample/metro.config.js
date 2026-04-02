@@ -17,6 +17,10 @@ const nanoIconsNodeModules = path.resolve(
 // Optional: keep Bare from crawling into Expo example
 // (adjust folder name if your Expo example directory is different)
 const expoExampleRoot = path.resolve(repoRoot, 'examples/ExpoExample');
+const nanoIconsBenchmarkingRoot = path.resolve(
+  repoRoot,
+  'examples/NanoIconsBenchmarking',
+);
 
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -27,25 +31,7 @@ const baseBlockList = Array.isArray(defaultConfig.resolver.blockList)
   ? defaultConfig.resolver.blockList
   : [defaultConfig.resolver.blockList].filter(Boolean);
 
-const { assetExts, sourceExts } = defaultConfig.resolver;
-
-const config = {
-  transformer: {
-    babelTransformerPath: require.resolve(
-      'react-native-svg-transformer/react-native',
-    ),
-    unstable_allowRequireContext: true,
-  },
-  resolver: {
-    assetExts: assetExts.filter(ext => ext !== 'svg'),
-    sourceExts: [...sourceExts, 'svg'],
-  },
-};
-
-// const rnsvgConfig = mergeConfig(defaultConfig, config);
-
 module.exports = mergeConfig(defaultConfig, {
-  // module.exports = mergeConfig(rnsvgConfig, {
   projectRoot: appRoot,
 
   // Metro must be able to watch+hash the patched dependency files
@@ -90,6 +76,7 @@ module.exports = mergeConfig(defaultConfig, {
     // Optional: prevent Metro from scanning the Expo example
     blockList: baseBlockList.concat([
       new RegExp(`^${escapeRegExp(expoExampleRoot)}[/\\\\].*`),
+      new RegExp(`^${escapeRegExp(nanoIconsBenchmarkingRoot)}[/\\\\].*`),
     ]),
 
     unstable_enableSymlinks: true,

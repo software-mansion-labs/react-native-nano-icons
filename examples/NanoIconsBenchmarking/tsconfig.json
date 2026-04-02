@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "react-native-nano-icons": [
+        "../../packages/react-native-nano-icons/src/index"
+      ],
+      "react-native-nano-icons/*": [
+        "../../packages/react-native-nano-icons/src/*"
+      ]
+    },
+    "resolveJsonModule": true
+  },
+  "exclude": ["node_modules", "ios", "android", "metro.config.js"]
+}

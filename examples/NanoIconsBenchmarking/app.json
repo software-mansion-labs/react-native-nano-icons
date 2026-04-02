@@ -1,0 +1,7 @@
+{
+  "name": "NanoIconsBenchmarking",
+  "displayName": "NanoIconsBenchmarking",
+  "plugins": [
+    "expo-image"
+  ]
+}
