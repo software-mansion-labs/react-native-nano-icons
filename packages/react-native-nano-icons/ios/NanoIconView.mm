@@ -41,6 +41,12 @@ using namespace facebook::react;
   return concreteComponentDescriptorProvider<NanoIconViewComponentDescriptor>();
 }
 
+// Leaf view — skip the expensive recursive clipping walk (was 27% of CPU)
+- (void)updateClippedSubviewsWithClipRect:(__unused CGRect)clipRect
+                           relativeToView:(__unused UIView *)clipView
+{
+}
+
 - (void)_releaseCachedColors
 {
   for (CGColorRef c : _cachedCGColors) {
@@ -87,16 +93,18 @@ using namespace facebook::react;
 
   // Recreate font if fontFamily or fontSize changed
   BOOL fontChanged = NO;
+  BOOL needsRedraw = NO;
   if (oldViewProps.fontFamily != newViewProps.fontFamily || oldViewProps.fontSize != newViewProps.fontSize) {
+    NSString *family = [NSString stringWithUTF8String:newViewProps.fontFamily.c_str()];
     if (_font) {
       CFRelease(_font);
       _font = NULL;
     }
-    NSString *family = [NSString stringWithUTF8String:newViewProps.fontFamily.c_str()];
     _fontFamily = family;
     _fontSize = newViewProps.fontSize;
     _font = CTFontCreateWithName((__bridge CFStringRef)family, _fontSize, NULL);
     fontChanged = YES;
+    needsRedraw = YES;
     _metricsValid = NO;
   }
 
@@ -122,6 +130,7 @@ using namespace facebook::react;
         _glyphs[i] = glyphPair[0];
       }
     }
+    needsRedraw = YES;
   }
 
   // Update colors
@@ -132,10 +141,13 @@ using namespace facebook::react;
       _colors[i] = (uint32_t)colors[i];
     }
     [self _rebuildCachedColors];
+    needsRedraw = YES;
   }
 
   [super updateProps:props oldProps:oldProps];
-  [self setNeedsDisplay];
+  if (needsRedraw) {
+    [self setNeedsDisplay];
+  }
 }
 
 - (void)layoutSubviews

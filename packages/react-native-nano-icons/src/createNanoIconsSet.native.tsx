@@ -13,6 +13,18 @@ const DEFAULT_ICON_SIZE = 12;
 
 const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
 
+// Shared processColor cache — avoids redundant color parsing for repeated
+// color strings like "black", "rgba(0,0,0,0.3)" across thousands of icons
+const processedColorCache = new Map<string, number>();
+function cachedProcessColor(color: string): number {
+  let result = processedColorCache.get(color);
+  if (result === undefined) {
+    result = (processColor(color) ?? 0xff000000) as number;
+    processedColorCache.set(color, result);
+  }
+  return result;
+}
+
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
 ): IconComponent<GM> {
@@ -29,6 +41,29 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       [[63, 'black']],
     ]) as GlyphEntry;
   };
+
+  // Pre-compute per-icon static data (codepoints, default colors) once at set creation
+  // Avoids layers.map() + processColor per icon mount
+  const codepointsCache = new Map<string, readonly number[]>();
+  const defaultColorsCache = new Map<string, readonly number[]>();
+
+  function getCodepoints(name: string, layers: GlyphEntry[1]): readonly number[] {
+    let cp = codepointsCache.get(name);
+    if (!cp) {
+      cp = layers.map(([c]) => c);
+      codepointsCache.set(name, cp);
+    }
+    return cp;
+  }
+
+  function getDefaultColors(name: string, layers: GlyphEntry[1]): readonly number[] {
+    let colors = defaultColorsCache.get(name);
+    if (!colors) {
+      colors = layers.map(([, srcColor]) => cachedProcessColor(srcColor ?? 'black'));
+      defaultColorsCache.set(name, colors);
+    }
+    return colors;
+  }
 
   const Icon = memo(
     ({
@@ -48,27 +83,24 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       const scaledSize = size * fontScale;
       const width = (adv / unitsPerEm) * scaledSize;
 
-      const colorArray = Array.isArray(color) ? color : [color];
-      const lastPaletteColor = colorArray?.length
-        ? colorArray[colorArray.length - 1]
-        : undefined;
+      const nameStr = name as string;
+      const codepoints = getCodepoints(nameStr, layers);
 
-      const codepoints = useMemo(
-        () => layers.map(([cp]) => cp),
-
-        [name]
-      );
-
-      const processedColors = useMemo(
-        () =>
-          layers.map(([, srcColor], i) => {
-            const layerColor =
-              colorArray?.[i] ?? lastPaletteColor ?? srcColor ?? 'black';
-            return (processColor(layerColor) ?? 0xff000000) as number;
-          }),
-
-        [name, color]
-      );
+      const processedColors = useMemo(() => {
+        // Fast path: no custom color — use pre-computed defaults
+        if (color === undefined || color === null) {
+          return getDefaultColors(nameStr, layers);
+        }
+        const colorArray = Array.isArray(color) ? color : [color];
+        const lastPaletteColor = colorArray.length
+          ? colorArray[colorArray.length - 1]
+          : undefined;
+        return layers.map(([, srcColor], i) => {
+          const layerColor =
+            colorArray[i] ?? lastPaletteColor ?? srcColor ?? 'black';
+          return cachedProcessColor(layerColor as string);
+        });
+      }, [nameStr, color]);
 
       const nativeStyle = useMemo(
         () => [{ width, height: scaledSize }, style],
