@@ -1,6 +1,5 @@
 import { JSDOM } from 'jsdom';
 import { parseColor } from '../../utils/parse';
-import type { PathKitModule } from '../types.js';
 
 export type ParsedFlatSvg = {
   viewBox: [number, number, number, number];
@@ -138,91 +137,55 @@ export function validateSvg(content: string): SvgValidation {
   return { valid: true };
 }
 
-// ensure the svg has a xmlns attribute
-export function preprocessSvg(content: string): string {
-  if (/xmlns\s*=/.test(content)) return content;
-  return content.replace(/<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
-}
-
 /**
- * Split an SVG `d` string into individual subpath `d` strings.
- * Splits on `Z` followed by `M` (case-insensitive).
- */
-export function splitSubpaths(d: string): string[] {
-  return d
-    .split(/Z\s*(?=M)/i)
-    .map((s) => (s.endsWith('Z') || s.endsWith('z') ? s : s + 'Z'))
-    .filter((s) => s.replace(/[Zz\s]/g, '').length > 0);
-}
-
-export type EvenoddResolution = {
-  /** Individual contour `d` strings (split from the evenodd path). */
-  contours: string[];
-};
-
-/**
- * Extract fill-rule="evenodd" paths from the raw SVG and split each into
- * individual contour `d` strings.
+ * Extract the original `d` strings of evenodd paths from the raw SVG
+ * BEFORE picosvg processes it. Picosvg's simplify (via our PathKit shim)
+ * can drop contours from multi-subpath evenodd paths, so we preserve
+ * the originals and apply our own winding conversion later.
  *
- * Font glyphs use nonzero winding, and the font creation tools
- * (svgicons2svgfont → svg2ttf) don't reliably handle multi-subpath glyphs
- * with complex hole arrangements.  Splitting into single-contour layers
- * guarantees each glyph is a simple filled shape.
- *
- * Returns one entry per evenodd path (in document order).
+ * Returns one `d` string per evenodd path, in document order.
  */
-export function extractEvenoddPaths(
-  svgContent: string,
-  _PathKit: PathKitModule
-): EvenoddResolution[] {
+export function extractOriginalEvenoddDs(svgContent: string): string[] {
   if (!/<[^>]*fill-rule\s*=\s*["']evenodd/i.test(svgContent)) {
     return [];
   }
 
   const dom = new JSDOM(svgContent, { contentType: 'image/svg+xml' });
   const doc = dom.window.document;
-  const results: EvenoddResolution[] = [];
+  const results: string[] = [];
 
-  const pathEls = doc.querySelectorAll('path[fill-rule="evenodd"]');
+  const pathEls = doc.querySelectorAll(
+    'path[fill-rule="evenodd"], path[clip-rule="evenodd"]'
+  );
   for (const el of pathEls) {
     const d = el.getAttribute('d');
-    if (!d) continue;
-
-    const contours = splitSubpaths(d);
-    if (contours.length > 1) {
-      results.push({ contours });
-    }
+    if (d) results.push(d);
   }
-
   return results;
 }
 
-
 /**
- * Replace corrupted evenodd paths with individual single-contour paths.
- * The first (largest) contour keeps the original fill; the remaining "hole"
- * contours inherit the fill of the layer directly below, since they represent
- * areas where the background should show through.
- *
- * Mutates `paths` in place.
+ * Replace picosvg's (potentially damaged) evenodd path data with the
+ * preserved originals. Matches by position: the Nth evenodd path in
+ * the parsed output gets the Nth original `d` string.
  */
-export function spliceEvenoddContours(
+export function restoreOriginalEvenoddDs(
   paths: ParsedFlatSvg['paths'],
-  evenoddResolved: EvenoddResolution[]
+  originalDs: string[]
 ): void {
-  let ri = 0;
-  for (let i = 0; i < paths.length && ri < evenoddResolved.length; i++) {
-    if (paths[i]!.fillRule === 'evenodd') {
-      const { contours } = evenoddResolved[ri]!;
-      const fill = paths[i]!.fill;
-      const bgFill = i > 0 ? paths[i - 1]!.fill : fill;
-      const contourPaths = contours.map((d, ci) => ({
-        d,
-        fill: ci === 0 ? fill : bgFill,
-      }));
-      paths.splice(i, 1, ...contourPaths);
-      i += contours.length - 1;
-      ri++;
+  let oi = 0;
+  for (const p of paths) {
+    if (p.fillRule === 'evenodd' && oi < originalDs.length) {
+      p.d = originalDs[oi]!;
+      oi++;
     }
   }
 }
+
+// ensure the svg has a xmlns attribute
+export function preprocessSvg(content: string): string {
+  if (/xmlns\s*=/.test(content)) return content;
+  return content.replace(/<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
+}
+
+

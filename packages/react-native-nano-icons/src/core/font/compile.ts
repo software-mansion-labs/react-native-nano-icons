@@ -1,42 +1,56 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { once } from 'node:events';
-import { type Transform } from 'node:stream';
 
 import { forceTtfMetrics } from './metrics.js';
 import svg2ttf from 'svg2ttf';
-import { parseCodepointFromFilename } from '../../utils/parse.js';
 
-async function writeGlyphStreamToFont(
-  fontStream: Transform,
-  svgPath: string,
-  filename: string
-): Promise<void> {
-  const codepoint = parseCodepointFromFilename(filename);
-  const name = path.basename(filename, '.svg');
+export type FontGlyph = {
+  codepoint: number;
+  advanceWidth: number;
+  /** Path data already in font coordinates (Y-up, placement applied). */
+  d: string;
+};
 
-  return new Promise((resolve, reject) => {
-    const glyphStream = fs.createReadStream(svgPath);
-
-    (glyphStream as any).metadata = {
-      name,
-      unicode: [String.fromCodePoint(codepoint)],
-    };
-
-    glyphStream.on('error', reject);
-    // Do not add fontStream.on("error", reject) here — one per glyph would exceed
-    // Node's default MaxListeners (10). Font stream errors are handled once below.
-    fontStream.write(glyphStream);
-    glyphStream.on('end', resolve);
-  });
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
-export function parseCompileTtfFromGlyphSVGsError(
+/**
+ * Build an SVG font XML string from pre-transformed glyph data.
+ */
+function buildSvgFontXml(opts: {
+  fontName: string;
+  glyphs: FontGlyph[];
+  upm: number;
+  ascent: number;
+  descent: number;
+}): string {
+  const { fontName, glyphs, upm, ascent, descent } = opts;
+
+  const glyphLines = glyphs.map((g) => {
+    const hex = g.codepoint.toString(16);
+    const name = `u${hex.padStart(4, '0')}`;
+    return `<glyph glyph-name="${name}" unicode="&#x${hex};" horiz-adv-x="${g.advanceWidth}" d="${escapeXml(g.d)}"/>`;
+  });
+
+  return `<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg">
+<defs>
+<font id="${escapeXml(fontName)}" horiz-adv-x="${upm}">
+<font-face font-family="${escapeXml(fontName)}" units-per-em="${upm}" ascent="${ascent}" descent="${-Math.abs(descent)}"/>
+<missing-glyph horiz-adv-x="0"/>
+${glyphLines.join('\n')}
+</font>
+</defs>
+</svg>`;
+}
+
+export function parseCompileTtfFromGlyphsError(
   err: unknown,
   codepointToIcon: Map<number, string>
 ) {
   const msg = err instanceof Error ? err.message : String(err);
-  // Try to extract codepoint from error (e.g. 'glyph "ue906"')
   const cpMatch = msg.match(/glyph\s+"u([0-9a-fA-F]+)"/);
   if (cpMatch) {
     const cp = parseInt(cpMatch[1]!, 16);
@@ -49,8 +63,12 @@ export function parseCompileTtfFromGlyphSVGsError(
   throw err;
 }
 
-export async function compileTtfFromGlyphSVGs(opts: {
-  glyphDir: string;
+/**
+ * Compile a TTF font from pre-transformed glyph data.
+ * Builds SVG font XML directly (no intermediate files), then converts via svg2ttf.
+ */
+export async function compileTtfFromGlyphs(opts: {
+  glyphs: FontGlyph[];
   outTtfPath: string;
   fontName: string;
   upm: number;
@@ -58,52 +76,20 @@ export async function compileTtfFromGlyphSVGs(opts: {
   descent: number;
   lineGap?: number;
 }): Promise<void> {
-  const { SVGIcons2SVGFontStream } = await import('svgicons2svgfont');
-
-  const { glyphDir, outTtfPath, fontName, upm, ascent, descent } = opts;
+  const { glyphs, outTtfPath, fontName, upm, ascent, descent } = opts;
   const lineGap = opts.lineGap ?? 0;
 
-  const files = fs
-    .readdirSync(glyphDir)
-    .filter((f) => /^u[0-9a-fA-F]+\.svg$/.test(f))
-    .sort(
-      (a, b) => parseCodepointFromFilename(a) - parseCodepointFromFilename(b)
-    );
+  if (glyphs.length === 0)
+    throw new Error('No glyphs to compile');
 
-  if (files.length === 0)
-    throw new Error(`No glyph SVGs found in: ${glyphDir}`);
-
-  const fontStream = new SVGIcons2SVGFontStream({
+  const svgFontString = buildSvgFontXml({
     fontName,
-    fontHeight: upm,
-    normalize: false,
+    glyphs,
+    upm,
     ascent,
     descent,
   });
 
-  const svgFontChunks: Buffer[] = [];
-  fontStream.on('data', (c: Buffer | string) =>
-    svgFontChunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c))
-  );
-
-  // Single error listener for the font stream; per-glyph errors are handled in writeGlyphStreamToFont.
-  let fontStreamReject: (err: Error) => void;
-  const fontStreamErrorPromise = new Promise<never>((_, rej) => {
-    fontStreamReject = rej;
-  });
-  fontStream.on('error', (err: Error) => fontStreamReject(err));
-
-  for (const f of files) {
-    await Promise.race([
-      writeGlyphStreamToFont(fontStream, path.join(glyphDir, f), f),
-      fontStreamErrorPromise,
-    ]);
-  }
-
-  fontStream.end();
-  await once(fontStream, 'end');
-
-  const svgFontString = Buffer.concat(svgFontChunks).toString('utf8');
   const ttfRaw = svg2ttf(svgFontString);
   const rawBuf = Buffer.from(ttfRaw.buffer);
 

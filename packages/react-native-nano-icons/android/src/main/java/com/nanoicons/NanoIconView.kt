@@ -14,6 +14,10 @@ class NanoIconView(context: Context) : View(context) {
   private var colors: IntArray = intArrayOf()
   private var cachedFontFamily: String? = null
   private var cachedTypeface: Typeface? = null
+  // Cached String objects — rebuilt only when codepoints change
+  private var cachedTexts: Array<String> = emptyArray()
+  // Cached baseline — rebuilt only when font or size changes
+  private var cachedBaseline: Float = 0f
 
   init {
     // Transparent background, no default drawing
@@ -26,6 +30,7 @@ class NanoIconView(context: Context) : View(context) {
       cachedTypeface = ReactFontManager.getInstance()
         .getTypeface(fontFamily, Typeface.NORMAL, context.assets)
       paint.typeface = cachedTypeface
+      updateBaseline()
       invalidate()
     }
   }
@@ -34,12 +39,14 @@ class NanoIconView(context: Context) : View(context) {
     val sizeInPx = size * resources.displayMetrics.density
     if (paint.textSize != sizeInPx) {
       paint.textSize = sizeInPx
+      updateBaseline()
       invalidate()
     }
   }
 
   fun setCodepoints(values: IntArray) {
     codepoints = values
+    cachedTexts = Array(values.size) { i -> String(Character.toChars(values[i])) }
     invalidate()
   }
 
@@ -48,23 +55,22 @@ class NanoIconView(context: Context) : View(context) {
     invalidate()
   }
 
+  private fun updateBaseline() {
+    cachedBaseline = -paint.fontMetrics.ascent
+  }
+
   override fun onDraw(canvas: Canvas) {
     super.onDraw(canvas)
-    if (codepoints.isEmpty() || cachedTypeface == null) return
+    if (cachedTexts.isEmpty() || cachedTypeface == null) return
 
     canvas.save()
     canvas.clipRect(0f, 0f, width.toFloat(), height.toFloat())
 
-    val baseline = -paint.fontMetrics.ascent
-
     // All layers drawn at the same position (stacked on each other)
-    for (i in codepoints.indices) {
-      val cp = codepoints[i]
+    for (i in cachedTexts.indices) {
       val color = if (i < colors.size) colors[i] else 0xFF000000.toInt()
       paint.color = color
-
-      val text = String(Character.toChars(cp))
-      canvas.drawText(text, 0f, baseline, paint)
+      canvas.drawText(cachedTexts[i], 0f, cachedBaseline, paint)
     }
 
     canvas.restore()

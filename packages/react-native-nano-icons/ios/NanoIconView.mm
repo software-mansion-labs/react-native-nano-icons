@@ -14,6 +14,12 @@ using namespace facebook::react;
   CGFloat _fontSize;
   std::vector<CGGlyph> _glyphs;
   std::vector<uint32_t> _colors;
+  // Cached CGColor refs — rebuilt only when colors prop changes
+  std::vector<CGColorRef> _cachedCGColors;
+  // Cached layout metrics — rebuilt only when font or bounds change
+  CGFloat _fitScale;
+  CGPoint _baselinePosition;
+  BOOL _metricsValid;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -23,6 +29,9 @@ using namespace facebook::react;
     _props = defaultProps;
     self.opaque = NO;
     self.backgroundColor = [UIColor clearColor];
+    _fitScale = 1.0;
+    _baselinePosition = CGPointZero;
+    _metricsValid = NO;
   }
   return self;
 }
@@ -30,6 +39,45 @@ using namespace facebook::react;
 + (ComponentDescriptorProvider)componentDescriptorProvider
 {
   return concreteComponentDescriptorProvider<NanoIconViewComponentDescriptor>();
+}
+
+- (void)_releaseCachedColors
+{
+  for (CGColorRef c : _cachedCGColors) {
+    CGColorRelease(c);
+  }
+  _cachedCGColors.clear();
+}
+
+- (void)_rebuildCachedColors
+{
+  [self _releaseCachedColors];
+  _cachedCGColors.resize(_colors.size());
+  for (size_t i = 0; i < _colors.size(); i++) {
+    uint32_t colorInt = _colors[i];
+    CGFloat a = ((colorInt >> 24) & 0xFF) / 255.0;
+    CGFloat r = ((colorInt >> 16) & 0xFF) / 255.0;
+    CGFloat g = ((colorInt >> 8) & 0xFF) / 255.0;
+    CGFloat b = (colorInt & 0xFF) / 255.0;
+    _cachedCGColors[i] = CGColorCreateSRGB(r, g, b, a);
+  }
+}
+
+- (void)_updateMetrics
+{
+  if (!_font) {
+    _metricsValid = NO;
+    return;
+  }
+
+  CGFloat ascent = CTFontGetAscent(_font);
+  CGFloat descent = CTFontGetDescent(_font);
+  CGFloat fontTotalHeight = ascent + descent;
+  CGFloat viewHeight = self.bounds.size.height;
+
+  _fitScale = (fontTotalHeight > 0) ? (viewHeight / fontTotalHeight) : 1.0;
+  _baselinePosition = CGPointMake(0, descent);
+  _metricsValid = YES;
 }
 
 - (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps
@@ -49,6 +97,7 @@ using namespace facebook::react;
     _fontSize = newViewProps.fontSize;
     _font = CTFontCreateWithName((__bridge CFStringRef)family, _fontSize, NULL);
     fontChanged = YES;
+    _metricsValid = NO;
   }
 
   // Update glyphs if codepoints changed or font changed
@@ -82,10 +131,17 @@ using namespace facebook::react;
     for (size_t i = 0; i < colors.size(); i++) {
       _colors[i] = (uint32_t)colors[i];
     }
+    [self _rebuildCachedColors];
   }
 
   [super updateProps:props oldProps:oldProps];
   [self setNeedsDisplay];
+}
+
+- (void)layoutSubviews
+{
+  [super layoutSubviews];
+  _metricsValid = NO;
 }
 
 - (void)drawRect:(CGRect)rect
@@ -99,47 +155,76 @@ using namespace facebook::react;
     return;
   }
 
-  // CoreText draws with y-axis pointing up; UIKit has y-axis pointing down.
-  // We flip the context and then scale/position using the actual font metrics
-  // so the glyph fits exactly within the view bounds.
-  CGContextSaveGState(context);
-  CGContextTranslateCTM(context, 0, self.bounds.size.height);
-  CGContextScaleCTM(context, 1.0, -1.0);
-
-  // Use actual CTFont metrics to position the baseline correctly.
-  // CoreText may report slightly different ascent/descent than what we set in the TTF.
-  CGFloat ascent = CTFontGetAscent(_font);
-  CGFloat descent = CTFontGetDescent(_font);
-  CGFloat fontTotalHeight = ascent + descent;
-  CGFloat viewHeight = self.bounds.size.height;
-
-  // Scale so the font's full extent (ascent + descent) fits the view height
-  if (fontTotalHeight > 0) {
-    CGFloat fitScale = viewHeight / fontTotalHeight;
-    CGContextScaleCTM(context, fitScale, fitScale);
+  if (!_metricsValid) {
+    [self _updateMetrics];
   }
 
-  // Position baseline at y=descent from the bottom so descenders fit below
-  // and ascent fills upward to exactly the view top
-  CGPoint position = CGPointMake(0, descent);
+  CGContextSaveGState(context);
+  // CoreText draws with y-axis pointing up; UIKit has y-axis pointing down.
+  CGContextTranslateCTM(context, 0, self.bounds.size.height);
+  CGContextScaleCTM(context, 1.0, -1.0);
+  CGContextScaleCTM(context, _fitScale, _fitScale);
 
-  for (size_t i = 0; i < _glyphs.size(); i++) {
+  // Batch consecutive same-color glyphs into a single CTFontDrawGlyphs call
+  size_t i = 0;
+  while (i < _glyphs.size()) {
     if (_glyphs[i] == 0) {
-      continue; // Skip invalid glyphs
+      i++;
+      continue;
     }
 
-    // Extract RGBA from processColor() result (iOS returns 0xAABBGGRR)
-    uint32_t colorInt = (i < _colors.size()) ? _colors[i] : 0xFF000000;
-    CGFloat a = ((colorInt >> 24) & 0xFF) / 255.0;
-    CGFloat r = ((colorInt >> 16) & 0xFF) / 255.0;
-    CGFloat g = ((colorInt >> 8) & 0xFF) / 255.0;
-    CGFloat b = (colorInt & 0xFF) / 255.0;
-
-    CGColorRef color = CGColorCreateSRGB(r, g, b, a);
+    // Determine the color for this run
+    CGColorRef color = (i < _cachedCGColors.size()) ? _cachedCGColors[i] : NULL;
+    if (!color) {
+      // Fallback: opaque black
+      static CGColorRef sBlack = CGColorCreateSRGB(0, 0, 0, 1);
+      color = sBlack;
+    }
     CGContextSetFillColorWithColor(context, color);
-    CGColorRelease(color);
 
-    CTFontDrawGlyphs(_font, &_glyphs[i], &position, 1, context);
+    // Collect consecutive glyphs with the same color
+    size_t batchStart = i;
+    size_t batchCount = 0;
+    // Use a small stack buffer for positions; heap-allocate only for very large batches
+    CGPoint positionsBuf[16];
+    CGGlyph glyphsBuf[16];
+    CGPoint *positions = positionsBuf;
+    CGGlyph *batchGlyphs = glyphsBuf;
+
+    while (i < _glyphs.size()) {
+      if (_glyphs[i] == 0) { i++; continue; }
+
+      CGColorRef nextColor = (i < _cachedCGColors.size()) ? _cachedCGColors[i] : NULL;
+      // Break batch if color changes
+      if (i > batchStart && nextColor != color) break;
+
+      if (batchCount < 16) {
+        positions[batchCount] = _baselinePosition;
+        batchGlyphs[batchCount] = _glyphs[i];
+      }
+      batchCount++;
+      i++;
+    }
+
+    // If batch exceeded stack buffer, allocate and refill
+    if (batchCount > 16) {
+      positions = (CGPoint *)malloc(batchCount * sizeof(CGPoint));
+      batchGlyphs = (CGGlyph *)malloc(batchCount * sizeof(CGGlyph));
+      size_t idx = 0;
+      for (size_t j = batchStart; j < i; j++) {
+        if (_glyphs[j] == 0) continue;
+        positions[idx] = _baselinePosition;
+        batchGlyphs[idx] = _glyphs[j];
+        idx++;
+      }
+    }
+
+    CTFontDrawGlyphs(_font, batchGlyphs, positions, batchCount, context);
+
+    if (batchCount > 16) {
+      free(positions);
+      free(batchGlyphs);
+    }
   }
 
   CGContextRestoreGState(context);
@@ -150,6 +235,7 @@ using namespace facebook::react;
   if (_font) {
     CFRelease(_font);
   }
+  [self _releaseCachedColors];
 }
 
 @end

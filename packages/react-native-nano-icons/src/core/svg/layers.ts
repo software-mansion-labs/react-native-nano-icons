@@ -1,6 +1,8 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
+import type { PathKitModule } from '../types.js';
+
 function roundInt(n: number): number {
   return Math.round(n);
 }
@@ -63,4 +65,46 @@ export async function writeLayerSvg(opts: {
     </svg>`.trim();
 
   await fsp.writeFile(path.join(opts.tempDir, `u${hex}.svg`), layerSvg, 'utf8');
+}
+
+/**
+ * Transform an SVG path `d` string from source SVG coordinates into font
+ * glyph coordinates (Y-up, with placement scaling and centering applied).
+ *
+ * Combines placement transform (translate + scale + translate) with the
+ * SVG→font Y-axis flip into a single affine transform applied via PathKit.
+ */
+export function transformPathForFont(
+  PathKit: PathKitModule,
+  d: string,
+  opts: {
+    vx: number;
+    vy: number;
+    scale: number;
+    xOff: number;
+    yOff: number;
+    upm: number;
+  }
+): string {
+  const { vx, vy, scale, xOff, yOff, upm } = opts;
+
+  const p = PathKit.FromSVGString(d);
+  if (!p) return d;
+
+  // Combined affine: placement + Y-flip for font coordinates.
+  //   x' =  scale * (x - vx) + xOff
+  //   y' =  upm - (scale * (y - vy) + yOff)
+  //
+  // SkMatrix row-major: [scaleX, skewX, transX, skewY, scaleY, transY, 0,0,1]
+  const scaleX = scale;
+  const scaleY = -scale;
+  const transX = xOff - vx * scale;
+  const transY = upm - yOff + vy * scale;
+
+  p.transform(scaleX, 0, transX, 0, scaleY, transY, 0, 0, 1);
+
+  const result = p.toSVGString();
+  p.delete?.();
+
+  return result;
 }

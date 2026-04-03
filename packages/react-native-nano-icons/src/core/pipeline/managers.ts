@@ -73,14 +73,37 @@ export class PyodideManager {
 
     await py.loadPackage(['micropip', 'lxml'], { messageCallback: () => {} });
 
+    // Resolve local picosvg wheel path for offline-first installation.
+    const picosvgWhlDir = path.join(
+      getPackageRoot(),
+      'src',
+      'core',
+      'shims'
+    );
+    const picosvgWhl = (await fs.readdir(picosvgWhlDir))
+      .find((f) => f.startsWith('picosvg-') && f.endsWith('.whl'));
+    const localWhlUrl = picosvgWhl
+      ? `file://${path.join(picosvgWhlDir, picosvgWhl)}`
+      : null;
+
+    py.globals.set('_picosvg_local_whl', localWhlUrl);
+
     await py.runPythonAsync(`
       import sys
       if "/" not in sys.path:
           sys.path.insert(0, "/")
-          
+
       import micropip
-      await micropip.install("picosvg", deps=False)
-          
+
+      _whl = _picosvg_local_whl
+      if _whl:
+          try:
+              await micropip.install(_whl, deps=False)
+          except Exception:
+              await micropip.install("picosvg", deps=False)
+      else:
+          await micropip.install("picosvg", deps=False)
+
       import pathops
       import picosvg
     `);

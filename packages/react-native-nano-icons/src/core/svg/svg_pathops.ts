@@ -457,9 +457,13 @@ function bestStartMinYMinX(
   return best;
 }
 
-// proxy to for picosvg to interatc with pathkit
-export function buildPathopsBackend(PathKit: PathKitModule) {
-  const VERB: VerbMap = {
+
+// ---------------------------------------------------------------------------
+// Containment helpers (module-level for reuse by fixPathWinding)
+// ---------------------------------------------------------------------------
+
+function buildVerbMap(PathKit: PathKitModule): VerbMap {
+  return {
     MOVE: PathKit.MOVE_VERB ?? 0,
     LINE: PathKit.LINE_VERB ?? 1,
     QUAD: PathKit.QUAD_VERB ?? 2,
@@ -467,6 +471,241 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
     CUBIC: PathKit.CUBIC_VERB ?? 4,
     CLOSE: PathKit.CLOSE_VERB ?? 5,
   };
+}
+
+/**
+ * Convert contour commands to a polyline by sampling curves.
+ * Used for ray-casting containment tests.
+ */
+function contourToPolyline(
+  contourCmds: readonly Cmd[],
+  V: VerbMap,
+  steps = 8
+): Point[] {
+  let cx = 0,
+    cy = 0;
+  let sx = 0,
+    sy = 0;
+  const pts: Point[] = [];
+
+  for (const cmd of contourCmds) {
+    const v = cmd[0]!;
+    if (v === V.MOVE) {
+      cx = cmd[1]!;
+      cy = cmd[2]!;
+      sx = cx;
+      sy = cy;
+      pts.push([cx, cy]);
+    } else if (v === V.LINE) {
+      cx = cmd[1]!;
+      cy = cmd[2]!;
+      pts.push([cx, cy]);
+    } else if (v === V.QUAD) {
+      const x0 = cx,
+        y0 = cy;
+      const x1 = cmd[1]!,
+        y1 = cmd[2]!;
+      const x2 = cmd[3]!,
+        y2 = cmd[4]!;
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        const mt = 1 - t;
+        pts.push([mt * mt * x0 + 2 * mt * t * x1 + t * t * x2, mt * mt * y0 + 2 * mt * t * y1 + t * t * y2]);
+      }
+      cx = x2;
+      cy = y2;
+    } else if (v === V.CUBIC) {
+      const x0 = cx,
+        y0 = cy;
+      const x1 = cmd[1]!,
+        y1 = cmd[2]!;
+      const x2 = cmd[3]!,
+        y2 = cmd[4]!;
+      const x3 = cmd[5]!,
+        y3 = cmd[6]!;
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        const mt = 1 - t;
+        pts.push([
+          mt * mt * mt * x0 + 3 * mt * mt * t * x1 + 3 * mt * t * t * x2 + t * t * t * x3,
+          mt * mt * mt * y0 + 3 * mt * mt * t * y1 + 3 * mt * t * t * y2 + t * t * t * y3,
+        ]);
+      }
+      cx = x3;
+      cy = y3;
+    } else if (v === V.CLOSE) {
+      if (cx !== sx || cy !== sy) pts.push([sx, sy]);
+      cx = sx;
+      cy = sy;
+    }
+  }
+  return pts;
+}
+
+/**
+ * Ray-casting point-in-polygon test.
+ */
+function pointInPolygon(px: number, py: number, poly: Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i]!;
+    const [xj, yj] = poly[j]!;
+    if (
+      yi > py !== yj > py &&
+      px < ((xj - xi) * (py - yi)) / (yj - yi) + xi
+    ) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/**
+ * Get a representative point on the contour boundary (midpoint of first segment).
+ */
+function getContourSamplePoint(contourCmds: readonly Cmd[], V: VerbMap): Point | null {
+  let cx = 0,
+    cy = 0;
+  for (const cmd of contourCmds) {
+    const v = cmd[0]!;
+    if (v === V.MOVE) {
+      cx = cmd[1]!;
+      cy = cmd[2]!;
+    } else if (v === V.LINE) {
+      return [(cx + cmd[1]!) / 2, (cy + cmd[2]!) / 2];
+    } else if (v === V.QUAD) {
+      const t = 0.5,
+        mt = 0.5;
+      return [
+        mt * mt * cx + 2 * mt * t * cmd[1]! + t * t * cmd[3]!,
+        mt * mt * cy + 2 * mt * t * cmd[2]! + t * t * cmd[4]!,
+      ];
+    } else if (v === V.CUBIC) {
+      const t = 0.5,
+        mt = 0.5;
+      return [
+        mt ** 3 * cx + 3 * mt ** 2 * t * cmd[1]! + 3 * mt * t ** 2 * cmd[3]! + t ** 3 * cmd[5]!,
+        mt ** 3 * cy + 3 * mt ** 2 * t * cmd[2]! + 3 * mt * t ** 2 * cmd[4]! + t ** 3 * cmd[6]!,
+      ];
+    }
+  }
+  return null;
+}
+
+/**
+ * Apply containment-based winding fix to contour objects.
+ * Even nesting depth = CCW (outer), odd = CW (hole).
+ */
+function applyContainmentWinding(
+  contourObjs: Array<{ cmds: Cmd[]; explicitCloseWanted: boolean; absA: number }>,
+  V: VerbMap
+): void {
+  const n = contourObjs.length;
+  if (n === 0) return;
+
+  const polylines = contourObjs.map((obj) => contourToPolyline(obj.cmds, V));
+  const samplePts = contourObjs.map((obj) => getContourSamplePoint(obj.cmds, V));
+  const depths = new Array<number>(n).fill(0);
+
+  for (let i = 0; i < n; i++) {
+    const pt = samplePts[i];
+    if (!pt) continue;
+    for (let j = 0; j < n; j++) {
+      if (i === j) continue;
+      if (pointInPolygon(pt[0], pt[1], polylines[j]!)) {
+        depths[i] = (depths[i] ?? 0) + 1;
+      }
+    }
+  }
+
+  const ensureOrient = (
+    obj: { cmds: Cmd[]; explicitCloseWanted: boolean },
+    wantCCW: boolean
+  ) => {
+    const a = approxSignedAreaFromContourCmds(obj.cmds, V);
+    const isCCW = a > 0;
+    if (wantCCW !== isCCW) {
+      obj.cmds = reverseClosedContourKeepStart(obj.cmds, obj.explicitCloseWanted, V);
+    }
+  };
+
+  for (let i = 0; i < n; i++) {
+    ensureOrient(contourObjs[i]!, depths[i]! % 2 === 0);
+  }
+}
+
+/**
+ * Convert a path `d` string with evenodd fill semantics to an equivalent
+ * path that renders identically under nonzero winding.
+ *
+ * Steps:
+ * 1. Parse via PathKit, set fill type to EVENODD, simplify (resolve topology)
+ * 2. Split into contours, compute containment depths
+ * 3. Fix winding: even depth = CCW (outer), odd depth = CW (hole)
+ * 4. Reconstruct d string
+ */
+export function convertEvenoddToWinding(
+  PathKit: PathKitModule,
+  d: string
+): string {
+  const V = buildVerbMap(PathKit);
+
+  // 1. Parse and simplify with EVENODD fill type
+  const p = PathKit.FromSVGString(d);
+  if (!p) return d;
+
+  const FILL_EVENODD =
+    PathKit?.FillType?.EVENODD ?? PathKit?.FillType?.EVEN_ODD ?? 1;
+  p.setFillType(FILL_EVENODD);
+  p.simplify();
+
+  // Get the simplified SVG string and re-parse for command access
+  const simplified = p.toSVGString();
+  p.delete?.();
+
+  const p2 = PathKit.FromSVGString(simplified);
+  if (!p2) return simplified;
+
+  const cmds: Cmd[] = p2.toCmds();
+  p2.delete?.();
+
+  if (cmds.length === 0) return simplified;
+
+  // 2. Split into contours
+  const contourObjs = splitContours(cmds, V).map((c) => {
+    const explicitCloseWanted = explicitCloseWantedFromCmds(c, V);
+    const cc = ensureClosed(c, V);
+    const a = approxSignedAreaFromContourCmds(cc, V);
+    return { cmds: cc, absA: Math.abs(a), explicitCloseWanted };
+  });
+
+  contourObjs.sort((x, y) => y.absA - x.absA);
+
+  // 3. Fix winding via containment analysis
+  applyContainmentWinding(contourObjs, V);
+
+  // 4. Reconstruct d string from fixed commands
+  const allCmds = contourObjs.flatMap((x) => x.cmds);
+  const parts: string[] = [];
+  for (const cmd of allCmds) {
+    const v = cmd[0]!;
+    if (v === V.MOVE) parts.push(`M${roundN(cmd[1]!)} ${roundN(cmd[2]!)}`);
+    else if (v === V.LINE) parts.push(`L${roundN(cmd[1]!)} ${roundN(cmd[2]!)}`);
+    else if (v === V.QUAD)
+      parts.push(`Q${roundN(cmd[1]!)} ${roundN(cmd[2]!)} ${roundN(cmd[3]!)} ${roundN(cmd[4]!)}`);
+    else if (v === V.CUBIC)
+      parts.push(
+        `C${roundN(cmd[1]!)} ${roundN(cmd[2]!)} ${roundN(cmd[3]!)} ${roundN(cmd[4]!)} ${roundN(cmd[5]!)} ${roundN(cmd[6]!)}`
+      );
+    else if (v === V.CLOSE) parts.push('Z');
+  }
+
+  return parts.join(' ');
+}
+
+// proxy to for picosvg to interatc with pathkit
+export function buildPathopsBackend(PathKit: PathKitModule) {
+  const VERB: VerbMap = buildVerbMap(PathKit);
 
   const FILL_EVENODD =
     PathKit?.FillType?.EVENODD ?? PathKit?.FillType?.EVEN_ODD ?? 1;
@@ -500,30 +739,9 @@ export function buildPathopsBackend(PathKit: PathKitModule) {
     // Big-to-small ordering gives deterministic outer→inner ordering.
     contourObjs.sort((x, y) => y.absA - x.absA);
 
-    // Enforce winding convention:
-    // - largest contour CCW (positive area)
-    // - all subsequent contours CW (negative area)
-    const ensureOrient = (
-      obj: { cmds: Cmd[]; explicitCloseWanted: boolean },
-      wantCCW: boolean
-    ) => {
-      const a = approxSignedAreaFromContourCmds(obj.cmds, VERB);
-      const isCCW = a > 0;
-      if (wantCCW !== isCCW) {
-        obj.cmds = reverseClosedContourKeepStart(
-          obj.cmds,
-          obj.explicitCloseWanted,
-          VERB
-        );
-      }
-    };
-
-    if (contourObjs.length) {
-      ensureOrient(contourObjs[0]!, true);
-      for (let i = 1; i < contourObjs.length; i++) {
-        ensureOrient(contourObjs[i]!, false);
-      }
-    }
+    // Containment-based winding: compute nesting depth per contour via
+    // ray-casting point-in-polygon. Even depth = outer (CCW), odd = hole (CW).
+    applyContainmentWinding(contourObjs, VERB);
 
     // Rotate starts deterministically:
     // 1) If we have recorded MOVE points, try to rotate contour to a move point that lies on it.
