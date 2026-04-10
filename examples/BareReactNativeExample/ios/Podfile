@@ -49,5 +49,16 @@ target 'BareReactNativeExample' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # Xcode 26.x Apple Clang advertises C++20 consteval but fails on fmt 11.x
+    # (basic_format_string consteval). C++17 makes fmt disable FMT_USE_CONSTEVAL.
+    # See https://github.com/facebook/react-native/issues/55601
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      end
+    end
   end
 end

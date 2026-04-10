@@ -1,5 +1,4 @@
 #import "NanoIconView.h"
-
 #import <CoreText/CoreText.h>
 #import <React/RCTConversions.h>
 #import <React/RCTFabricComponentsPlugins.h>
@@ -8,132 +7,259 @@
 
 using namespace facebook::react;
 
+// Drawing canvas that can be shifted outside the Yoga frame.
+@interface NanoIconDrawingView : UIView
+@property (nonatomic, copy) void (^drawBlock)(CGContextRef, CGRect);
+@end
+
+@implementation NanoIconDrawingView
+- (instancetype)initWithFrame:(CGRect)frame {
+    if (self = [super initWithFrame:frame]) {
+        self.opaque = NO;
+        self.backgroundColor = [UIColor clearColor];
+        self.userInteractionEnabled = NO;
+    }
+    return self;
+}
+- (void)drawRect:(CGRect)rect {
+    if (self.drawBlock) {
+        CGContextRef ctx = UIGraphicsGetCurrentContext();
+        if (ctx) self.drawBlock(ctx, self.bounds);
+    }
+}
+@end
+
 @implementation NanoIconView {
   CTFontRef _font;
   NSString *_fontFamily;
   CGFloat _fontSize;
   std::vector<CGGlyph> _glyphs;
   std::vector<uint32_t> _colors;
-  // Cached CGColor refs — rebuilt only when colors prop changes
   std::vector<CGColorRef> _cachedCGColors;
-  // Cached layout metrics — rebuilt only when font or bounds change
   CGFloat _fitScale;
   CGPoint _baselinePosition;
   BOOL _metricsValid;
+  NanoIconDrawingView *_drawingView;
 }
 
-- (instancetype)initWithFrame:(CGRect)frame
-{
+- (instancetype)initWithFrame:(CGRect)frame {
   if (self = [super initWithFrame:frame]) {
     static const auto defaultProps = std::make_shared<const NanoIconViewProps>();
     _props = defaultProps;
     self.opaque = NO;
     self.backgroundColor = [UIColor clearColor];
+    self.clipsToBounds = NO;
+
     _fitScale = 1.0;
     _baselinePosition = CGPointZero;
-    _metricsValid = NO;
+
+    _drawingView = [[NanoIconDrawingView alloc] initWithFrame:self.bounds];
+    __weak __typeof(self) weakSelf = self;
+    _drawingView.drawBlock = ^(CGContextRef context, CGRect bounds) {
+      [weakSelf _drawIconInContext:context bounds:bounds];
+    };
+    [self addSubview:_drawingView];
   }
   return self;
 }
 
-+ (ComponentDescriptorProvider)componentDescriptorProvider
-{
++ (ComponentDescriptorProvider)componentDescriptorProvider {
   return concreteComponentDescriptorProvider<NanoIconViewComponentDescriptor>();
 }
 
-// Leaf view — skip the expensive recursive clipping walk (was 27% of CPU)
 - (void)updateClippedSubviewsWithClipRect:(__unused CGRect)clipRect
-                           relativeToView:(__unused UIView *)clipView
-{
-}
+                           relativeToView:(__unused UIView *)clipView {}
 
-- (void)_releaseCachedColors
-{
-  for (CGColorRef c : _cachedCGColors) {
-    CGColorRelease(c);
-  }
-  _cachedCGColors.clear();
-}
+#pragma mark - Metrics
 
-- (void)_rebuildCachedColors
-{
-  [self _releaseCachedColors];
-  _cachedCGColors.resize(_colors.size());
-  for (size_t i = 0; i < _colors.size(); i++) {
-    uint32_t colorInt = _colors[i];
-    CGFloat a = ((colorInt >> 24) & 0xFF) / 255.0;
-    CGFloat r = ((colorInt >> 16) & 0xFF) / 255.0;
-    CGFloat g = ((colorInt >> 8) & 0xFF) / 255.0;
-    CGFloat b = (colorInt & 0xFF) / 255.0;
-    _cachedCGColors[i] = CGColorCreateSRGB(r, g, b, a);
-  }
-}
-
-- (void)_updateMetrics
-{
+// Scale factor to fit the icon font's em square into the view height,
+// and the CoreText baseline origin used for all glyph draws.
+- (void)_updateMetrics {
   if (!_font) {
     _metricsValid = NO;
     return;
   }
-
   CGFloat ascent = CTFontGetAscent(_font);
   CGFloat descent = CTFontGetDescent(_font);
-  CGFloat fontTotalHeight = ascent + descent;
-  CGFloat viewHeight = self.bounds.size.height;
-
-  _fitScale = (fontTotalHeight > 0) ? (viewHeight / fontTotalHeight) : 1.0;
+  CGFloat totalHeight = ascent + descent;
+  _fitScale = (totalHeight > 0) ? (self.bounds.size.height / totalHeight) : 1.0;
   _baselinePosition = CGPointMake(0, descent);
   _metricsValid = YES;
 }
 
-- (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps
-{
+// Distance from this view's bottom edge to the parent text baseline.
+// Returns 0 when standalone or when the icon is taller than the text line.
+- (CGFloat)_inlineBaselineOffset {
+  UIView *current = self.superview;
+  NSAttributedString *attrStr = nil;
+  while (current) {
+    if ([current respondsToSelector:@selector(attributedText)]) {
+      attrStr = [current performSelector:@selector(attributedText)];
+      if (attrStr.length > 0) break;
+    }
+    current = current.superview;
+  }
+  if (!attrStr) return 0;
+
+  UIFont *f = [attrStr attribute:NSFontAttributeName atIndex:0 effectiveRange:nil];
+  if (!f) return 0;
+
+  NSParagraphStyle *style = [attrStr attribute:NSParagraphStyleAttributeName
+                                       atIndex:0 effectiveRange:nil];
+  CGFloat lineHeight = (style && style.maximumLineHeight > 0)
+                     ? style.maximumLineHeight : f.lineHeight;
+
+  NSNumber *bOff = [attrStr attribute:NSBaselineOffsetAttributeName
+                              atIndex:0 effectiveRange:nil];
+  CGFloat baselineFromLineTop = f.ascender - (bOff ? bOff.doubleValue : 0);
+
+  CGFloat frameBottom = self.frame.origin.y + self.frame.size.height;
+  CGFloat posInLine = fmod(frameBottom, lineHeight);
+  if (posInLine < 0.01) posInLine = lineHeight;
+
+  return MAX(0, posInLine - baselineFromLineTop);
+}
+
+#pragma mark - Layout
+
+- (void)layoutSubviews {
+  [super layoutSubviews];
+  if (!_metricsValid) [self _updateMetrics];
+
+  CGFloat offset = [self _inlineBaselineOffset];
+  _drawingView.frame = CGRectMake(0, -offset,
+                                  self.bounds.size.width, self.bounds.size.height);
+}
+
+#pragma mark - Drawing
+
+// Render multi-color icons by drawing each color layer glyph at the same
+// position. Layers stack via painter's order to compose the final icon.
+- (void)_drawIconInContext:(CGContextRef)context bounds:(CGRect)bounds {
+  if (!_font || _glyphs.empty()) return;
+  if (!_metricsValid) [self _updateMetrics];
+
+  CGContextSaveGState(context);
+  // Flip to CoreText coordinates (Y-up) and apply fit scale.
+  CGContextTranslateCTM(context, 0, bounds.size.height);
+  CGContextScaleCTM(context, 1.0, -1.0);
+  CGContextScaleCTM(context, _fitScale, _fitScale);
+
+  size_t i = 0;
+  while (i < _glyphs.size()) {
+    if (_glyphs[i] == 0) { i++; continue; }
+
+    CGColorRef color = (i < _cachedCGColors.size()) ? _cachedCGColors[i] : NULL;
+    if (!color) {
+      static CGColorRef sBlack = CGColorCreateSRGB(0, 0, 0, 1);
+      color = sBlack;
+    }
+    CGContextSetFillColorWithColor(context, color);
+
+    // Batch consecutive same-color glyphs.
+    size_t batchStart = i;
+    size_t batchCount = 0;
+    CGPoint posBuf[16];
+    CGGlyph glyphBuf[16];
+
+    while (i < _glyphs.size()) {
+      if (_glyphs[i] == 0) { i++; continue; }
+      CGColorRef next = (i < _cachedCGColors.size()) ? _cachedCGColors[i] : NULL;
+      if (i > batchStart && next != color) break;
+      if (batchCount < 16) {
+        posBuf[batchCount] = _baselinePosition;
+        glyphBuf[batchCount] = _glyphs[i];
+      }
+      batchCount++;
+      i++;
+    }
+
+    CGPoint *positions = posBuf;
+    CGGlyph *glyphs = glyphBuf;
+    if (batchCount > 16) {
+      positions = (CGPoint *)malloc(batchCount * sizeof(CGPoint));
+      glyphs = (CGGlyph *)malloc(batchCount * sizeof(CGGlyph));
+      size_t idx = 0;
+      for (size_t j = batchStart; j < i; j++) {
+        if (_glyphs[j] == 0) continue;
+        positions[idx] = _baselinePosition;
+        glyphs[idx] = _glyphs[j];
+        idx++;
+      }
+    }
+
+    CTFontDrawGlyphs(_font, glyphs, positions, batchCount, context);
+
+    if (batchCount > 16) {
+      free(positions);
+      free(glyphs);
+    }
+  }
+
+  CGContextRestoreGState(context);
+}
+
+#pragma mark - Props
+
+- (void)_releaseCachedColors {
+  for (CGColorRef c : _cachedCGColors) CGColorRelease(c);
+  _cachedCGColors.clear();
+}
+
+// Convert ARGB uint32 color values into cached CGColorRefs.
+- (void)_rebuildCachedColors {
+  [self _releaseCachedColors];
+  _cachedCGColors.resize(_colors.size());
+  for (size_t i = 0; i < _colors.size(); i++) {
+    uint32_t ci = _colors[i];
+    _cachedCGColors[i] = CGColorCreateSRGB(
+        ((ci >> 16) & 0xFF) / 255.0,
+        ((ci >> 8)  & 0xFF) / 255.0,
+        ( ci        & 0xFF) / 255.0,
+        ((ci >> 24) & 0xFF) / 255.0);
+  }
+}
+
+- (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps {
   const auto &oldViewProps = static_cast<const NanoIconViewProps &>(*_props);
   const auto &newViewProps = static_cast<const NanoIconViewProps &>(*props);
 
-  // Recreate font if fontFamily or fontSize changed
   BOOL fontChanged = NO;
   BOOL needsRedraw = NO;
-  if (oldViewProps.fontFamily != newViewProps.fontFamily || oldViewProps.fontSize != newViewProps.fontSize) {
-    NSString *family = [NSString stringWithUTF8String:newViewProps.fontFamily.c_str()];
-    if (_font) {
-      CFRelease(_font);
-      _font = NULL;
-    }
-    _fontFamily = family;
+
+  if (oldViewProps.fontFamily != newViewProps.fontFamily ||
+      oldViewProps.fontSize  != newViewProps.fontSize) {
+    if (_font) { CFRelease(_font); _font = NULL; }
+    _fontFamily = [NSString stringWithUTF8String:newViewProps.fontFamily.c_str()];
     _fontSize = newViewProps.fontSize;
-    _font = CTFontCreateWithName((__bridge CFStringRef)family, _fontSize, NULL);
+    _font = CTFontCreateWithName((__bridge CFStringRef)_fontFamily, _fontSize, NULL);
+    _metricsValid = NO;
     fontChanged = YES;
     needsRedraw = YES;
-    _metricsValid = NO;
   }
 
-  // Update glyphs if codepoints changed or font changed
-  BOOL codepointsChanged = fontChanged || (oldViewProps.codepoints != newViewProps.codepoints);
-  if (codepointsChanged && _font) {
+  // Map Unicode codepoints to font glyph IDs, handling surrogate pairs for codepoints > 0xFFFF.
+  if (fontChanged || oldViewProps.codepoints != newViewProps.codepoints) {
     const auto &codepoints = newViewProps.codepoints;
     _glyphs.resize(codepoints.size());
-
     for (size_t i = 0; i < codepoints.size(); i++) {
       int32_t cp = codepoints[i];
-      // Handle BMP and supplementary plane characters
       if (cp <= 0xFFFF) {
         UniChar ch = (UniChar)cp;
         CTFontGetGlyphsForCharacters(_font, &ch, &_glyphs[i], 1);
       } else {
-        // Supplementary plane (private use area): use surrogate pair
-        UniChar surrogates[2];
-        surrogates[0] = (UniChar)(0xD800 + ((cp - 0x10000) >> 10));
-        surrogates[1] = (UniChar)(0xDC00 + ((cp - 0x10000) & 0x3FF));
-        CGGlyph glyphPair[2] = {0, 0};
-        CTFontGetGlyphsForCharacters(_font, surrogates, glyphPair, 2);
-        _glyphs[i] = glyphPair[0];
+        UniChar surr[2] = {
+          (UniChar)(0xD800 + ((cp - 0x10000) >> 10)),
+          (UniChar)(0xDC00 + ((cp - 0x10000) & 0x3FF))
+        };
+        CGGlyph pair[2] = {0, 0};
+        CTFontGetGlyphsForCharacters(_font, surr, pair, 2);
+        _glyphs[i] = pair[0];
       }
     }
     needsRedraw = YES;
   }
 
-  // Update colors
   if (oldViewProps.colors != newViewProps.colors) {
     const auto &colors = newViewProps.colors;
     _colors.resize(colors.size());
@@ -145,114 +271,16 @@ using namespace facebook::react;
   }
 
   [super updateProps:props oldProps:oldProps];
-  if (needsRedraw) {
-    [self setNeedsDisplay];
-  }
+  if (needsRedraw) [_drawingView setNeedsDisplay];
 }
 
-- (void)layoutSubviews
-{
-  [super layoutSubviews];
-  _metricsValid = NO;
-}
-
-- (void)drawRect:(CGRect)rect
-{
-  if (!_font || _glyphs.empty()) {
-    return;
-  }
-
-  CGContextRef context = UIGraphicsGetCurrentContext();
-  if (!context) {
-    return;
-  }
-
-  if (!_metricsValid) {
-    [self _updateMetrics];
-  }
-
-  CGContextSaveGState(context);
-  // CoreText draws with y-axis pointing up; UIKit has y-axis pointing down.
-  CGContextTranslateCTM(context, 0, self.bounds.size.height);
-  CGContextScaleCTM(context, 1.0, -1.0);
-  CGContextScaleCTM(context, _fitScale, _fitScale);
-
-  // Batch consecutive same-color glyphs into a single CTFontDrawGlyphs call
-  size_t i = 0;
-  while (i < _glyphs.size()) {
-    if (_glyphs[i] == 0) {
-      i++;
-      continue;
-    }
-
-    // Determine the color for this run
-    CGColorRef color = (i < _cachedCGColors.size()) ? _cachedCGColors[i] : NULL;
-    if (!color) {
-      // Fallback: opaque black
-      static CGColorRef sBlack = CGColorCreateSRGB(0, 0, 0, 1);
-      color = sBlack;
-    }
-    CGContextSetFillColorWithColor(context, color);
-
-    // Collect consecutive glyphs with the same color
-    size_t batchStart = i;
-    size_t batchCount = 0;
-    // Use a small stack buffer for positions; heap-allocate only for very large batches
-    CGPoint positionsBuf[16];
-    CGGlyph glyphsBuf[16];
-    CGPoint *positions = positionsBuf;
-    CGGlyph *batchGlyphs = glyphsBuf;
-
-    while (i < _glyphs.size()) {
-      if (_glyphs[i] == 0) { i++; continue; }
-
-      CGColorRef nextColor = (i < _cachedCGColors.size()) ? _cachedCGColors[i] : NULL;
-      // Break batch if color changes
-      if (i > batchStart && nextColor != color) break;
-
-      if (batchCount < 16) {
-        positions[batchCount] = _baselinePosition;
-        batchGlyphs[batchCount] = _glyphs[i];
-      }
-      batchCount++;
-      i++;
-    }
-
-    // If batch exceeded stack buffer, allocate and refill
-    if (batchCount > 16) {
-      positions = (CGPoint *)malloc(batchCount * sizeof(CGPoint));
-      batchGlyphs = (CGGlyph *)malloc(batchCount * sizeof(CGGlyph));
-      size_t idx = 0;
-      for (size_t j = batchStart; j < i; j++) {
-        if (_glyphs[j] == 0) continue;
-        positions[idx] = _baselinePosition;
-        batchGlyphs[idx] = _glyphs[j];
-        idx++;
-      }
-    }
-
-    CTFontDrawGlyphs(_font, batchGlyphs, positions, batchCount, context);
-
-    if (batchCount > 16) {
-      free(positions);
-      free(batchGlyphs);
-    }
-  }
-
-  CGContextRestoreGState(context);
-}
-
-- (void)dealloc
-{
-  if (_font) {
-    CFRelease(_font);
-  }
+- (void)dealloc {
+  if (_font) CFRelease(_font);
   [self _releaseCachedColors];
 }
 
 @end
 
-Class<RCTComponentViewProtocol> NanoIconViewCls(void)
-{
+Class<RCTComponentViewProtocol> NanoIconViewCls(void) {
   return NanoIconView.class;
 }

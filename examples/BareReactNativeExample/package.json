@@ -5,6 +5,7 @@
   "scripts": {
     "build": "cd ios && bundle install && bundle exec pod update",
     "android": "react-native run-android",
+    "android:clean": "rm -rf node_modules/react-native-safe-area-context/android/build android/app/.cxx android/.cxx && cd android && ./gradlew clean",
     "ios": "yarn build && react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
@@ -21,11 +22,11 @@
     "expo-image": "~55.0.6",
     "expo-modules-core": "^55.0.17",
     "react": "19.2.0",
-    "react-native": "0.83.2",
+    "react-native": "0.83.4",
     "react-native-nano-icons": "workspace:*",
     "react-native-release-profiler": "^0.4.4",
     "react-native-safe-area-context": "~5.6.2",
-    "react-native-screens": "~4.23.0",
+    "react-native-screens": "~4.24.0",
     "react-native-svg": "15.15.3"
   },
   "devDependencies": {
