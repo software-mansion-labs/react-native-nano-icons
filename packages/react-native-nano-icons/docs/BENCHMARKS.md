@@ -1,73 +1,57 @@
-# Benchmark Methodology
+# Benchmarks
 
-## Test Scenario
+## Setup
 
-Render 1,000 instances of the same icon in a `ScrollView`, measuring the time spent on the JS thread, UI (main) thread, and any main-thread microhangs during initial load.
+1,000 icons rendered in a `ScrollView` on **iPhone 15 Pro**, iOS 18, Release build, New Architecture (Fabric), React Native 0.84.0. Averaged over **20 runs** per library.
 
-## Device & Build Configuration
+Each library was tested in isolation — only one screen was registered on the `Icons` route in [`App.tsx`](../../../examples/NanoIconsBenchmarking/App.tsx) at a time, with the other imports commented out to avoid polluting the bundle:
 
-> **TODO**: Re-measure on a physical device. Current data was captured on an iOS simulator.
+```tsx
+const RootStack = createNativeStackNavigator({
+  initialRouteName: 'Home',
+  screens: {
+    Home: HomeScreen,
+    Icons: NanoIconsScreen,
+    // Icons: SVGIconsScreen,
+    // Icons: ExpoImageIconsScreen,
+    // Icons: ExpoVectorIconsScreen,
+  },
+});
+```
 
-| Parameter | Value |
-| :--- | :--- |
-| Device | TBD (physical device) |
-| OS | iOS TBD |
-| Build type | Release |
-| Architecture | New Architecture (Fabric) |
-| React Native | 0.84.0 |
+Each screen pre-creates the icon array at module scope and renders it inside a `ScrollView`. For example, [`NanoIconsScreen.tsx`](../../../examples/NanoIconsBenchmarking/screens/NanoIconsScreen.tsx):
 
-## Libraries Tested
+```tsx
+const materialIcons = Object.keys(glyphMap.i) as (keyof typeof glyphMap.i)[];
 
-| Library | Version | Rendering approach |
-| :--- | :--- | :--- |
-| `react-native-svg` | TBD | Native SVG view tree — parses XML per icon instance |
-| `expo-image` | TBD | Async image decode with caching |
-| `@expo/vector-icons` (IcoMoon) | TBD | Font glyph rendering via IcoMoon-generated fonts |
-| `react-native-nano-icons` | TBD | Font glyph rendering with layered multicolor support |
+const Icons = materialIcons.map(name => (
+  <MaterialIcon key={name} name={name} size={52} />
+));
 
-## What is measured
+export default function NanoIconsScreen() {
+  return (
+    <View>
+      <ScrollView>{Icons}</ScrollView>
+    </View>
+  );
+}
+```
 
-- **JS Thread (ms)** — Time spent executing JavaScript to create and mount icon components.
-- **UI Thread (ms)** — Time spent on the native main thread to render icon views.
-- **Microhang (ms)** — Duration of main thread stalls during initial load that can cause visible UI freezes. See [Apple's documentation on understanding hangs](https://developer.apple.com/documentation/xcode/understanding-hangs-in-your-app).
+Other screens follow the same pattern: [`SVGIconsScreen.tsx`](../../../examples/NanoIconsBenchmarking/screens/SVGIconsScreen.tsx) uses `react-native-svg` components via `require.context`, [`ExpoImageIconsScreen.tsx`](../../../examples/NanoIconsBenchmarking/screens/ExpoImageIconsScreen.tsx) uses `expo-image` `<Image>`, and [`ExpoVectorIconsScreen.tsx`](../../../examples/NanoIconsBenchmarking/screens/ExpoVectorIconsScreen.tsx) uses `@expo/vector-icons` with an IcoMoon font.
 
-All three phases are sequential: JS execution happens first, then UI thread rendering, then any decode/load stalls (microhang). This is why the chart uses stacked bars.
+Measurement was done with Xcode Instruments. The [`HomeScreen`](../../../examples/NanoIconsBenchmarking/screens/HomeScreen.tsx) button navigates to the icon screen, triggering the render being profiled.
 
-## How to Reproduce
+## Results
 
-1. Clone the repository and install dependencies:
-   ```bash
-   git clone https://github.com/software-mansion-labs/react-native-nano-icons.git
-   cd react-native-nano-icons
-   yarn install
-   ```
+| Library | JS Thread (ms) | Main Thread (ms) | Hang (ms) |
+| :--- | ---: | ---: | ---: |
+| `react-native-svg` | 192.03 | 292.15 | — |
+| `expo-image` | 78.07 | 922.03 | 415.32 |
+| `@expo/vector-icons` (IcoMoon) | 119.51 | 370.41 | 277.58 |
+| **`react-native-nano-icons`** | **74.97** | **155.04** | **—** |
 
-2. Build the example app in release mode:
-   ```bash
-   cd examples/ExpoExample
-   npx expo prebuild
-   # Build for iOS release via Xcode, or:
-   # npx expo run:ios --configuration Release
-   ```
+Times are absolute and include React Native screen navigation overhead (shared across all libraries).
 
-3. The example app contains separate screens for each library (`NanoIconsScreen`, `SVGIconsScreen`, `ExpoImageIconsScreen`, `ExpoVectorIconsScreen`). Each screen renders 1,000 icons in a ScrollView.
-
-4. Use Instruments (iOS) or the React Native release profiler to capture thread timing. The example app includes a `useStopProfiling` hook from `react-native-release-profiler` for automated measurement.
-
-## Raw Data
-
-> **TODO**: Add raw timing data table after re-measuring on a physical device.
-
-| Library | JS Thread (ms) | UI Thread (ms) | Microhang (ms) | Total (ms) |
-| :--- | ---: | ---: | ---: | ---: |
-| `react-native-svg` | — | — | — | — |
-| `expo-image` | — | — | — | — |
-| `@expo/vector-icons` | — | — | — | — |
-| `react-native-nano-icons` | — | — | — | — |
-
-## Notes
-
-- Measurements should be taken on a physical device. Simulator results tend to be faster than real hardware due to host CPU/memory advantages.
-- Results can vary between runs. Take the average of 3–5 runs.
-- Ensure no other heavy processes are running on the device during measurement.
-- The profiling hooks in the example app are currently commented out in screen components — uncomment them before measuring.
+- **JS Thread** — time executing JavaScript to create and mount components.
+- **Main Thread** — native UI thread rendering time.
+- **Hang** — main-thread stall during initial load ([Apple docs](https://developer.apple.com/documentation/xcode/understanding-hangs-in-your-app)). A dash means no hang was recorded.

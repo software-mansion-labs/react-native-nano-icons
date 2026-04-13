@@ -320,14 +320,23 @@ frame = {glyphRect.origin.x, glyphRect.origin.y + glyphRect.size.height - attach
 ```
 For inline views (non-text attachments), `NSFontAttributeName` is nil at the attachment character index, so `font.descender` evaluates to 0 via ObjC nil messaging. The view's bottom edge therefore aligns with the bottom of `glyphRect`. Additionally, Fabric uses a two-pass measurement: the first pass determines attachment positions with initial (zero) bounds, then feeds those positions back as `NSTextAttachment.bounds.origin.y` in a second pass. This feedback loop shifts the final frame ~2–3 pt above the typographic descender line, making the actual distance from the frame bottom to the baseline smaller than `|UIFont.descender|`.
 
-### Native Compensation
+### Native Rendering Architecture
 
-`NanoIconView` auto-detects when it's inline inside a `<Text>` component by walking the superview/parent chain to find the paragraph host view.
+#### iOS — Standalone vs. Inline Drawing Paths
 
-- **iOS:** Walks superviews until one responds to `-attributedText` (`RCTParagraphComponentView`). Reads the parent font's `ascender`, effective `lineHeight` (respecting custom RN `lineHeight` via `NSParagraphStyle.maximumLineHeight`), and `NSBaselineOffsetAttributeName`. Computes the icon's position within the current text line using `fmod(frameBottom, lineHeight)` and derives the exact distance from the Yoga frame's bottom edge to the text baseline. A child `NanoIconDrawingView` is shifted upward by this distance so the icon's visual bottom rests on the baseline. When the icon is taller than the text line the offset clamps to zero (no shift). `clipsToBounds = NO` and an `updateClippedSubviewsWithClipRect:` no-op prevent Fabric from clipping the overflow.
-- **Android:** Checks if `parent` is a `ReactTextView`. If so, reads the text layout paint's `fontMetrics.descent` and applies a compensating `canvas.translate` in `onDraw`.
+`NanoIconView` uses two distinct rendering paths depending on whether the icon is standalone or inline inside a `<Text>` component.
 
-When standalone (not inline in text), the offset is 0 — no change to rendering.
+**Inline detection** is performed once on the first `layoutSubviews` call (when the full view hierarchy is assembled) by checking the nearest 3 ancestors for `RCTParagraphComponentView` via direct class name comparison. The result is cached in `_isInlineInText` and only re-evaluated on `didMoveToSuperview` (reparenting).
+
+**Standalone icons** (the common case) draw directly in `NanoIconView`'s own `drawRect:`. No child views are created. `CTFontDrawGlyphs` renders glyph layers at the cached baseline position with a coordinate-flip transform to map CoreText's Y-up system to UIKit's Y-down frame.
+
+**Inline icons** use a lazily-created `CALayer` sublayer whose `frame.origin.y` is shifted upward by the computed baseline offset. A `CALayer` is used instead of a `UIView` because it provides the necessary shifted pixel buffer without the overhead of a responder chain, hit testing, or accessibility tree. This allows the icon to overflow the Yoga frame without clipping (enabled by `clipsToBounds = NO` and an `updateClippedSubviewsWithClipRect:` no-op that prevents Fabric scroll clipping). The owning `NanoIconView` acts as the layer's delegate and draws glyphs via `drawLayer:inContext:`. The baseline offset is derived from the parent `RCTParagraphComponentView`'s `attributedText`: the parent font's `ascender`, effective `lineHeight` (respecting custom RN `lineHeight` via `NSParagraphStyle.maximumLineHeight`), and `NSBaselineOffsetAttributeName`. The offset is computed as the distance from the Yoga frame's bottom edge to the text baseline using `fmod(frameBottom, lineHeight)`, and clamped to zero when the icon is taller than the text line. The offset is cached and only recomputed on bounds changes.
+
+**Font caching**: `CTFontRef` instances are shared via a process-wide static cache keyed by `(fontFamily, fontSize)`. Icons with the same font family and size reuse the same `CTFontRef` rather than each creating their own.
+
+#### Android
+
+Checks if `parent` is a `ReactTextView`. If so, reads the text layout paint's `fontMetrics.descent` and applies a compensating `canvas.translate` in `onDraw`. Standalone icons draw directly with no offset.
 
 ---
 

@@ -211,13 +211,13 @@ This makes the library well-suited for multicolor icons like country flags, bran
 
 ```TypeScript
 // Renders with the original SVG colors
-<Icon name="SWM_logo" size={52} />
+<Icon name="person" size={52} />
 
 // Override individual layer colors
-<Icon name="SWM_logo" size={52} color={["#FFFFFF", "#001A72"]} />
+<Icon name="person" size={52} color={['#DB227F', '#FDA780', '#231B25','#140E19']} />
 
 <Text>
-  Logo <Icon name="SWM_logo" size={32} /> Inline
+  Inline<Icon name="person" size={32} />person
 </Text>
 ```
 
