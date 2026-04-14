@@ -6,10 +6,10 @@
   <img alt="Nano Icons" src="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/logo-nanoicons-default.svg">
 </picture>
 
-<br>
 </div>
+<br>
 
-`react-native-nano-icons`
+[![npm version](https://img.shields.io/npm/v/react-native-nano-icons.svg)](https://www.npmjs.com/package/react-native-nano-icons?activeTab=readme) [![main](https://img.shields.io/github/actions/workflow/status/software-mansion-labs/react-native-nano-icons/run-jest-tests.yml?branch=main&label=main)](https://github.com/software-mansion-labs/react-native-nano-icons/actions/workflows/run-jest-tests.yml?query=branch%3Amain)
 
 # High-performance icon rendering for React Native & Expo.
 
