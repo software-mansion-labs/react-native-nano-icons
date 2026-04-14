@@ -38,6 +38,9 @@ jobs:
       group: publish-${{ github.ref }}
       cancel-in-progress: false
 
+    env:
+      HUSKY: 0
+
     steps:
       - name: Check out
         uses: actions/checkout@v4
