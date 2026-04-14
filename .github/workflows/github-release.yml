@@ -53,9 +53,16 @@ jobs:
             echo "value=$(jq -r .version packages/react-native-nano-icons/package.json)" >> $GITHUB_OUTPUT
           fi
 
+      - name: Sync root README into package
+        run: node scripts/sync-readme.mjs
+
       - name: Pack package
         working-directory: packages/react-native-nano-icons
         run: npm pack --pack-destination ../../
+
+      - name: Restore package README
+        if: always()
+        run: node scripts/sync-readme.mjs --restore
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

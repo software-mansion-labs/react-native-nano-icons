@@ -54,6 +54,9 @@ jobs:
           cache: 'yarn'
           registry-url: https://registry.npmjs.org/
 
+      - name: Sync root README into package
+        run: node scripts/sync-readme.mjs
+
       - name: Publish manual release
         if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: software-mansion/npm-package-publish@273bbdd5df5d28ae2de6c3ecd4a6f8067e4ff370
@@ -75,3 +78,7 @@ jobs:
           release-type: 'nightly'
           version: '1.0.0'
           dry-run: false
+
+      - name: Restore package README
+        if: always()
+        run: node scripts/sync-readme.mjs --restore
