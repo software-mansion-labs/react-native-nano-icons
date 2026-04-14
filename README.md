@@ -1,7 +1,10 @@
 <div align="center">
 
-![Nano Icons (light mode)](packages/react-native-nano-icons/docs/img/logo-nanoicons-default.svg#gh-light-mode-only)
-![Nano Icons (dark mode)](packages/react-native-nano-icons/docs/img/logo-nanoicons-inverted.svg#gh-dark-mode-only)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/logo-nanoicons-inverted.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/logo-nanoicons-default.svg">
+  <img alt="Nano Icons" src="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/logo-nanoicons-default.svg">
+</picture>
 
 <br>
 </div>
@@ -24,8 +27,11 @@ At build time, your SVGs are automatically converted into an optimized icon font
 Drop your SVGs in a folder. Use them as a fully typed component by name. 
 That’s it 🔬⚡️
 
-![Nano Icons Platforms Showcase (light mode)](packages/react-native-nano-icons/docs/img/nano-icons-platforms-light.png#gh-light-mode-only)
-![Nano Icons Platforms Showcase (dark mode)](packages/react-native-nano-icons/docs/img/nano-icons-platforms-inverted.png#gh-dark-mode-only)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/nano-icons-platforms-inverted.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/nano-icons-platforms-light.png">
+  <img alt="Nano Icons Platforms Showcase" src="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/nano-icons-platforms-light.png">
+</picture>
 
 ---
 
@@ -222,7 +228,7 @@ This makes the library well-suited for multicolor icons like country flags, bran
 ```
 
 <div align="center">
-  <img alt="Multicolor icon example showing per-layer color overrides" src="packages/react-native-nano-icons/docs/img/nano-icon-color-showcase.png" height="250">
+  <img alt="Multicolor icon example showing per-layer color overrides" src="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/nano-icon-color-showcase.png" height="250">
 </div>
 <br>
 
@@ -258,7 +264,7 @@ We measured the average time to render a screen with identical set of 1,000 diff
 > These libraries serve different primary purposes. `expo-image` is the go-to image library for photos and remote assets. `@expo/vector-icons` ships with many popular icon sets built in. `react-native-svg` handles the full SVG specification with fine-grained attribute control. We compare them here specifically on the use case of rendering many small, static icons.
 
 <div align="center">
-  <img alt="Performance benchmark: time to render 1k icons" src="packages/react-native-nano-icons/docs/img/nano-icons-benchmarks.png" width="900">
+  <img alt="Performance benchmark: time to render 1k icons" src="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/nano-icons-benchmarks.png" width="900">
 </div>
 <br>
 
@@ -278,8 +284,11 @@ The chart shows time in milliseconds across three phases: **JS Thread** (JavaScr
 
 ## 🔧 Font Generation Pipeline
 
-![Nano Icons Pipeline (light mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png#gh-light-mode-only)
-![Nano Icons Pipeline (dark mode)](packages/react-native-nano-icons/docs/img/nano-icons-graph-inverted.png#gh-dark-mode-only)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/nano-icons-graph-inverted.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png">
+  <img alt="Nano Icons Pipeline" src="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/nano-icons-graph-light.png">
+</picture>
 
 At build time, the pipeline processes your SVG directory through four stages:
 
@@ -336,8 +345,8 @@ can help you build your next dream product –
 
 <!-- automd:contributors author="software-mansion" -->
 
-Made by [@software-mansion](https://github.com/software-mansion) 💛
+Made by [@software-mansion](https://github.com/software-mansion) 💙
 <br><br>
 <a href="https://github.com/software-mansion-labs/react-native-nano-icons/graphs/contributors">
-<img src="https://contrib.rocks/image?repo=software-mansion-labs/react-native-nano-icons" />
+  <img src="https://contrib.rocks/image?repo=software-mansion-labs/react-native-nano-icons" />
 </a>

@@ -1,7 +1,10 @@
 <div align="center">
 
-![Nano Icons (light mode)](./docs/img/logo-nanoicons-default.svg#gh-light-mode-only)
-![Nano Icons (dark mode)](./docs/img/logo-nanoicons-inverted.svg#gh-dark-mode-only)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/logo-nanoicons-inverted.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/logo-nanoicons-default.svg">
+  <img alt="Nano Icons" src="https://raw.githubusercontent.com/software-mansion-labs/react-native-nano-icons/main/packages/react-native-nano-icons/docs/img/logo-nanoicons-default.svg">
+</picture>
 
 
 <br>
