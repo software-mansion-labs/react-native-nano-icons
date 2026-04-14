@@ -70,4 +70,5 @@ jobs:
           tag_name: v${{ steps.version.outputs.value }}
           name: v${{ steps.version.outputs.value }}
           draft: ${{ inputs.draft }}
+          generate_release_notes: true
           files: react-native-nano-icons-${{ steps.version.outputs.value }}.tgz

@@ -57,6 +57,12 @@ jobs:
           cache: 'yarn'
           registry-url: https://registry.npmjs.org/
 
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build package
+        run: yarn workspace react-native-nano-icons build
+
       - name: Sync root README into package
         run: node scripts/sync-readme.mjs
 
@@ -81,6 +87,31 @@ jobs:
           release-type: 'nightly'
           version: '1.0.0'
           dry-run: false
+
+      - name: Resolve version
+        id: version
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type == 'stable' && !inputs.dry-run }}
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "value=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=$(jq -r .version packages/react-native-nano-icons/package.json)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Pack package
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type == 'stable' && !inputs.dry-run }}
+        working-directory: packages/react-native-nano-icons
+        run: npm pack --pack-destination ../../
+
+      - name: Create GitHub Release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type == 'stable' && !inputs.dry-run }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          name: v${{ steps.version.outputs.value }}
+          draft: true
+          generate_release_notes: true
+          files: react-native-nano-icons-${{ steps.version.outputs.value }}.tgz
 
       - name: Restore package README
         if: always()
