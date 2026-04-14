@@ -12,7 +12,6 @@ const BACKUP = path.join(PKG_DIR, 'README.md.bak');
 
 const REPO = 'software-mansion-labs/react-native-nano-icons';
 const BRANCH = 'main';
-const RAW = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
 const BLOB = `https://github.com/${REPO}/blob/${BRANCH}`;
 
 const mode = process.argv[2];
@@ -32,11 +31,6 @@ if (fs.existsSync(PKG_README)) {
 }
 
 let content = fs.readFileSync(ROOT_README, 'utf8');
-
-content = content.replace(
-  /packages\/react-native-nano-icons\/docs\/img\//g,
-  `${RAW}/packages/react-native-nano-icons/docs/img/`,
-);
 
 content = content.replace(
   /\]\(packages\/react-native-nano-icons\/docs\/BENCHMARKS\.md\)/g,
