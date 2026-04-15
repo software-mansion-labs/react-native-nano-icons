@@ -42,8 +42,9 @@ That’s it 🔬⚡️
 - [🎨 Multicolor Icons](#-multicolor-icons)
 - [📊 Performance](#-performance)
 - [⚠️ Known Limitations](#%EF%B8%8F-known-limitations)
-- [🔧 Font Generation Pipeline](#-how-it-works)
+- [🔧 Font Generation Pipeline](#-font-generation-pipeline)
 - [🤝 Contributing](#-contributing)
+- [License](#license)
 
 ---
 
