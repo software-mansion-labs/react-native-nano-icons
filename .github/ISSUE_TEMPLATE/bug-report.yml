@@ -51,7 +51,7 @@ body:
       required: true
 
   - type: input
-    id: gesture-handler-version
+    id: nano-icons-version
     attributes:
       label: Nano Icons version
       description: What version of react-native-nano-icons are you using?
@@ -67,6 +67,15 @@ body:
       placeholder: 0.81.5
     validations:
       required: true
+
+  - type: input
+    id: expo-version
+    attributes:
+      label: Expo version
+      description: What version of expo are you using?
+      placeholder: 55.0.8
+    validations:
+      required: false
 
   - type: dropdown
     id: platforms

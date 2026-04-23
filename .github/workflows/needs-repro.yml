@@ -1,0 +1,38 @@
+name: Check for reproduction
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  main:
+    if: ${{ github.repository == 'software-mansion-labs/react-native-nano-icons' && !contains(github.event.issue.labels.*.name, 'Maintainer issue') }}
+
+    runs-on: ubuntu-latest
+    concurrency:
+      group: needs-repro-${{ github.event.issue.number }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout Actions
+        uses: actions/checkout@v4
+        with:
+          repository: software-mansion-labs/swmansion-bot
+          ref: stable
+
+      - uses: actions/cache@v4
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Actions
+        run: yarn install
+
+      - name: Needs Repro
+        uses: ./needs-repro
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          needs-repro-label: 'Missing repro'
+          needs-repro-response: "Hey! 👋 \n\nThe issue doesn't seem to contain a [minimal reproduction](https://stackoverflow.com/help/minimal-reproducible-example).\n\nCould you provide a [snack](https://snack.expo.dev/) or a link to a GitHub repository under your username that reproduces the problem?"
+          repro-provided-label: 'Repro provided'
+          check-issues-only-created-after: 2026-04-17
