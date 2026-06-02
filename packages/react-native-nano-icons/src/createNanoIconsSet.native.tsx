@@ -123,7 +123,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           fontFamily={fontFamilyBasename}
           codepoints={codepoints}
           colors={processedColors}
-          fontSize={size}
+          fontSize={scaledSize}
           advanceWidth={adv}
           unitsPerEm={unitsPerEm}
           iconWidth={width}
