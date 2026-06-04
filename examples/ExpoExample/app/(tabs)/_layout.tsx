@@ -1,52 +1,41 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import {
+  NativeTabs,
+  Icon,
+  Label,
+  VectorIcon,
+} from 'expo-router/unstable-native-tabs';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Nano Icons',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: '(Nano) SWM Icons',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="material"
-        options={{
-          title: '(Nano)Material TwoTone Icons',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
-    </Tabs>
+    <NativeTabs tintColor={Colors[colorScheme ?? 'light'].tint}>
+      <NativeTabs.Trigger name="index">
+        <Label>Nano Icons</Label>
+        <Icon
+          sf="chevron.left.forwardslash.chevron.right"
+          androidSrc={<VectorIcon family={FontAwesome} name="code" />}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="two">
+        <Label>(Nano) SWM Icons</Label>
+        <Icon
+          sf="chevron.left.forwardslash.chevron.right"
+          androidSrc={<VectorIcon family={FontAwesome} name="code" />}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="material">
+        <Label>(Nano)Material TwoTone Icons</Label>
+        <Icon
+          sf="chevron.left.forwardslash.chevron.right"
+          androidSrc={<VectorIcon family={FontAwesome} name="code" />}
+        />
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
