@@ -51,6 +51,23 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
     return ch;
   };
 
+  // Single color: tint only layers authored with currentColor
+  // Layers with hardcoded fills (flags, logos, ...) keep their source colors
+  function resolveLayerColor(
+    color: IconProps<keyof GM['i']>['color'],
+    srcColor: string | undefined,
+    index: number
+  ): string {
+    if (Array.isArray(color)) {
+      const last = color.length ? color[color.length - 1] : undefined;
+      return (color[index] ?? last ?? srcColor ?? 'black') as string;
+    }
+    if (color != null && srcColor === 'currentColor') {
+      return color as string;
+    }
+    return srcColor ?? 'black';
+  }
+
   const Icon = memo(
     ({
       name,
@@ -71,11 +88,6 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       const scaledSize = size * fontScale;
       const width = (adv / unitsPerEm) * scaledSize;
 
-      const colorArray = Array.isArray(color) ? color : [color];
-      const lastPaletteColor = colorArray?.length
-        ? colorArray[colorArray.length - 1]
-        : undefined;
-
       const containerStyle = useMemo(
         () => [{ height: scaledSize, width, bottom: 0 as const }, style],
         [scaledSize, width, style]
@@ -94,8 +106,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
           importantForAccessibility={importantForAccessibility}
           testID={testID}>
           {layers.map(([codepoint, srcColor], i) => {
-            const layerColor =
-              colorArray?.[i] ?? lastPaletteColor ?? srcColor ?? 'black';
+            const layerColor = resolveLayerColor(color, srcColor, i);
 
             return (
               <Text

@@ -101,7 +101,16 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
         if (color === undefined || color === null) {
           return getDefaultColors(nameStr, layers);
         }
-        const colorArray = Array.isArray(color) ? color : [color];
+        // Single color: tint only layers authored with currentColor
+        // Layers with hardcoded fills (flags, logos, ...) keep their source colors
+        if (!Array.isArray(color)) {
+          return layers.map(([, srcColor]) =>
+            cachedProcessColor(
+              (srcColor === 'currentColor' ? color : srcColor ?? 'black') as string
+            )
+          );
+        }
+        const colorArray = color;
         const lastPaletteColor = colorArray.length
           ? colorArray[colorArray.length - 1]
           : undefined;
