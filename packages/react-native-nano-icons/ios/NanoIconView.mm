@@ -188,6 +188,28 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
   }
 }
 
+// Fabric recycles component views. Without a reset, a recycled view keeps the
+// previous icon's inline drawing sublayer (and drawRect backing store), which
+// shows up as ghost glyphs from another icon overlapping the new one.
+// Only rendered content and inline-mode state are reset here: _glyphs/_colors
+// must stay consistent with _props, which Fabric preserves across recycling
+// (updateProps only rebuilds them when the new props differ).
+- (void)prepareForRecycle {
+  [super prepareForRecycle];
+  if (_drawingLayer) {
+    [_drawingLayer removeFromSuperlayer];
+    _drawingLayer = nil;
+  }
+  _inlineDetected = NO;
+  _isInlineInText = NO;
+  _paragraphView = nil;
+  _cachedBaselineOffset = 0;
+  _baselineOffsetValid = NO;
+  _metricsValid = NO;
+  self.layer.contents = nil;
+  [self setNeedsDisplay];
+}
+
 // Invalidate cached offset when size changes (text relayout).
 - (void)setBounds:(CGRect)bounds {
   if (!CGSizeEqualToSize(self.bounds.size, bounds.size)) {
@@ -225,7 +247,18 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
     }
     // First layout after inline detection: the layer missed the initial
     // setNeedsDisplay from updateProps (which targeted self before detection).
-    if (created) [_drawingLayer setNeedsDisplay];
+    // Also clear self's backing store in case this view previously drew as a
+    // standalone icon (drawRect early-returns for inline, so this only wipes).
+    if (created) {
+      [_drawingLayer setNeedsDisplay];
+      [self setNeedsDisplay];
+    }
+  } else if (_drawingLayer) {
+    // Switched inline -> standalone (reparent/recycle): drop the stale inline
+    // layer or its old glyph keeps compositing on top of the new icon.
+    [_drawingLayer removeFromSuperlayer];
+    _drawingLayer = nil;
+    [self setNeedsDisplay];
   }
   // standalone: draws directly via drawRect: on self
 }
@@ -377,11 +410,11 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
 
   [super updateProps:props oldProps:oldProps];
   if (needsRedraw) {
-    if (_isInlineInText && _drawingLayer) {
-      [_drawingLayer setNeedsDisplay];
-    } else {
-      [self setNeedsDisplay];
-    }
+    // _isInlineInText may be stale here (re-detection happens at layout), so
+    // mark both targets; drawRect/drawInContext render per the resolved mode
+    // and the redundant invalidation only clears the unused backing store.
+    [_drawingLayer setNeedsDisplay];
+    [self setNeedsDisplay];
   }
 }
 
