@@ -1996,7 +1996,7 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
-  - react-native-nano-icons (0.1.2):
+  - react-native-nano-icons (0.1.8):
     - boost
     - DoubleConversion
     - fast_float
@@ -2696,7 +2696,35 @@ PODS:
     - React-perflogger (= 0.83.4)
     - React-utils (= 0.83.4)
     - SocketRocket
-  - RNScreens (4.23.0):
+  - ReactNavigation (8.0.0-alpha.32):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
+  - RNScreens (4.25.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -2723,10 +2751,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNScreens/common (= 4.23.0)
+    - RNScreens/common (= 4.25.2)
     - SocketRocket
     - Yoga
-  - RNScreens/common (4.23.0):
+  - RNScreens/common (4.25.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -2918,6 +2946,7 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios/ReactAppDependencyProvider`)
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - "ReactNavigation (from `../node_modules/@react-navigation/native`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - SocketRocket (~> 0.7.1)
@@ -3116,6 +3145,8 @@ EXTERNAL SOURCES:
     :path: build/generated/ios/ReactCodegen
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  ReactNavigation:
+    :path: "../node_modules/@react-navigation/native"
   RNScreens:
     :path: "../node_modules/react-native-screens"
   RNSVG:
@@ -3181,7 +3212,7 @@ SPEC CHECKSUMS:
   React-logger: 993e4b9793768764e0fdd379ad1d6582f7905463
   React-Mapbuffer: 3a5f700ed673820ab4b1b35ba0cf8476400bc4c5
   React-microtasksnativemodule: 094677e625f12276a8f871844a5ee6a945a90221
-  react-native-nano-icons: d01d4788806e414db2a06fd6f8c1de5eb4573076
+  react-native-nano-icons: 118c99a62175c3f4737ff21e85252c90158816fb
   react-native-release-profiler: 12729af9f7bd9b14426bd4610af28d5e4b4a0f0c
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   React-NativeModulesApple: 29290351acc118784e158aa7b23c42719dc57617
@@ -3217,7 +3248,8 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 2b19d66e5ddfe8dc7afb6338a4626156cbf2bab1
   ReactCodegen: 53a01767e04b3a23f128b5a3c6542b4ab24fb921
   ReactCommon: 5901ef412ae35cc727b9584d4f7e3e1f7f17c251
-  RNScreens: afaf526a9c804c3b4503f950cf3e67ed81e29ada
+  ReactNavigation: e64ef01244ab3c95f7a9d6a77517ee3422869a07
+  RNScreens: 9269ab4971b2bd24917be84295d2c2ae7d06e9be
   RNSVG: 595abfa0f9ac26d56afcaaedf4e37a00f54cab71
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57

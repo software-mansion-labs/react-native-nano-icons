@@ -54,5 +54,9 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
+  },
+  "resolutions": {
+    "@react-navigation/elements@npm:^3.0.0-alpha.36": "patch:@react-navigation/elements@npm%3A3.0.0-alpha.36#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.36-35f7f0575b.patch",
+    "@react-navigation/elements@npm:^2.9.12": "patch:@react-navigation/elements@npm%3A3.0.0-alpha.36#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.36-35f7f0575b.patch"
   }
 }

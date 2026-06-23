@@ -1,39 +1,77 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import {
-  NativeTabs,
-  Icon,
-  Label,
-  VectorIcon,
-} from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import { TabiconsSymbols } from '@/assets/nanoicons/tabicons.symbols';
+import { MciconsSymbols } from '@/assets/nanoicons/mcicons.symbols';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
   return (
-    <NativeTabs tintColor={Colors[colorScheme ?? 'light'].tint}>
+    <NativeTabs
+      tintColor={palette.tint}
+      // Note: expo-router converts xcasset icons to template images only when
+      // an icon color is set for the state; setting both normal and selected
+      // colors keeps icon/selectedIcon the same native type.
+      iconColor={palette.tabIconDefault}>
       <NativeTabs.Trigger name="index">
-        <Label>Nano Icons</Label>
-        <Icon
-          sf="chevron.left.forwardslash.chevron.right"
-          androidSrc={<VectorIcon family={FontAwesome} name="code" />}
+        <NativeTabs.Trigger.Label>Nano Icons</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          xcasset={TabiconsSymbols.home}
+          src={
+            <NativeTabs.Trigger.VectorIcon family={FontAwesome} name="home" />
+          }
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="two">
-        <Label>(Nano) SWM Icons</Label>
-        <Icon
-          sf="chevron.left.forwardslash.chevron.right"
-          androidSrc={<VectorIcon family={FontAwesome} name="code" />}
+        <NativeTabs.Trigger.Label>(Nano) SWM Icons</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          xcasset={{
+            default: TabiconsSymbols.heart,
+            selected: TabiconsSymbols['heart.fill'],
+          }}
+          src={
+            <NativeTabs.Trigger.VectorIcon family={FontAwesome} name="heart" />
+          }
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="material">
-        <Label>(Nano)Material TwoTone Icons</Label>
-        <Icon
-          sf="chevron.left.forwardslash.chevron.right"
-          androidSrc={<VectorIcon family={FontAwesome} name="code" />}
+        <NativeTabs.Trigger.Label>(Nano)Material</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          xcasset={TabiconsSymbols.messages}
+          src={
+            <NativeTabs.Trigger.VectorIcon
+              family={FontAwesome}
+              name="comment"
+            />
+          }
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="swm">
+        <NativeTabs.Trigger.Label>SWM</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          xcasset={TabiconsSymbols.swm}
+          src={
+            <NativeTabs.Trigger.VectorIcon family={FontAwesome} name="flag" />
+          }
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="colors">
+        <NativeTabs.Trigger.Label>Colors</NativeTabs.Trigger.Label>
+        {/* Colored imageset (mcicons set, multicolor: true) — renders in
+            ORIGINAL colors in the bar, unlike the monochrome symbols above. */}
+        <NativeTabs.Trigger.Icon
+          xcasset={MciconsSymbols.walker}
+          src={
+            <NativeTabs.Trigger.VectorIcon
+              family={FontAwesome}
+              name="paint-brush"
+            />
+          }
         />
       </NativeTabs.Trigger>
     </NativeTabs>

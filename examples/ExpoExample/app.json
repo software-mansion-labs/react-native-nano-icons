@@ -55,10 +55,26 @@
               "fontFamily": "SWMIconsOutline",
               "outputDir": "./assets/nanoicons"
             }
+          ],
+          "symbolSets": [
+            {
+              "inputDir": "./assets/tabicons",
+              "name": "tabicons",
+              "prefix": "nano",
+              "outputDir": "./assets/nanoicons"
+            },
+            {
+              "inputDir": "./assets/mcicons",
+              "name": "mcicons",
+              "prefix": "nanomc",
+              "outputDir": "./assets/nanoicons",
+              "multicolor": true
+            }
           ]
         }
       ],
-      "expo-router"
+      "expo-router",
+      "expo-splash-screen"
     ]
   }
 }

@@ -3,6 +3,8 @@ import path from 'node:path';
 import * as plist from 'plist';
 import type { NanoLogger } from './logger.js';
 import type { BuiltFont } from './build.js';
+import type { BuiltSymbolSet } from './buildSymbols.js';
+import { catalogRootContentsJson } from '../src/core/symbols/contents.js';
 
 type ShellScriptOptions = {
   shellPath?: string;
@@ -21,6 +23,16 @@ type XcodeProject = {
     target: string,
     options?: ShellScriptOptions
   ) => void;
+  addResourceFile: (
+    filePath: string,
+    opt?: {
+      target?: string;
+      lastKnownFileType?: string;
+      sourceTree?: string;
+    },
+    group?: string | null
+  ) => unknown;
+  hasFile: (filePath: string) => boolean;
   writeSync: () => string;
   hash: {
     project: {
@@ -119,6 +131,139 @@ async function linkIos(
 
     fs.writeFileSync(pbxprojPath, project.writeSync(), 'utf8');
   }
+}
+
+// ---------------------------------------------------------------------------
+// Custom SF Symbol linking (iOS)
+// ---------------------------------------------------------------------------
+
+const IOS_SYMBOLS_CATALOG = 'NanoIconsSymbols.xcassets';
+
+function findIosApp(
+  projectRoot: string
+): { iosDir: string; xcodeprojName: string; appName: string } | null {
+  const iosDir = path.join(projectRoot, 'ios');
+  if (!fs.existsSync(iosDir)) return null;
+
+  const xcodeprojDir = fs
+    .readdirSync(iosDir, { withFileTypes: true })
+    .find((d) => d.name.endsWith('.xcodeproj'));
+  if (!xcodeprojDir) return null;
+
+  return {
+    iosDir,
+    xcodeprojName: xcodeprojDir.name,
+    appName: xcodeprojDir.name.replace(/\.xcodeproj$/, ''),
+  };
+}
+
+const NANO_ASSET_RE = /\.(symbolset|imageset)$/;
+
+// Copy generated asset folders into a catalog, first removing previously
+// generated assets for the same prefixes (handles removed icons and mode switches).
+export function copySymbolsetsIntoCatalog(
+  catalogDir: string,
+  builtSymbolSets: BuiltSymbolSet[]
+): void {
+  const prefixes = new Set(builtSymbolSets.map((s) => s.prefix));
+
+  // Remove stale assets owned by our prefixes.
+  for (const entry of fs.readdirSync(catalogDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !NANO_ASSET_RE.test(entry.name)) continue;
+    const assetName = entry.name.replace(NANO_ASSET_RE, '');
+    for (const prefix of prefixes) {
+      if (assetName.startsWith(`${prefix}.`)) {
+        fs.rmSync(path.join(catalogDir, entry.name), {
+          recursive: true,
+          force: true,
+        });
+        break;
+      }
+    }
+  }
+
+  for (const set of builtSymbolSets) {
+    for (const assetDir of set.assetDirs) {
+      const dest = path.join(catalogDir, path.basename(assetDir));
+      fs.cpSync(assetDir, dest, { recursive: true });
+    }
+  }
+}
+
+/**
+ * Link custom SF Symbols into the iOS app. Primary path writes into the app's
+ * existing Images.xcassets (no pbxproj changes). Fallback (no Images.xcassets)
+ * creates NanoIconsSymbols.xcassets and registers it on the first target.
+ */
+export async function linkBareSymbols(
+  projectRoot: string,
+  builtSymbolSets: BuiltSymbolSet[],
+  logger: NanoLogger
+): Promise<void> {
+  if (!builtSymbolSets.length) return;
+
+  const app = findIosApp(projectRoot);
+  if (!app) {
+    const outputDirs = [
+      ...new Set(builtSymbolSets.map((s) => path.dirname(s.symbolsDir))),
+    ];
+    const rel = path.relative(projectRoot, outputDirs[0] ?? '');
+    logger.info(
+      `No ios/ project found — symbols saved to ${rel}/  (skipping link)`
+    );
+    return;
+  }
+
+  const imagesCatalog = path.join(app.iosDir, app.appName, 'Images.xcassets');
+
+  if (fs.existsSync(imagesCatalog)) {
+    copySymbolsetsIntoCatalog(imagesCatalog, builtSymbolSets);
+    logger.succeed(`Linked symbols → ios/${app.appName}/Images.xcassets`);
+    return;
+  }
+
+  // Fallback: dedicated catalog + pbxproj resource entry
+  const catalogDir = path.join(app.iosDir, IOS_SYMBOLS_CATALOG);
+  fs.mkdirSync(catalogDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(catalogDir, 'Contents.json'),
+    catalogRootContentsJson(),
+    'utf8'
+  );
+  copySymbolsetsIntoCatalog(catalogDir, builtSymbolSets);
+
+  const pbxprojPath = path.join(
+    app.iosDir,
+    app.xcodeprojName,
+    'project.pbxproj'
+  );
+  const xcode = require('xcode') as { project: (p: string) => XcodeProject };
+  const project = xcode.project(pbxprojPath);
+  project.parseSync();
+
+  if (!project.hasFile(IOS_SYMBOLS_CATALOG)) {
+    try {
+      project.addResourceFile(
+        IOS_SYMBOLS_CATALOG,
+        {
+          target: project.getFirstTarget().uuid,
+          lastKnownFileType: 'folder.assetcatalog',
+          sourceTree: '"<group>"',
+        },
+        null
+      );
+      fs.writeFileSync(pbxprojPath, project.writeSync(), 'utf8');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.warn(
+        `Could not register ${IOS_SYMBOLS_CATALOG} in the Xcode project (${message}). ` +
+          `Add ios/${IOS_SYMBOLS_CATALOG} to your app target's resources in Xcode once.`
+      );
+      return;
+    }
+  }
+
+  logger.succeed(`Linked symbols → ios/${IOS_SYMBOLS_CATALOG}`);
 }
 
 /**

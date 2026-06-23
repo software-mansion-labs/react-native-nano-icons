@@ -43,7 +43,7 @@ For each icon set:
 2. Computes SHA-256 fingerprint of all SVG inputs
 3. **Skips generation** if existing glyphmap hash matches (incremental builds)
 4. Deletes stale output files
-5. Calls `runPipeline()` with resolved config and paths
+5. Calls `runFontPipeline()` with resolved config and paths
 6. Returns `{ fontFamily, ttfPath, glyphmapPath }`
 
 ---
@@ -76,9 +76,9 @@ The pathops shim (`src/core/shims/pathops.py`) provides: `Path`, `op()`, `FillTy
 
 ---
 
-## Pipeline: `runPipeline(config, paths, options?)`
+## Pipeline: `runFontPipeline(config, paths, options?)`
 
-**File:** `src/core/pipeline/run.ts`
+**File:** `src/core/pipeline/runFontPipeline.ts`
 
 ### Step 1: Read SVG files
 
@@ -295,7 +295,7 @@ Picosvg's `simplify()` through the PathKit WASM shim can **drop contours** from 
 
 ### Font Metrics Design
 
-The pipeline compiles icon fonts with **`ascent = UPM`** and **`descent = 0`** (see `run.ts:252-254`). This means:
+The pipeline compiles icon fonts with **`ascent = UPM`** and **`descent = 0`** (see `runFontPipeline.ts:252-254`). This means:
 
 - Glyphs fill the entire em square from baseline to top — no descender space
 - At any `fontSize`, the glyph's visual height equals the font size
@@ -358,7 +358,7 @@ Checks if `parent` is a `ReactTextView`. If so, reads the text layout paint's `f
 ```
 src/core/
 ├── pipeline/
-│   ├── run.ts          # Main pipeline orchestrator
+│   ├── runFontPipeline.ts          # Main pipeline orchestrator
 │   ├── managers.ts     # PathKit + Pyodide singleton managers
 │   ├── config.ts       # PipelineConfig, PipelinePaths types, ensureDir
 │   └── index.ts        # Re-exports

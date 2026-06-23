@@ -8,7 +8,7 @@ import path from 'node:path';
 // Must be set before any pipeline import so getPackageRoot() picks it up.
 process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
 
-import { runPipeline } from '../src/core/pipeline/run';
+import { runFontPipeline } from '../src/core/pipeline/runFontPipeline';
 import type { NanoGlyphMap } from '../src/core/types';
 
 // ---------------------------------------------------------------------------
@@ -38,7 +38,7 @@ describe('Pipeline E2E — outline (single-colour)', () => {
     outputDir = path.join(os.tmpdir(), `nano-e2e-${Date.now()}`);
     tempDir = path.join(os.tmpdir(), `nano-e2e-tmp-${Date.now()}`);
 
-    await runPipeline(
+    await runFontPipeline(
       {
         fontFamily: FONT_FAMILY,
         upm: UPM,
@@ -207,7 +207,7 @@ describe('Pipeline E2E — inputHash embedding', () => {
     outputDir = path.join(os.tmpdir(), `nano-e2e-hash-${Date.now()}`);
     tempDir = path.join(os.tmpdir(), `nano-e2e-hash-tmp-${Date.now()}`);
 
-    await runPipeline(
+    await runFontPipeline(
       {
         fontFamily: FONT_FAMILY,
         upm: UPM,
@@ -229,7 +229,7 @@ describe('Pipeline E2E — inputHash embedding', () => {
     }
   });
 
-  test('glyphmap m.h equals the inputHash passed to runPipeline', () => {
+  test('glyphmap m.h equals the inputHash passed to runFontPipeline', () => {
     expect(glyphmap.m.h).toBe(INPUT_HASH);
   });
 });

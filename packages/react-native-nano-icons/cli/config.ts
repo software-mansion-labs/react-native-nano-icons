@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { IconSetConfig } from './build.js';
+import type { SymbolSetConfig } from './buildSymbols.js';
 
 export type NanoIconsConfig = {
-  iconSets: IconSetConfig[];
+  iconSets?: IconSetConfig[];
+  symbolSets?: SymbolSetConfig[];
 };
 
 /**
@@ -22,11 +24,14 @@ export function loadNanoIconsConfig(configRoot: string): NanoIconsConfig {
   }
 
   const raw = fs.readFileSync(configPath, 'utf8');
-  const config = JSON.parse(raw) as { iconSets?: unknown[] };
+  const config = JSON.parse(raw) as {
+    iconSets?: unknown[];
+    symbolSets?: unknown[];
+  };
 
-  if (!config?.iconSets?.length) {
+  if (!config?.iconSets?.length && !config?.symbolSets?.length) {
     throw new Error(
-      `🔬❌ [react-native-nano-icons] .nanoicons.json must contain an "iconSets" array with at least one entry.`
+      `🔬❌ [react-native-nano-icons] .nanoicons.json must contain an "iconSets" or "symbolSets" array with at least one entry.`
     );
   }
 

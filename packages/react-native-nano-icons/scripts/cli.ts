@@ -16,7 +16,9 @@ import {
   createOraLogger,
   loadNanoIconsConfig,
   buildAllFonts,
+  buildAllSymbols,
   linkBare,
+  linkBareSymbols,
 } from '../cli/index.js';
 
 async function main(): Promise<void> {
@@ -32,8 +34,20 @@ async function main(): Promise<void> {
 
   const logger = await createOraLogger(level);
   const config = loadNanoIconsConfig(configRoot);
-  const built = await buildAllFonts(config.iconSets, projectRoot, { logger });
-  await linkBare(projectRoot, built, logger);
+
+  if (config.iconSets?.length) {
+    const built = await buildAllFonts(config.iconSets, projectRoot, {
+      logger,
+    });
+    await linkBare(projectRoot, built, logger);
+  }
+
+  if (config.symbolSets?.length) {
+    const builtSymbols = await buildAllSymbols(config.symbolSets, projectRoot, {
+      logger,
+    });
+    await linkBareSymbols(projectRoot, builtSymbols, logger);
+  }
 }
 
 main().catch((err: unknown) => {

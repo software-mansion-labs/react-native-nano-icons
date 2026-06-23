@@ -17,10 +17,39 @@ export interface IconSetConfig {
 }
 
 /**
- * plugins: [ [ "react-native-nano-icons", { iconSets: [...] } ] ]
+ * Config for one symbol set: input SVGs → `.symbolset` (or `.imageset` when
+ * `multicolor`), linked into the iOS asset catalog for `UIImage(named:)`.
  */
+export interface SymbolSetConfig {
+  /** Folder of SVG files (relative to project root). */
+  inputDir: string;
+  /** Set name; defaults to the inputDir basename. */
+  name?: string;
+  /** Symbol name prefix (default "nano"): home.svg → "nano.home". */
+  prefix?: string;
+  /** Output dir; defaults to a sibling nanoicons folder next to inputDir. */
+  outputDir?: string;
+  /** Emit colored `.imageset` (original colors) instead of monochrome `.symbolset`. */
+  multicolor?: boolean;
+}
+
+/** Result of building one symbol set. */
+export interface BuiltSymbolSet {
+  name: string;
+  prefix: string;
+  /** Directory containing the generated asset folders. */
+  symbolsDir: string;
+  /** The generated `.symbolset`/`.imageset` folders. */
+  assetDirs: string[];
+  manifestTsPath: string;
+  symbolmapPath: string;
+  symbols: Record<string, string>;
+}
+
+/** plugins: [ [ "react-native-nano-icons", { iconSets: [...], symbolSets: [...] } ] ] */
 export interface NanoIconsPluginOptions {
-  iconSets: IconSetConfig[];
+  iconSets?: IconSetConfig[];
+  symbolSets?: SymbolSetConfig[];
 }
 
 /**

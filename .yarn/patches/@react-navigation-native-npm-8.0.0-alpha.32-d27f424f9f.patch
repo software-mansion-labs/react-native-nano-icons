@@ -1,0 +1,30 @@
+diff --git a/ios/ReactNavigationSFSymbolView.swift b/ios/ReactNavigationSFSymbolView.swift
+index d36bb6746381abf93ad68fcba2e610009956f08e..33ce99af3fe7c78e1e8c2970a7081b40132a8c85 100644
+--- a/ios/ReactNavigationSFSymbolView.swift
++++ b/ios/ReactNavigationSFSymbolView.swift
+@@ -532,15 +532,23 @@ import UIKit
+       let variableValue = min(max(props.variableValue, 0), 1)
+ 
+       if #available(iOS 16.0, *) {
+-        return UIImage(
++        if let systemImage = UIImage(
+           systemName: name,
+           variableValue: Double(variableValue),
+           configuration: configuration
+-        )
++        ) {
++          return systemImage
++        }
+       }
+     }
+ 
++    // Built-in SF Symbols resolve via `systemName:`. Fall back to a custom
++    // symbol compiled into the app's asset catalog (`UIImage(named:)`), then
++    // apply the same SymbolConfiguration so app-provided symbol sets get the
++    // full rendering-mode treatment (monochrome / hierarchical / palette /
++    // multicolor) — not just the built-in library.
+     return UIImage(systemName: name, withConfiguration: configuration)
++      ?? UIImage(named: name)?.applyingSymbolConfiguration(configuration)
+   }
+ 
+   @available(iOS 26.0, *)

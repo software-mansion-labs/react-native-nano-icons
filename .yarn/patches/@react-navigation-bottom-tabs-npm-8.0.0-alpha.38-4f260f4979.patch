@@ -1,0 +1,23 @@
+diff --git a/lib/module/views/BottomTabViewNativeImpl.js b/lib/module/views/BottomTabViewNativeImpl.js
+index a1536bfad924ce09c75c07356d903743f5301fbc..8a1c17ad1f257ae23f6d292d1ae1990152e27846 100644
+--- a/lib/module/views/BottomTabViewNativeImpl.js
++++ b/lib/module/views/BottomTabViewNativeImpl.js
+@@ -537,6 +537,18 @@ function getPlatformIcon(icon) {
+         },
+         shared: undefined
+       };
++    case 'sfSymbolAsset':
++      // A custom SF Symbol / image bundled in the app's iOS asset catalog,
++      // resolved by name via `[UIImage imageNamed:]` (react-native-screens'
++      // `xcasset` icon type). The app-provided counterpart to `sfSymbol`.
++      return {
++        ios: {
++          type: 'xcasset',
++          name: icon.name
++        },
++        android: undefined,
++        shared: undefined
++      };
+     case 'image':
+       return {
+         ios: icon.tinted === false ? {

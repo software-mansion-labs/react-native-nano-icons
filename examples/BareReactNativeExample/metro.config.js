@@ -70,6 +70,23 @@ module.exports = mergeConfig(defaultConfig, {
           platform,
         );
       }
+      // react-navigation v8 imports the `@react-navigation/elements/internal`
+      // subpath export. Package exports are disabled in this monorepo config
+      // (above), so map that one subpath to its physical file explicitly.
+      if (moduleName === '@react-navigation/elements/internal') {
+        return context.resolveRequest(
+          context,
+          '@react-navigation/elements/lib/module/internal',
+          platform,
+        );
+      }
+      // `@callstack/liquid-glass` is an OPTIONAL peer of @react-navigation/
+      // elements (elements `require()`s it inside try/catch). We don't use it,
+      // so resolve it to an empty module — elements then falls back to
+      // `isLiquidGlassSupported = false`.
+      if (moduleName === '@callstack/liquid-glass') {
+        return { type: 'empty' };
+      }
       return context.resolveRequest(context, moduleName, platform);
     },
 
