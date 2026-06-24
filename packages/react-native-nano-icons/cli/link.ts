@@ -5,6 +5,7 @@ import type { NanoLogger } from './logger.js';
 import type { BuiltFont } from './build.js';
 import type { BuiltSymbolSet } from './buildSymbols.js';
 import { catalogRootContentsJson } from '../src/core/symbols/contents.js';
+import { toDrawableResourceName } from '../src/utils/naming.js';
 
 type ShellScriptOptions = {
   shellPath?: string;
@@ -45,6 +46,7 @@ type XcodeProject = {
 };
 
 const ANDROID_FONTS_DIR = 'android/app/src/main/assets/fonts';
+const ANDROID_DRAWABLES_DIR = 'android/app/src/main/res/drawable';
 const IOS_NANOICONS_FONTS_DIR = 'nanoicons-fonts';
 const IOS_RUN_SCRIPT_PHASE_NAME = 'Copy nanoicons fonts';
 
@@ -73,7 +75,7 @@ async function linkIos(
 
   if (!xcodeprojDir) return;
 
-  const appName = xcodeprojDir.name.replace(/\.xcodeproj$/, '');
+  const appName = xcodeprojDir.name.replace(XCODEPROJ_RE, '');
   const infoPlistPath = path.join(iosDir, appName, 'Info.plist');
   if (!fs.existsSync(infoPlistPath)) return;
 
@@ -153,11 +155,14 @@ function findIosApp(
   return {
     iosDir,
     xcodeprojName: xcodeprojDir.name,
-    appName: xcodeprojDir.name.replace(/\.xcodeproj$/, ''),
+    appName: xcodeprojDir.name.replace(XCODEPROJ_RE, ''),
   };
 }
 
+// File/folder name matchers (filesystem, CLI-specific).
+const XCODEPROJ_RE = /\.xcodeproj$/;
 const NANO_ASSET_RE = /\.(symbolset|imageset)$/;
+const XML_FILE_RE = /\.xml$/;
 
 // Copy generated asset folders into a catalog, first removing previously
 // generated assets for the same prefixes (handles removed icons and mode switches).
@@ -264,6 +269,63 @@ export async function linkBareSymbols(
   }
 
   logger.succeed(`Linked symbols → ios/${IOS_SYMBOLS_CATALOG}`);
+}
+
+// ---------------------------------------------------------------------------
+// Android VectorDrawable linking
+// ---------------------------------------------------------------------------
+
+// Copy generated VectorDrawable XML into a res/drawable dir, first removing
+// previously generated drawables owned by our prefixes (handles removed icons).
+export function copyDrawablesIntoResDir(
+  drawableDir: string,
+  builtSymbolSets: BuiltSymbolSet[]
+): void {
+  fs.mkdirSync(drawableDir, { recursive: true });
+
+  const prefixes = new Set(
+    builtSymbolSets.map((s) => toDrawableResourceName(s.prefix))
+  );
+
+  // Remove stale drawables owned by our prefixes (e.g. "nano_*.xml").
+  for (const entry of fs.readdirSync(drawableDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.xml')) continue;
+    const base = entry.name.replace(XML_FILE_RE, '');
+    for (const prefix of prefixes) {
+      if (base.startsWith(`${prefix}_`)) {
+        fs.rmSync(path.join(drawableDir, entry.name), { force: true });
+        break;
+      }
+    }
+  }
+
+  for (const set of builtSymbolSets) {
+    for (const file of set.drawableFiles) {
+      fs.copyFileSync(file, path.join(drawableDir, path.basename(file)));
+    }
+  }
+}
+
+/**
+ * Link generated VectorDrawables into the Android app's res/drawable. They are
+ * compiled automatically by AGP and resolve by name via getIdentifier — the
+ * native-tab-bar counterpart to the iOS asset catalog. No gradle changes needed.
+ */
+export async function linkBareAndroidDrawables(
+  projectRoot: string,
+  builtSymbolSets: BuiltSymbolSet[],
+  logger: NanoLogger
+): Promise<void> {
+  if (!builtSymbolSets.length) return;
+
+  if (!fs.existsSync(path.join(projectRoot, 'android'))) {
+    logger.info('No android/ project found — skipping drawable link');
+    return;
+  }
+
+  const drawableDir = path.join(projectRoot, ANDROID_DRAWABLES_DIR);
+  copyDrawablesIntoResDir(drawableDir, builtSymbolSets);
+  logger.succeed(`Linked drawables → ${ANDROID_DRAWABLES_DIR}`);
 }
 
 /**

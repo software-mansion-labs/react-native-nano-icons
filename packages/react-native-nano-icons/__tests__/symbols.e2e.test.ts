@@ -11,10 +11,8 @@ process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
 
 import { buildAllSymbols } from '../cli/buildSymbols';
 import { copySymbolsetsIntoCatalog } from '../cli/link';
-import {
-  manifestExportName,
-  type NanoSymbolMap,
-} from '../src/core/pipeline/runSymbolPipeline';
+import { type NanoSymbolMap } from '../src/core/pipeline/runSymbolPipeline';
+import { manifestExportName } from '../src/utils/naming';
 import { catalogRootContentsJson } from '../src/core/symbols/contents';
 import { buildColoredSymbolSvg } from '../src/core/symbols/coloredSymbol';
 

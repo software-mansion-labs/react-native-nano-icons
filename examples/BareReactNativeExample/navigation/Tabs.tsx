@@ -2,22 +2,15 @@ import {
   createBottomTabNavigator,
   createBottomTabScreen,
 } from '@react-navigation/bottom-tabs';
-import type { Icon } from '@react-navigation/elements';
 
 import IconsScreen from '../screens/IconsScreen';
-import { MulticolorScreen, SystemScreen } from '../screens/VariantScreens';
+import MulticolorScreen from '../screens/MulticolorScreen';
+import SystemScreen from '../screens/SystemScreen';
 import { TabiconsSymbols } from '../assets/nanoicons/tabicons.symbols';
+import { TabiconsDrawables } from '../assets/nanoicons/tabicons.drawables';
 import { MciconSymbols } from '../assets/nanoicons/mcicon.symbols';
-
-// 3 tabs in the native tab render path:
-//   asset(): our custom catalog assets, by name via UIImage(named:)
-//            (the `sfSymbolAsset` Icon type — app-provided counterpart to sfSymbol)
-//     · .symbolset  -> SF Symbol template, tinted by the bar
-//     · .imageset   -> colored image, original colors
-//   sf():    a built-in Apple SF Symbol, UIImage(systemName:)
-const asset = (name: string): Icon => ({ type: 'sfSymbolAsset', name });
-
-const sf = (name: string): Icon => ({ type: 'sfSymbol', name }) as Icon;
+import { MciconDrawables } from '../assets/nanoicons/mcicon.drawables';
+import { nano, system } from '../helpers/icons';
 
 const Tabs = createBottomTabNavigator({
   screenOptions: {
@@ -30,44 +23,34 @@ const Tabs = createBottomTabNavigator({
       screen: IconsScreen,
       options: {
         title: 'Mono',
-        tabBarIcon: () => asset(TabiconsSymbols.swm),
+        tabBarIconSize: 44,
+        tabBarActiveIndicatorWidth: 80,
+        tabBarActiveIndicatorHeight: 40,
+        tabBarIcon: () => nano(TabiconsSymbols.swm, TabiconsDrawables.swm),
       },
     }),
-    // Colored multicolor image (.imageset) — original colors in the bar.
+    // Colored multicolor image (.imageset on iOS / 'original' drawable on
+    // Android) — keeps its own colors in the bar.
     Multicolor: createBottomTabScreen({
       screen: MulticolorScreen,
       options: {
         title: 'Multicolor',
-        tabBarIcon: () => asset(MciconSymbols.walking),
+        tabBarIconSize: 30,
+        tabBarIcon: ({ focused }) =>
+          nano(
+            MciconSymbols.walking,
+            MciconDrawables.walking,
+            focused ? 'original' : 'template',
+          ),
       },
     }),
-    // Built-in system SF Symbol — screen presents palette/hierarchical modes.
+    // Built-in system symbol — SF Symbol on iOS, Material Symbol on Android.
     System: createBottomTabScreen({
       screen: SystemScreen,
       options: {
         title: 'System',
         tabBarIcon: ({ focused }: { focused: boolean }) =>
-          sf(focused ? 'star.fill' : 'star'),
-      },
-    }),
-    // Blob demo: AO is two solid halves (red/black) + a compass emblem, all
-    // non-white ink — no white knockout, so monochrome flattening unions it into
-    // a solid filled rectangle.
-    BlobFlag: createBottomTabScreen({
-      screen: IconsScreen,
-      options: {
-        title: 'BlobFlag',
-        tabBarIcon: () => asset(TabiconsSymbols.AO),
-      },
-    }),
-    // Blob demo: a multicolor illustration whose legibility depends on color
-    // contrast (off-white/grey details below the knockout threshold) — flattens
-    // to a featureless silhouette.
-    BlobWalk: createBottomTabScreen({
-      screen: IconsScreen,
-      options: {
-        title: 'BlobWalk',
-        tabBarIcon: () => asset(TabiconsSymbols['person-walking']),
+          system(focused ? 'star.fill' : 'star', 'star'),
       },
     }),
   },

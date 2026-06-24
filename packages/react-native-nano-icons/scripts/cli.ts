@@ -19,6 +19,7 @@ import {
   buildAllSymbols,
   linkBare,
   linkBareSymbols,
+  linkBareAndroidDrawables,
 } from '../cli/index.js';
 
 async function main(): Promise<void> {
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
       logger,
     });
     await linkBareSymbols(projectRoot, builtSymbols, logger);
+    await linkBareAndroidDrawables(projectRoot, builtSymbols, logger);
   }
 }
 

@@ -41,9 +41,15 @@ export interface BuiltSymbolSet {
   symbolsDir: string;
   /** The generated `.symbolset`/`.imageset` folders. */
   assetDirs: string[];
+  /** Directory containing the generated Android VectorDrawable `.xml` files. */
+  drawablesDir: string;
+  /** The generated VectorDrawable `.xml` file paths. */
+  drawableFiles: string[];
   manifestTsPath: string;
   symbolmapPath: string;
   symbols: Record<string, string>;
+  /** Icon → Android drawable resource name (e.g. "home" → "nano_home"). */
+  drawables: Record<string, string>;
 }
 
 /** plugins: [ [ "react-native-nano-icons", { iconSets: [...], symbolSets: [...] } ] ] */

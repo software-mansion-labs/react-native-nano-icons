@@ -1,8 +1,8 @@
 diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
-index 0d0e9082021ade2ecdbd7fadadfa4d9211561e13..c11d7450833abcb56fe87d7448a9463e55b4bc89 100644
+index 0d0e9082021ade2ecdbd7fadadfa4d9211561e13..ed09a4439f8d1495e366ee0fcd31ca8d575af38b 100644
 --- a/lib/typescript/src/types.d.ts
 +++ b/lib/typescript/src/types.d.ts
-@@ -43,7 +43,17 @@ type IconMaterialSymbol = {
+@@ -43,7 +43,32 @@ type IconMaterialSymbol = {
       */
      type: 'materialSymbol';
  } & Pick<MaterialSymbolProps, 'name' | 'variant' | 'weight'>;
@@ -17,15 +17,30 @@ index 0d0e9082021ade2ecdbd7fadadfa4d9211561e13..c11d7450833abcb56fe87d7448a9463e
 +    /** Name of the asset-catalog entry (e.g. a `.symbolset` or `.imageset`). */
 +    name: string;
 +};
-+export type Icon = IconSfSymbol | IconMaterialSymbol | IconImage | IconSFSymbolAsset;
++type IconDrawableAsset = {
++    /**
++     * - `drawableAsset` - Use a custom drawable bundled in the app's Android
++     *   resources (res/drawable), referenced by name. The app-provided Android
++     *   counterpart to `sfSymbolAsset`; resolved via a drawable resource id.
++     */
++    type: 'drawableAsset';
++    /** Name of the drawable resource (e.g. a generated VectorDrawable). */
++    name: string;
++    /**
++     * Whether the tab bar tints the icon: 'template' (default) tints with the
++     * item icon color; 'original' keeps the drawable's own (multicolor) colors.
++     */
++    tintingMode?: 'template' | 'original';
++};
++export type Icon = IconSfSymbol | IconMaterialSymbol | IconImage | IconSFSymbolAsset | IconDrawableAsset;
  export type HeaderSearchBarRef = {
      focus: () => void;
      blur: () => void;
 diff --git a/src/types.tsx b/src/types.tsx
-index a0a5deba89651c08f9595869e509e11c0ca9a2f0..5519da533daaf657503ce881b02121ccc3ab6971 100644
+index a0a5deba89651c08f9595869e509e11c0ca9a2f0..516e2871e064d801cf96a5b3bd463daa6d487d28 100644
 --- a/src/types.tsx
 +++ b/src/types.tsx
-@@ -56,7 +56,24 @@ type IconMaterialSymbol = {
+@@ -56,7 +56,44 @@ type IconMaterialSymbol = {
    type: 'materialSymbol';
  } & Pick<MaterialSymbolProps, 'name' | 'variant' | 'weight'>;
  
@@ -43,11 +58,31 @@ index a0a5deba89651c08f9595869e509e11c0ca9a2f0..5519da533daaf657503ce881b02121cc
 +  name: string;
 +};
 +
++type IconDrawableAsset = {
++  /**
++   * - `drawableAsset` - Use a custom drawable bundled in the app's Android
++   *   resources (res/drawable), referenced by name. The app-provided Android
++   *   counterpart to `sfSymbolAsset`; resolved via a drawable resource id.
++   */
++  type: 'drawableAsset';
++  /**
++   * Name of the drawable resource (e.g. a generated VectorDrawable like
++   * `nano_home`).
++   */
++  name: string;
++  /**
++   * Whether the tab bar tints the icon: 'template' (default) tints with the
++   * item icon color; 'original' keeps the drawable's own (multicolor) colors.
++   */
++  tintingMode?: 'template' | 'original';
++};
++
 +export type Icon =
 +  | IconSfSymbol
 +  | IconMaterialSymbol
 +  | IconImage
-+  | IconSFSymbolAsset;
++  | IconSFSymbolAsset
++  | IconDrawableAsset;
  
  export type HeaderSearchBarRef = {
    focus: () => void;

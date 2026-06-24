@@ -5,7 +5,9 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { TabiconsSymbols } from '@/assets/nanoicons/tabicons.symbols';
+import { TabiconsDrawables } from '@/assets/nanoicons/tabicons.drawables';
 import { MciconsSymbols } from '@/assets/nanoicons/mcicons.symbols';
+import { MciconsDrawables } from '@/assets/nanoicons/mcicons.drawables';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -22,6 +24,7 @@ export default function TabLayout() {
         <NativeTabs.Trigger.Label>Nano Icons</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           xcasset={TabiconsSymbols.home}
+          drawable={TabiconsDrawables.home}
           src={
             <NativeTabs.Trigger.VectorIcon family={FontAwesome} name="home" />
           }
@@ -34,6 +37,10 @@ export default function TabLayout() {
             default: TabiconsSymbols.heart,
             selected: TabiconsSymbols['heart.fill'],
           }}
+          drawable={{
+            default: TabiconsDrawables.heart,
+            selected: TabiconsDrawables['heart.fill'],
+          }}
           src={
             <NativeTabs.Trigger.VectorIcon family={FontAwesome} name="heart" />
           }
@@ -43,6 +50,7 @@ export default function TabLayout() {
         <NativeTabs.Trigger.Label>(Nano)Material</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           xcasset={TabiconsSymbols.messages}
+          drawable={TabiconsDrawables.messages}
           src={
             <NativeTabs.Trigger.VectorIcon
               family={FontAwesome}
@@ -55,6 +63,7 @@ export default function TabLayout() {
         <NativeTabs.Trigger.Label>SWM</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           xcasset={TabiconsSymbols.swm}
+          drawable={TabiconsDrawables.swm}
           src={
             <NativeTabs.Trigger.VectorIcon family={FontAwesome} name="flag" />
           }
@@ -66,6 +75,7 @@ export default function TabLayout() {
             ORIGINAL colors in the bar, unlike the monochrome symbols above. */}
         <NativeTabs.Trigger.Icon
           xcasset={MciconsSymbols.walker}
+          drawable={MciconsDrawables.walker}
           src={
             <NativeTabs.Trigger.VectorIcon
               family={FontAwesome}

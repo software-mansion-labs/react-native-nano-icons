@@ -27,7 +27,7 @@ const DEFAULT_PREFIX = 'nano';
 
 // Bump when emission changes — part of the fingerprint, so upgrades invalidate
 // outputs built from unchanged SVGs.
-const GENERATOR_VERSION = 8;
+const GENERATOR_VERSION = 9;
 
 function shouldSkipGeneration(
   inputHash: string,
@@ -38,12 +38,16 @@ function shouldSkipGeneration(
 ): BuiltSymbolSet | null {
   const symbolmapPath = path.join(outputDir, `${name}.symbolmap.json`);
   const manifestTsPath = path.join(outputDir, `${name}.symbols.ts`);
+  const drawablesTsPath = path.join(outputDir, `${name}.drawables.ts`);
   const symbolsDir = path.join(outputDir, `${name}.symbols`);
+  const drawablesDir = path.join(outputDir, `${name}.drawables`);
 
   if (
     !fs.existsSync(symbolmapPath) ||
     !fs.existsSync(manifestTsPath) ||
-    !fs.existsSync(symbolsDir)
+    !fs.existsSync(drawablesTsPath) ||
+    !fs.existsSync(symbolsDir) ||
+    !fs.existsSync(drawablesDir)
   ) {
     return null;
   }
@@ -59,10 +63,15 @@ function shouldSkipGeneration(
 
   const suffix = multicolor ? 'imageset' : 'symbolset';
   const symbols = symbolmap.s ?? {};
+  const drawables = symbolmap.d ?? {};
   const assetDirs = Object.values(symbols).map((assetName) =>
     path.join(symbolsDir, `${assetName}.${suffix}`)
   );
+  const drawableFiles = Object.values(drawables).map((resourceName) =>
+    path.join(drawablesDir, `${resourceName}.xml`)
+  );
   if (!assetDirs.every((d) => fs.existsSync(d))) return null;
+  if (!drawableFiles.every((f) => fs.existsSync(f))) return null;
 
   logger?.info(`${name}: SVG fingerprint unchanged, skipping build.`);
   return {
@@ -70,9 +79,12 @@ function shouldSkipGeneration(
     prefix: symbolmap.m.p,
     symbolsDir,
     assetDirs,
+    drawablesDir,
+    drawableFiles,
     manifestTsPath,
     symbolmapPath,
     symbols,
+    drawables,
   };
 }
 

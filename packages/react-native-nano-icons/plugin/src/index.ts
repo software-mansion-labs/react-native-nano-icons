@@ -1,6 +1,7 @@
 import type { ConfigPlugin } from '@expo/config-plugins';
 import { withNanoIconsFontLinking } from './withNanoIconsFontLinking.js';
 import { withNanoIconsSymbolLinking } from './withNanoIconsSymbolLinking.js';
+import { withNanoIconsDrawableLinking } from './withNanoIconsDrawableLinking.js';
 import type { NanoIconsPluginOptions } from './types.js';
 
 const withNanoIcons: ConfigPlugin<NanoIconsPluginOptions> = (
@@ -13,6 +14,7 @@ const withNanoIcons: ConfigPlugin<NanoIconsPluginOptions> = (
 
   if (options?.symbolSets?.length) {
     config = withNanoIconsSymbolLinking(config, options.symbolSets);
+    config = withNanoIconsDrawableLinking(config, options.symbolSets);
   }
 
   return config;

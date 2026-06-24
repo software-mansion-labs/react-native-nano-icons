@@ -23,7 +23,7 @@
     "react-native-nano-icons": "workspace:*",
     "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "4.25.2",
+    "react-native-screens": "patch:react-native-screens@npm%3A4.25.2#~/.yarn/patches/react-native-screens-npm-4.25.2-0de6719d95.patch",
     "react-native-web": "^0.21.0",
     "react-native-worklets": "0.8.3"
   },

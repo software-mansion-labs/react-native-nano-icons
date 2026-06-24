@@ -16,4 +16,6 @@ export {
   linkBare,
   linkBareSymbols,
   copySymbolsetsIntoCatalog,
+  linkBareAndroidDrawables,
+  copyDrawablesIntoResDir,
 } from './link.js';

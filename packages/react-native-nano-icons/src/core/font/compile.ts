@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { forceTtfMetrics } from './metrics.js';
 import svg2ttf from 'svg2ttf';
+import { XML_AMP, XML_QUOT, GLYPH_CODEPOINT } from '../../utils/svgPatterns.js';
 
 export type FontGlyph = {
   codepoint: number;
@@ -12,7 +13,7 @@ export type FontGlyph = {
 };
 
 function escapeXml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  return s.replace(XML_AMP, '&amp;').replace(XML_QUOT, '&quot;');
 }
 
 /**
@@ -51,7 +52,7 @@ export function parseCompileTtfFromGlyphsError(
   codepointToIcon: Map<number, string>
 ) {
   const msg = err instanceof Error ? err.message : String(err);
-  const cpMatch = msg.match(/glyph\s+"u([0-9a-fA-F]+)"/);
+  const cpMatch = msg.match(GLYPH_CODEPOINT);
   if (cpMatch) {
     const cp = parseInt(cpMatch[1]!, 16);
     const iconName = codepointToIcon.get(cp);

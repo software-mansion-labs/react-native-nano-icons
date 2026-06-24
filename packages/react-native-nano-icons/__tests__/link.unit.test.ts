@@ -145,14 +145,22 @@ describe('linkBareSymbols — iOS asset catalog', () => {
     fs.writeFileSync(path.join(symbolsetDir, 'Contents.json'), '{}');
     fs.writeFileSync(path.join(symbolsetDir, 'nano.home.svg'), '<svg/>');
 
+    const drawablesDir = path.join(symbolsOutDir, 'tabs.drawables');
+    const drawableFile = path.join(drawablesDir, 'nano_home.xml');
+    fs.mkdirSync(drawablesDir, { recursive: true });
+    fs.writeFileSync(drawableFile, '<vector/>');
+
     builtSet = {
       name: 'tabs',
       prefix: 'nano',
       symbolsDir,
       assetDirs: [symbolsetDir],
+      drawablesDir,
+      drawableFiles: [drawableFile],
       manifestTsPath: path.join(symbolsOutDir, 'tabs.symbols.ts'),
       symbolmapPath: path.join(symbolsOutDir, 'tabs.symbolmap.json'),
       symbols: { home: 'nano.home' },
+      drawables: { home: 'nano_home' },
     };
   });
 
