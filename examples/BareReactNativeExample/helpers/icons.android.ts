@@ -6,7 +6,7 @@ export const nano = (
   _sfSymbolName: string,
   drawableName: string,
   tintingMode: TintingMode = 'template',
-): Icon => ({ type: 'drawableAsset', name: drawableName, tintingMode });
+): Icon => ({ type: 'drawableResource', name: drawableName, tintingMode });
 
 export const system = (_sfName: string, materialName: string): Icon =>
   ({ type: 'materialSymbol', name: materialName }) as Icon;
