@@ -11,10 +11,10 @@ export default function MulticolorScreen() {
       <Text style={styles.note}>
         With <Text style={styles.code}>multicolor: true</Text> the pipeline
         emits a <Text style={styles.code}>VectorDrawable</Text>. The tab uses it
-        as a <Text style={styles.code}>drawableResource</Text> with{' '}
-        <Text style={styles.code}>tintingMode: 'original'</Text>, so the bar
-        shows the drawable's own colors instead of template-tinting it with the
-        item icon color.
+        as an <Text style={styles.code}>image</Text> with{' '}
+        <Text style={styles.code}>tinted: false</Text>, so the bar shows the
+        drawable's own colors instead of template-tinting it with the item icon
+        color.
       </Text>
     </SafeAreaView>
   );

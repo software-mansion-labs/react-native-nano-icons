@@ -13,8 +13,12 @@ import { MciconDrawables } from '../assets/nanoicons/mcicon.drawables';
 import { nano, system } from '../helpers/icons';
 
 const Tabs = createBottomTabNavigator({
+  // implementation: 'custom',
   screenOptions: {
     headerShown: false,
+    // Active indicator is bar-wide (android) — set once for the whole bar.
+    tabBarActiveIndicatorWidth: 80,
+    tabBarActiveIndicatorHeight: 40,
   },
   screens: {
     // Monochrome custom symbol (nano.swm) — screen is the original nano-icons
@@ -24,12 +28,11 @@ const Tabs = createBottomTabNavigator({
       options: {
         title: 'Mono',
         tabBarIconSize: 44,
-        tabBarActiveIndicatorWidth: 80,
-        tabBarActiveIndicatorHeight: 40,
+
         tabBarIcon: () => nano(TabiconsSymbols.swm, TabiconsDrawables.swm),
       },
     }),
-    // Colored multicolor image (.imageset on iOS / 'original' drawable on
+    // Colored multicolor image (.imageset on iOS / untinted drawable on
     // Android) — keeps its own colors in the bar.
     Multicolor: createBottomTabScreen({
       screen: MulticolorScreen,
@@ -37,11 +40,7 @@ const Tabs = createBottomTabNavigator({
         title: 'Multicolor',
         tabBarIconSize: 30,
         tabBarIcon: ({ focused }) =>
-          nano(
-            MciconSymbols.walking,
-            MciconDrawables.walking,
-            focused ? 'original' : 'template',
-          ),
+          nano(MciconSymbols.walking, MciconDrawables.walking, !focused),
       },
     }),
     // Built-in system symbol — SF Symbol on iOS, Material Symbol on Android.

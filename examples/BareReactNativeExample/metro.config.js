@@ -8,14 +8,13 @@ const repoRoot = path.resolve(appRoot, '../..');
 
 const packagesRoot = path.resolve(repoRoot, 'packages');
 
-// This is where your patched dependency actually lives:
+// Patched dependency lives here.
 const nanoIconsNodeModules = path.resolve(
   repoRoot,
   'packages/react-native-nano-icons/node_modules',
 );
 
-// Optional: keep Bare from crawling into Expo example
-// (adjust folder name if your Expo example directory is different)
+// Roots to keep Metro from crawling.
 const expoExampleRoot = path.resolve(repoRoot, 'examples/ExpoExample');
 const nanoIconsBenchmarkingRoot = path.resolve(
   repoRoot,
@@ -34,35 +33,40 @@ const baseBlockList = Array.isArray(defaultConfig.resolver.blockList)
 module.exports = mergeConfig(defaultConfig, {
   projectRoot: appRoot,
 
-  // Metro must be able to watch+hash the patched dependency files
-  // and also watch workspace packages for live edits.
+  // Watch workspace packages and the patched dependency.
   watchFolders: [packagesRoot, nanoIconsNodeModules],
 
   resolver: {
-    // Prefer app deps first, then the library workspace deps (patched),
-    // then the repo root as a fallback.
+    // App deps first, then patched library deps, then repo root.
     nodeModulesPaths: [
       path.resolve(appRoot, 'node_modules'),
       nanoIconsNodeModules,
       path.resolve(repoRoot, 'node_modules'),
     ],
 
-    // CRITICAL: Keep React/RN singletons aligned with the Bare native binary.
-    // This avoids TurboModuleRegistry / PlatformConstants mismatches.
+    // Pin React/RN to the app's copies to match the native binary.
     extraNodeModules: {
       react: path.resolve(appRoot, 'node_modules/react'),
       'react-native': path.resolve(appRoot, 'node_modules/react-native'),
     },
 
-    // Force single copies of React/RN — extraNodeModules is only a fallback,
-    // so we also need resolveRequest to intercept imports that would otherwise
-    // resolve to the library's own node_modules.
     resolveRequest: (context, moduleName, platform) => {
+      // Force single copies of native modules; duplicates re-register views and crash.
+      const FORCED_SINGLETONS = [
+        'react',
+        'react-native',
+        'react-native-safe-area-context',
+        'react-native-gesture-handler',
+        'react-native-screens',
+        'react-native-reanimated',
+        'react-native-worklets',
+        'react-native-svg',
+        'react-native-pager-view',
+      ];
       if (
-        moduleName === 'react' ||
-        moduleName === 'react-native' ||
-        moduleName.startsWith('react/') ||
-        moduleName.startsWith('react-native/')
+        FORCED_SINGLETONS.some(
+          (m) => moduleName === m || moduleName.startsWith(`${m}/`)
+        )
       ) {
         return context.resolveRequest(
           { ...context, originModulePath: path.join(appRoot, '_entry.js') },
@@ -70,27 +74,28 @@ module.exports = mergeConfig(defaultConfig, {
           platform,
         );
       }
-      // react-navigation v8 imports the `@react-navigation/elements/internal`
-      // subpath export. Package exports are disabled in this monorepo config
-      // (above), so map that one subpath to its physical file explicitly.
+      // Map this exports-only subpath by hand since package exports are off.
       if (moduleName === '@react-navigation/elements/internal') {
-        return context.resolveRequest(
-          context,
-          '@react-navigation/elements/lib/module/internal',
-          platform,
+        const elementsPkg = require.resolve(
+          '@react-navigation/elements/package.json',
+          { paths: [appRoot] },
         );
+        return {
+          type: 'sourceFile',
+          filePath: path.join(
+            path.dirname(elementsPkg),
+            'lib/module/internal.js',
+          ),
+        };
       }
-      // `@callstack/liquid-glass` is an OPTIONAL peer of @react-navigation/
-      // elements (elements `require()`s it inside try/catch). We don't use it,
-      // so resolve it to an empty module — elements then falls back to
-      // `isLiquidGlassSupported = false`.
+      // Stub this optional peer to an empty module; elements handles its absence.
       if (moduleName === '@callstack/liquid-glass') {
         return { type: 'empty' };
       }
       return context.resolveRequest(context, moduleName, platform);
     },
 
-    // Optional: prevent Metro from scanning the Expo example
+    // Don't scan the other example projects.
     blockList: baseBlockList.concat([
       new RegExp(`^${escapeRegExp(expoExampleRoot)}[/\\\\].*`),
       new RegExp(`^${escapeRegExp(nanoIconsBenchmarkingRoot)}[/\\\\].*`),
@@ -98,7 +103,7 @@ module.exports = mergeConfig(defaultConfig, {
 
     unstable_enableSymlinks: true,
 
-    // Makes Metro less sensitive to package.json "exports" in monorepos
+    // Ignore package.json "exports" in the monorepo.
     unstable_enablePackageExports: false,
   },
 });

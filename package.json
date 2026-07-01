@@ -56,9 +56,8 @@
     ]
   },
   "resolutions": {
-    "@react-navigation/elements@npm:^3.0.0-alpha.36": "patch:@react-navigation/elements@npm%3A3.0.0-alpha.36#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.36-35f7f0575b.patch",
-    "@react-navigation/elements@npm:^2.9.12": "patch:@react-navigation/elements@npm%3A3.0.0-alpha.36#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.36-35f7f0575b.patch",
     "react-native/@react-native/codegen": "0.84.0",
-    "react-native-screens@npm:^4.25.2": "patch:react-native-screens@npm%3A4.25.2#~/.yarn/patches/react-native-screens-npm-4.25.2-0de6719d95.patch"
+    "@react-navigation/elements@npm:^3.0.0-alpha.37": "patch:@react-navigation/elements@npm%3A3.0.0-alpha.37#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.37-673c5008d9.patch",
+    "react-native-screens@npm:4.26.0-nightly-20260629-43756187e": "patch:react-native-screens@npm%3A4.26.0-nightly-20260629-43756187e#~/.yarn/patches/react-native-screens-npm-4.26.0-nightly-20260629-43756187e-7c88773b68.patch"
   }
 }

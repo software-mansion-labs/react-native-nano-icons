@@ -1,0 +1,413 @@
+diff --git a/android/src/main/java/com/swmansion/rnscreens/gamma/helpers/NoTintDrawable.kt b/android/src/main/java/com/swmansion/rnscreens/gamma/helpers/NoTintDrawable.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..70031dcd7289c916a7f96caee4c29105a2bc4e25
+--- /dev/null
++++ b/android/src/main/java/com/swmansion/rnscreens/gamma/helpers/NoTintDrawable.kt
+@@ -0,0 +1,18 @@
++package com.swmansion.rnscreens.gamma.helpers
++
++import android.content.res.ColorStateList
++import android.graphics.PorterDuff
++import android.graphics.drawable.Drawable
++import androidx.appcompat.graphics.drawable.DrawableWrapperCompat
++
++// Ignores tinting so the wrapped icon keeps its own colors even when a host view
++// (e.g. BottomNavigationView) applies an itemIconTintList.
++internal class NoTintDrawable(
++    drawable: Drawable,
++) : DrawableWrapperCompat(drawable) {
++    override fun setTintList(tint: ColorStateList?) = Unit
++
++    override fun setTint(tintColor: Int) = Unit
++
++    override fun setTintMode(tintMode: PorterDuff.Mode?) = Unit
++}
+diff --git a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceApplicator.kt b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceApplicator.kt
+index 10cd91b2867dcbbc125df0797740e9b79eceb335..cf87221d28484c4fa61b4a5c6cf58bebebc6f216 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceApplicator.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceApplicator.kt
+@@ -3,6 +3,8 @@ package com.swmansion.rnscreens.gamma.tabs.appearance
+ import android.annotation.SuppressLint
+ import android.content.Context
+ import android.content.res.ColorStateList
++import android.graphics.drawable.Drawable
++import android.graphics.drawable.InsetDrawable
+ import android.graphics.drawable.StateListDrawable
+ import android.util.TypedValue
+ import android.view.MenuItem
+@@ -22,6 +24,55 @@ import com.swmansion.rnscreens.utils.resolveColorAttr
+ internal class TabsAppearanceApplicator(
+     private val bottomNavigationView: BottomNavigationView,
+ ) {
++    // Largest effective per-tab icon size (dp); Material allows only one size for all items.
++    private var iconBoxDp: Float = TabsScreen.DEFAULT_ICON_SIZE_DP
++
++    fun applyIconBox(boxDp: Float) {
++        iconBoxDp = boxDp
++        bottomNavigationView.itemIconSize = PixelUtil.toPixelFromDIP(boxDp).toInt()
++    }
++
++    // Material defaults, captured before we override them so unset bars restore exactly.
++    private var defaultIndicatorWidthPx: Int = -1
++    private var defaultIndicatorHeightPx: Int = -1
++
++    // Explicit dp wins; else auto-scale to the enlarged icon box; else Material
++    // default. Reads iconBoxDp, so applyIconBox must run first.
++    private fun applyActiveIndicatorSize(
++        widthDp: Float?,
++        heightDp: Float?,
++    ) {
++        if (defaultIndicatorWidthPx < 0) {
++            defaultIndicatorWidthPx = bottomNavigationView.itemActiveIndicatorWidth
++            defaultIndicatorHeightPx = bottomNavigationView.itemActiveIndicatorHeight
++        }
++        val enlarged = iconBoxDp > TabsScreen.DEFAULT_ICON_SIZE_DP
++        bottomNavigationView.itemActiveIndicatorWidth =
++            when {
++                widthDp != null && widthDp > 0f -> PixelUtil.toPixelFromDIP(widthDp).toInt()
++                enlarged -> PixelUtil.toPixelFromDIP(iconBoxDp + 16f).toInt()
++                else -> defaultIndicatorWidthPx
++            }
++        bottomNavigationView.itemActiveIndicatorHeight =
++            when {
++                heightDp != null && heightDp > 0f -> PixelUtil.toPixelFromDIP(heightDp).toInt()
++                enlarged -> PixelUtil.toPixelFromDIP(iconBoxDp + 8f).toInt()
++                else -> defaultIndicatorHeightPx
++            }
++    }
++
++    // Inset the icon so it renders at effectiveDp, centered within iconBoxDp.
++    private fun sizeIcon(
++        icon: Drawable?,
++        effectiveDp: Float,
++    ): Drawable? {
++        if (icon == null || effectiveDp >= iconBoxDp) return icon
++        val larger = maxOf(icon.intrinsicWidth, icon.intrinsicHeight)
++        if (larger <= 0) return icon
++        val insetPx = (larger * (iconBoxDp - effectiveDp) / (2f * effectiveDp)).toInt()
++        return if (insetPx > 0) InsetDrawable(icon, insetPx) else icon
++    }
++
+     private val states =
+         arrayOf(
+             intArrayOf(-android.R.attr.state_enabled), // disabled
+@@ -109,6 +160,11 @@ internal class TabsAppearanceApplicator(
+         bottomNavigationView.isItemActiveIndicatorEnabled =
+             tabBarAppearance?.tabBarItemActiveIndicatorEnabled ?: true
+         bottomNavigationView.itemActiveIndicatorColor = ColorStateList.valueOf(activeIndicatorColor)
++
++        applyActiveIndicatorSize(
++            tabBarAppearance?.tabBarItemActiveIndicatorWidth,
++            tabBarAppearance?.tabBarItemActiveIndicatorHeight,
++        )
+     }
+ 
+     fun updateFontStyles(
+@@ -189,8 +245,10 @@ internal class TabsAppearanceApplicator(
+                 tabsScreen.icon
+             }
+ 
+-        if (menuItem.icon != targetIcon) {
+-            menuItem.icon = targetIcon
++        val sizedIcon = sizeIcon(targetIcon, tabsScreen.effectiveIconSizeDp)
++
++        if (menuItem.icon != sizedIcon) {
++            menuItem.icon = sizedIcon
+         }
+     }
+ 
+diff --git a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceCoordinator.kt b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceCoordinator.kt
+index 0b567e2530903d536ef94f476da7aebd5eb39808..1fb2c26f1e497be59ebf2f4182c45c9eb0544f80 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceCoordinator.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceCoordinator.kt
+@@ -19,6 +19,12 @@ internal class TabsAppearanceCoordinator(
+         tabsContainer: TabsContainer,
+     ) {
+         val selectedTabAppearance = tabsContainer.selectedTab.tabsScreen.appearance
++        // Icon box is bar-wide: the largest effective size across tabs. Apply it
++        // before updateSharedAppearance, which sizes the indicator against the box.
++        val iconBoxDp =
++            tabsScreenFragments.maxOfOrNull { it.tabsScreen.effectiveIconSizeDp }
++                ?: TabsScreen.DEFAULT_ICON_SIZE_DP
++        appearanceApplicator.applyIconBox(iconBoxDp)
+         appearanceApplicator.updateSharedAppearance(context, selectedTabAppearance, tabsContainer.tabBarHidden)
+         updateMenuItems(context, selectedTabAppearance)
+         appearanceApplicator.updateFontStyles(context, selectedTabAppearance) // It needs to be updated after updateMenuItems
+diff --git a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceModel.kt b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceModel.kt
+index 766abbf2b9b7be58c59a11df04bdfb0004be9c3e..ce685c6015aa06c2e37184cd9f6f96388e1dcf67 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceModel.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceModel.kt
+@@ -10,6 +10,8 @@ internal data class TabsAppearance(
+     val disabled: ItemStateAppearance? = null,
+     val tabBarItemActiveIndicatorColor: Int? = null,
+     val tabBarItemActiveIndicatorEnabled: Boolean? = null,
++    val tabBarItemActiveIndicatorWidth: Float? = null,
++    val tabBarItemActiveIndicatorHeight: Float? = null,
+     val tabBarItemTitleFontFamily: String? = null,
+     val tabBarItemTitleSmallLabelFontSize: Float? = null,
+     val tabBarItemTitleLargeLabelFontSize: Float? = null,
+diff --git a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/screen/TabsScreen.kt b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/screen/TabsScreen.kt
+index ba33fe851e66e8fa57501a0cdc706f01d68e4293..2c58a64d8c5caab8ec503459125c04b2bf5039bd 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/screen/TabsScreen.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/screen/TabsScreen.kt
+@@ -9,6 +9,7 @@ import com.swmansion.rnscreens.gamma.common.FragmentProviding
+ import com.swmansion.rnscreens.gamma.common.container.Container
+ import com.swmansion.rnscreens.gamma.common.container.ContainerItem
+ import com.swmansion.rnscreens.gamma.common.container.ContainerItemSupport
++import com.swmansion.rnscreens.gamma.helpers.NoTintDrawable
+ import com.swmansion.rnscreens.gamma.helpers.getSystemDrawableResource
+ import com.swmansion.rnscreens.gamma.scrollviewmarker.ScrollViewMarker
+ import com.swmansion.rnscreens.gamma.scrollviewmarker.ScrollViewSeeking
+@@ -79,15 +80,50 @@ class TabsScreen(
+ 
+     // region Icon
+     var drawableIconResourceName: String? by Delegates.observable(null) { _, oldValue, newValue ->
+-        if (newValue != oldValue) {
+-            icon = getSystemDrawableResource(reactContext, newValue)
+-        }
++        if (newValue != oldValue) rebuildIcon()
+     }
+ 
++    var drawableIconTinted: Boolean = true
++        set(value) {
++            if (field != value) {
++                field = value
++                rebuildIcon()
++            }
++        }
++
+     var selectedDrawableIconResourceName: String? by Delegates.observable(null) { _, oldValue, newValue ->
+-        if (newValue != oldValue) {
+-            selectedIcon = getSystemDrawableResource(reactContext, newValue)
++        if (newValue != oldValue) rebuildSelectedIcon()
++    }
++
++    var selectedDrawableIconTinted: Boolean = true
++        set(value) {
++            if (field != value) {
++                field = value
++                rebuildSelectedIcon()
++            }
+         }
++
++    // Per-tab icon size in dp; 0 means the default.
++    var drawableIconSize: Float = 0f
++
++    val effectiveIconSizeDp: Float
++        get() = if (drawableIconSize > 0f) drawableIconSize else DEFAULT_ICON_SIZE_DP
++
++    // A NoTintDrawable keeps the drawable's own colors; the bar can't tint it.
++    private fun resolveIcon(
++        resourceName: String?,
++        tinted: Boolean,
++    ): Drawable? {
++        val drawable = getSystemDrawableResource(reactContext, resourceName) ?: return null
++        return if (tinted) drawable else NoTintDrawable(drawable)
++    }
++
++    private fun rebuildIcon() {
++        icon = resolveIcon(drawableIconResourceName, drawableIconTinted)
++    }
++
++    private fun rebuildSelectedIcon() {
++        selectedIcon = resolveIcon(selectedDrawableIconResourceName, selectedDrawableIconTinted)
+     }
+ 
+     var icon: Drawable? by Delegates.observable(null) { _, oldValue, newValue ->
+@@ -180,5 +216,8 @@ class TabsScreen(
+ 
+     companion object {
+         const val TAG = "TabsScreen"
++
++        // Material's default bottom-navigation icon size (dp).
++        internal const val DEFAULT_ICON_SIZE_DP = 24f
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/screen/TabsScreenViewManager.kt b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/screen/TabsScreenViewManager.kt
+index 1e8dfe6d740bec85fc0e3ce459bc17164206009a..e13ddf527b50fd1d9508b6474cef8615809869da 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/screen/TabsScreenViewManager.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/screen/TabsScreenViewManager.kt
+@@ -134,6 +134,27 @@ class TabsScreenViewManager :
+         view.selectedDrawableIconResourceName = value
+     }
+ 
++    override fun setDrawableIconTinted(
++        view: TabsScreen,
++        value: Boolean,
++    ) {
++        view.drawableIconTinted = value
++    }
++
++    override fun setSelectedDrawableIconTinted(
++        view: TabsScreen,
++        value: Boolean,
++    ) {
++        view.selectedDrawableIconTinted = value
++    }
++
++    override fun setDrawableIconSize(
++        view: TabsScreen,
++        value: Float,
++    ) {
++        view.drawableIconSize = value
++    }
++
+     override fun setImageIconResource(
+         view: TabsScreen,
+         value: ReadableMap?,
+@@ -181,6 +202,8 @@ class TabsScreenViewManager :
+             disabled = if (appearance.hasKey("disabled")) parseItemStateAppearance(appearance.getMap("disabled")) else null,
+             tabBarItemActiveIndicatorColor = appearance.readOptionalColor("tabBarItemActiveIndicatorColor"),
+             tabBarItemActiveIndicatorEnabled = appearance.readOptionalBoolean("tabBarItemActiveIndicatorEnabled"),
++            tabBarItemActiveIndicatorWidth = appearance.readOptionalFloat("tabBarItemActiveIndicatorWidth"),
++            tabBarItemActiveIndicatorHeight = appearance.readOptionalFloat("tabBarItemActiveIndicatorHeight"),
+             tabBarItemTitleFontFamily = appearance.readOptionalString("tabBarItemTitleFontFamily"),
+             tabBarItemTitleSmallLabelFontSize = appearance.readOptionalFloat("tabBarItemTitleSmallLabelFontSize"),
+             tabBarItemTitleLargeLabelFontSize = appearance.readOptionalFloat("tabBarItemTitleLargeLabelFontSize"),
+diff --git a/ios/tabs/RNSTabBarAppearanceCoordinator.mm b/ios/tabs/RNSTabBarAppearanceCoordinator.mm
+index fee81a8fa60e462050bc6019ffb2fa376c10b4b6..9d52ec8a538a0f2126e25bcc104ca50c41372841 100644
+--- a/ios/tabs/RNSTabBarAppearanceCoordinator.mm
++++ b/ios/tabs/RNSTabBarAppearanceCoordinator.mm
+@@ -62,7 +62,9 @@ - (void)setIconsForTabBarItem:(UITabBarItem *)tabBarItem
+   if (screenView.iconType == RNSTabsIconTypeSfSymbol || screenView.iconType == RNSTabsIconTypeXcasset) {
+     if (screenView.iconResourceName != nil) {
+       if (screenView.iconType == RNSTabsIconTypeSfSymbol) {
+-        tabBarItem.image = [UIImage systemImageNamed:screenView.iconResourceName];
++        // Fall back to a custom symbol from the app's asset catalog.
++        tabBarItem.image = [UIImage systemImageNamed:screenView.iconResourceName]
++            ?: [UIImage imageNamed:screenView.iconResourceName];
+       } else {
+         tabBarItem.image = [UIImage imageNamed:screenView.iconResourceName];
+       }
+@@ -77,7 +79,8 @@ - (void)setIconsForTabBarItem:(UITabBarItem *)tabBarItem
+ 
+     if (screenView.selectedIconResourceName != nil) {
+       if (screenView.iconType == RNSTabsIconTypeSfSymbol) {
+-        tabBarItem.selectedImage = [UIImage systemImageNamed:screenView.selectedIconResourceName];
++        tabBarItem.selectedImage = [UIImage systemImageNamed:screenView.selectedIconResourceName]
++            ?: [UIImage imageNamed:screenView.selectedIconResourceName];
+       } else {
+         tabBarItem.selectedImage = [UIImage imageNamed:screenView.selectedIconResourceName];
+       }
+diff --git a/src/components/tabs/screen/TabsScreen.android.tsx b/src/components/tabs/screen/TabsScreen.android.tsx
+index a63fc3b33d22953f0e98f88c56425a33517563ad..4c175fb18f58dbfdd624e5fed9e8edbb838bdbd7 100644
+--- a/src/components/tabs/screen/TabsScreen.android.tsx
++++ b/src/components/tabs/screen/TabsScreen.android.tsx
+@@ -66,6 +66,7 @@ function TabsScreen(props: TabsScreenProps) {
+       {...iconProps}
+       {...filteredBaseProps}
+       // Android-specific
++      drawableIconSize={android?.drawableIconSize}
+       standardAppearance={mapAppearanceToNativeProps(
+         android?.standardAppearance,
+       )}>
+@@ -130,14 +131,22 @@ function mapItemStateAppearanceToNativeProp(
+   };
+ }
+ 
++function drawableTintedOf(
++  icon: PlatformIconAndroid | undefined,
++): boolean | undefined {
++  return icon?.type === 'drawableResource' ? icon.tinted : undefined;
++}
++
+ function parseIconsToNativeProps(
+   icon: PlatformIconAndroid | undefined,
+   selectedIcon: PlatformIconAndroid | undefined,
+ ): {
+   imageIconResource?: ImageResolvedAssetSource | undefined;
+   drawableIconResourceName?: string | undefined;
++  drawableIconTinted?: boolean | undefined;
+   selectedImageIconResource?: ImageResolvedAssetSource | undefined;
+   selectedDrawableIconResourceName?: string | undefined;
++  selectedDrawableIconTinted?: boolean | undefined;
+ } {
+   const parsedIcon = parseAndroidIconToNativeProps(icon);
+   const parsedSelectedIcon = parseAndroidIconToNativeProps(selectedIcon);
+@@ -145,9 +154,11 @@ function parseIconsToNativeProps(
+   return {
+     imageIconResource: parsedIcon.imageIconResource,
+     drawableIconResourceName: parsedIcon.drawableIconResourceName,
++    drawableIconTinted: drawableTintedOf(icon),
+     selectedImageIconResource: parsedSelectedIcon.imageIconResource,
+     selectedDrawableIconResourceName:
+       parsedSelectedIcon.drawableIconResourceName,
++    selectedDrawableIconTinted: drawableTintedOf(selectedIcon),
+   };
+ }
+ 
+diff --git a/src/components/tabs/screen/TabsScreen.android.types.ts b/src/components/tabs/screen/TabsScreen.android.types.ts
+index 2e3b25bbeb9f14be8c5012fb6db00ac3dcd8dbb5..46526a0879d09b3292168be8941f6457c7b1ecc7 100644
+--- a/src/components/tabs/screen/TabsScreen.android.types.ts
++++ b/src/components/tabs/screen/TabsScreen.android.types.ts
+@@ -99,6 +99,14 @@ export interface TabsScreenAppearanceAndroid {
+    * @platform android
+    */
+   tabBarItemActiveIndicatorEnabled?: boolean | undefined;
++  /**
++   * @summary Active-indicator pill size in dp. If unset, it auto-scales to wrap
++   * the icon box when icons are enlarged via `drawableIconSize`.
++   *
++   * @platform android
++   */
++  tabBarItemActiveIndicatorWidth?: number | undefined;
++  tabBarItemActiveIndicatorHeight?: number | undefined;
+   /**
+    * @summary Specifies the font family used for the title of each tab bar item.
+    *
+@@ -186,4 +194,14 @@ export interface TabsScreenPropsAndroid {
+    * @platform android
+    */
+   selectedIcon?: PlatformIconAndroid | undefined;
++  /**
++   * @summary Per-tab icon size in dp.
++   *
++   * The bottom bar's icon box is the largest `drawableIconSize` across all tabs;
++   * each tab's icon is inset to its own size within that box. Tabs without a value
++   * use the default 24dp.
++   *
++   * @platform android
++   */
++  drawableIconSize?: number | undefined;
+ }
+diff --git a/src/fabric/tabs/TabsScreenAndroidNativeComponent.ts b/src/fabric/tabs/TabsScreenAndroidNativeComponent.ts
+index 104117271d4233be005e84a0391314772bf29e38..ee002450f46a0ccbf11b72263310316db3867d34 100644
+--- a/src/fabric/tabs/TabsScreenAndroidNativeComponent.ts
++++ b/src/fabric/tabs/TabsScreenAndroidNativeComponent.ts
+@@ -50,6 +50,9 @@ export type Appearance = {
+   // TabBarItem - Active Indicator
+   tabBarItemActiveIndicatorColor?: ProcessedColorValue | null | undefined;
+   tabBarItemActiveIndicatorEnabled?: CT.WithDefault<boolean, true>;
++  // Indicator size (dp); unset = auto-scale to the icon box.
++  tabBarItemActiveIndicatorWidth?: CT.Float | undefined;
++  tabBarItemActiveIndicatorHeight?: CT.Float | undefined;
+ 
+   // TabBarItem - Label
+   tabBarItemTitleFontFamily?: string | undefined;
+@@ -102,6 +105,10 @@ export interface NativeProps extends ViewProps {
+   imageIconResource?: ImageSource | undefined;
+   selectedDrawableIconResourceName?: string | undefined;
+   selectedImageIconResource?: ImageSource | undefined;
++  drawableIconTinted?: CT.WithDefault<boolean, true>;
++  selectedDrawableIconTinted?: CT.WithDefault<boolean, true>;
++  // Per-tab icon size (dp); 0/unset = default 24dp.
++  drawableIconSize?: CT.Float | undefined;
+ 
+   // Appearance
+   standardAppearance?: Appearance | undefined;
+diff --git a/src/types.tsx b/src/types.tsx
+index 9c3ab4c3653ee1769addda8a6464cdf49695a601..270706e8f8d164207bd9a7c0864261e9e9eebe1f 100644
+--- a/src/types.tsx
++++ b/src/types.tsx
+@@ -119,6 +119,11 @@ export type PlatformIconAndroid =
+   | {
+       type: 'drawableResource';
+       name: string;
++      /**
++       * Whether the bottom tab bar tints the icon with the item icon color.
++       * Defaults to `true`; `false` keeps the drawable's own colors.
++       */
++      tinted?: boolean;
+     }
+   | PlatformIconShared;
+ 
