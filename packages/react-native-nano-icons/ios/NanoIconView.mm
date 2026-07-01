@@ -24,20 +24,36 @@ using namespace facebook::react;
 }
 @end
 
-// Process-wide CTFontRef cache keyed by (fontFamily, fontSize).
-// Avoids 1000× CTFontCreateWithName for identical (family, size) combos.
+// CTFontRef cache keyed by "family:size" — avoids CTFontCreateWithName per render.
+// File-scope so NanoIconInvalidateFontCache can clear it on OTA font swap.
+static NSMutableDictionary *sNanoIconFontCache;
+static dispatch_once_t sNanoIconFontCacheOnce;
+
 static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
-  static NSMutableDictionary *cache;
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{ cache = [NSMutableDictionary new]; });
+  dispatch_once(&sNanoIconFontCacheOnce, ^{ sNanoIconFontCache = [NSMutableDictionary new]; });
 
   NSString *key = [NSString stringWithFormat:@"%@:%.1f", family, size];
-  id existing = cache[key];
-  if (existing) return (__bridge CTFontRef)existing;
+  id existing = sNanoIconFontCache[key];
+  if (existing) {
+    return (__bridge CTFontRef)existing;
+  }
 
   CTFontRef font = CTFontCreateWithName((__bridge CFStringRef)family, size, NULL);
-  if (font) cache[key] = (__bridge id)font;
+  if (font) sNanoIconFontCache[key] = (__bridge id)font;
   return font;
+}
+
+// Clears cached entries for `family` after OTA font re-registration.
+void NanoIconInvalidateFontCache(NSString *family) {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (!sNanoIconFontCache) return;
+    NSString *prefix = [family stringByAppendingString:@":"];
+    NSArray<NSString *> *keys = [sNanoIconFontCache.allKeys
+        filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSString *k, id _) {
+          return [k hasPrefix:prefix];
+        }]];
+    [sNanoIconFontCache removeObjectsForKeys:keys];
+  });
 }
 
 @implementation NanoIconView {
@@ -345,6 +361,10 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
 
   // Map Unicode codepoints to font glyph IDs, handling surrogate pairs for codepoints > 0xFFFF.
   if (fontChanged || oldViewProps.codepoints != newViewProps.codepoints) {
+    // Re-fetch on codepoint change — cache may have been cleared by OTA font swap.
+    if (!fontChanged && _fontFamily) {
+      _font = NanoIconGetCachedFont(_fontFamily, _fontSize);
+    }
     const auto &codepoints = newViewProps.codepoints;
     _glyphs.resize(codepoints.size());
     for (size_t i = 0; i < codepoints.size(); i++) {

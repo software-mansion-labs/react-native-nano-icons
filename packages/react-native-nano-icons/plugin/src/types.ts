@@ -14,6 +14,14 @@ export interface IconSetConfig {
   safeZone?: number;
   /** First Unicode codepoint for glyphs (default 0xe900). Hex string or number. */
   startUnicode?: number | string;
+  /**
+   * Delivery mode for the generated TTF. Defaults to `'static'`.
+   *
+   * - `'static'`: TTF is bundled into the native app.
+   * - `'dynamic'`: TTF is excluded from native bundling - the host app is responsible for
+   *   delivering it (e.g. via OTA) and registering it under the same font family name.
+   */
+  linking?: 'static' | 'dynamic';
 }
 
 /**
@@ -65,4 +73,5 @@ export interface BuiltFont {
   fontFamily: string;
   ttfPath: string;
   glyphmapPath: string;
+  linking: 'static' | 'dynamic';
 }

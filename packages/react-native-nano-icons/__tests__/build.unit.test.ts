@@ -28,7 +28,8 @@ function writeSvgs(dir: string): void {
 function writeFakeOutputs(
   outputDir: string,
   fontFamily: string,
-  hash?: string
+  hash?: string,
+  linking?: 'static' | 'dynamic'
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, `${fontFamily}.ttf`), 'fake');
@@ -38,6 +39,8 @@ function writeFakeOutputs(
     z: 1020,
     s: 0xe900,
     ...(hash !== undefined && { h: hash }),
+    // only dynamic sets have l field, static have none
+    ...(linking === 'dynamic' && { l: 'd' }),
   };
   fs.writeFileSync(
     path.join(outputDir, `${fontFamily}.glyphmap.json`),
@@ -123,4 +126,77 @@ describe('buildAllFonts — skip/rebuild logic', () => {
       expect.objectContaining({ inputHash })
     );
   });
+});
+
+describe('buildAllFonts — linking mode', () => {
+  let inputDir: string;
+  let outputDir: string;
+  let inputHash: string;
+
+  beforeEach(() => {
+    inputDir = makeTmpDir();
+    outputDir = makeTmpDir();
+    writeSvgs(inputDir);
+    inputHash = getFingerprintSync(inputDir);
+
+    mockRunFontPipeline.mockReset();
+    mockRunFontPipeline.mockResolvedValue({
+      ttfPath: path.join(outputDir, `${FONT_FAMILY}.ttf`),
+      glyphmapPath: path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
+    });
+  });
+
+  afterEach(() => {
+    fs.rmSync(inputDir, { recursive: true, force: true });
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  });
+
+  function makeIconSet(linking?: 'static' | 'dynamic'): IconSetConfig {
+    return { inputDir, outputDir, fontFamily: FONT_FAMILY, linking };
+  }
+
+  test('linking defaults to "static" when omitted', async () => {
+    const [built] = await buildAllFonts([makeIconSet()], os.tmpdir());
+
+    expect(built!.linking).toBe('static');
+    expect(mockRunFontPipeline).toHaveBeenCalledWith(
+      expect.objectContaining({ linking: 'static' }),
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  test('linking "dynamic" is forwarded to runPipeline and reflected in BuiltFont', async () => {
+    const [built] = await buildAllFonts([makeIconSet('dynamic')], os.tmpdir());
+
+    expect(built!.linking).toBe('dynamic');
+    expect(mockRunFontPipeline).toHaveBeenCalledWith(
+      expect.objectContaining({ linking: 'dynamic' }),
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  test('unchanged dynamic build (matching hash + l:"d") is skipped', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'dynamic');
+
+    const [built] = await buildAllFonts([makeIconSet('dynamic')], os.tmpdir());
+
+    expect(mockRunFontPipeline).not.toHaveBeenCalled();
+    expect(built!.linking).toBe('dynamic');
+  });
+
+  // Changing only the linking mode (SVGs unchanged → matching hash) must still
+  // rebuild, otherwise the stored glyphmap keeps the wrong l value
+  test.each([
+    ['static', 'dynamic'],
+    ['dynamic', 'static'],
+  ] as const)(
+    'switching %s → %s rebuilds despite a matching hash',
+    async (from, to) => {
+      writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, from);
+      await buildAllFonts([makeIconSet(to)], os.tmpdir());
+      expect(mockRunFontPipeline).toHaveBeenCalledTimes(1);
+    }
+  );
 });

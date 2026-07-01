@@ -134,16 +134,24 @@ export type IconsMap = Record<string, GlyphEntry>;
  *   z - safe zone,
  *   s - start unicode,
  *   h - hash,
+ *   l - linking mode: 's' (static, bundled — default when absent) or 'd' (dynamic, OTA-delivered),
  * i - icons,
  *   adv - advance width,
  */
 export type NanoGlyphMap = {
-  m: { f: string; u: number; z: number; s: number; h?: string };
+  m: { f: string; u: number; z: number; s: number; h?: string; l?: 's' | 'd' };
   i: IconsMap;
 };
 
 /** Accepts JSON-inferred types where arrays aren't tuples. */
 export type NanoGlyphMapInput = {
-  m: { f: string; u: number; z: number; s: number; h?: string };
+  m: {
+    f: string;
+    u: number;
+    z: number;
+    s: number;
+    h?: string;
+    l?: 's' | 'd' | (string & {});
+  };
   i: Record<string, readonly unknown[]>;
 };

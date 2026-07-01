@@ -11,9 +11,15 @@ import { getOrBuildFonts } from './buildFonts.js';
 import type { IconSetConfig } from './types.js';
 
 const ANDROID_ASSETS_FONTS_DIR = 'app/src/main/assets/fonts';
+const IOS_FONTS_GROUP = 'Resources';
 
 /**
  * Add TTFs to the iOS project (Resources group + UIAppFonts in Info.plist).
+ *
+ * Copies each .ttf into ios/<projectName>/Resources/ on every prebuild so that
+ * Xcode's incremental build reliably picks up updated glyph data. Referencing
+ * the .ttf via a relative path outside ios/ leaves stale fonts in the .app
+ * bundle when only the file contents change.
  */
 export function withNanoIconsIos(
   config: Parameters<typeof withXcodeProject>[0],
@@ -24,16 +30,27 @@ export function withNanoIconsIos(
       config.modRequest.projectRoot,
       iconSets
     );
-    if (!built?.length) return config;
-    const ttfPaths = built.map((b) => b.ttfPath);
+    const bundled = built?.filter((b) => b.linking !== 'dynamic') ?? [];
+    if (!bundled.length) return config;
     const project = config.modResults;
     const platformProjectRoot = config.modRequest.platformProjectRoot;
-    IOSConfig.XcodeUtils.ensureGroupRecursively(project, 'Resources');
-    for (const fontPath of ttfPaths) {
-      const relativePath = path.relative(platformProjectRoot, fontPath);
+    const projectName =
+      config.modRequest.projectName ??
+      IOSConfig.XcodeUtils.getProjectName(config.modRequest.projectRoot);
+    const fontsDir = path.join(
+      platformProjectRoot,
+      projectName,
+      IOS_FONTS_GROUP
+    );
+    await fs.mkdir(fontsDir, { recursive: true });
+    IOSConfig.XcodeUtils.ensureGroupRecursively(project, IOS_FONTS_GROUP);
+    for (const { ttfPath } of bundled) {
+      const dest = path.join(fontsDir, path.basename(ttfPath));
+      await fs.copyFile(ttfPath, dest);
+      const relativePath = path.relative(platformProjectRoot, dest);
       IOSConfig.XcodeUtils.addResourceFileToGroup({
         filepath: relativePath,
-        groupName: 'Resources',
+        groupName: IOS_FONTS_GROUP,
         project,
         isBuildFile: true,
         verbose: true,
@@ -49,8 +66,9 @@ export function withNanoIconsIos(
         config.modRequest.projectRoot,
         iconSets
       );
-      if (!built?.length) return config;
-      const ttfPaths = built.map((b) => b.ttfPath);
+      const bundled = built?.filter((b) => b.linking !== 'dynamic') ?? [];
+      if (!bundled.length) return config;
+      const ttfPaths = bundled.map((b) => b.ttfPath);
       const existingFonts = getUIAppFonts(config.modResults);
       const fontList = ttfPaths.map((f) => path.basename(f));
       const allFonts = [...existingFonts, ...fontList];
@@ -88,13 +106,14 @@ export function withNanoIconsAndroid(
         config.modRequest.projectRoot,
         iconSets
       );
-      if (!built?.length) return config;
+      const bundled = built?.filter((b) => b.linking !== 'dynamic') ?? [];
+      if (!bundled.length) return config;
       const fontsDir = path.join(
         config.modRequest.platformProjectRoot,
         ANDROID_ASSETS_FONTS_DIR
       );
       await fs.mkdir(fontsDir, { recursive: true });
-      for (const b of built) {
+      for (const b of bundled) {
         const filename = path.basename(b.ttfPath);
         const dest = path.join(fontsDir, filename);
         await fs.copyFile(b.ttfPath, dest);

@@ -26,4 +26,6 @@ export type IconProps<Name> = {
 
 export type IconComponent<GM extends NanoGlyphMapInput> = React.FC<
   IconProps<keyof GM['i']>
->;
+> & {
+  loadFont: (font?: number | string | { uri: string }) => Promise<void>;
+};

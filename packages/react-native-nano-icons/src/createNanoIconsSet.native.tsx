@@ -1,15 +1,22 @@
 import { memo, useMemo } from 'react';
-import { PixelRatio, UIManager, processColor } from 'react-native';
+import { PixelRatio, UIManager, View, processColor } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
 import { shallowEqualColor } from './utils/shallowEqualColor';
+import {
+  DEFAULT_ICON_SIZE,
+  resolveGlyphEntry,
+  createLayerColorResolver,
+} from './utils/glyphRuntime';
 import NanoIconViewNative from './specs/NanoIconViewNativeComponent';
-import { createJSIconSet } from './createNanoIconsSet.shared';
+import {
+  createJSIconSet,
+  warnIfLinkingMismatch,
+} from './createNanoIconsSet.shared';
+import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
-
-const DEFAULT_ICON_SIZE = 12;
 
 const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
 
@@ -27,20 +34,34 @@ function cachedProcessColor(color: string): number {
 
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
+): IconComponent<GM>;
+export function createIconSet<GM extends NanoGlyphMapInput>(
+  glyphMap: GM,
+  font: unknown
+): IconComponent<GM>;
+export function createIconSet<GM extends NanoGlyphMapInput>(
+  glyphMap: GM,
+  font?: unknown
 ): IconComponent<GM> {
   if (!HAS_NATIVE_IMPL) {
-    return createJSIconSet(glyphMap);
+    return createJSIconSet(glyphMap, font);
   }
 
   const fontFamilyBasename = glyphMap.m.f;
   const unitsPerEm = glyphMap.m.u;
+  warnIfLinkingMismatch(fontFamilyBasename, glyphMap.m.l, font);
 
-  const resolveEntry = (name: keyof GM['i']): GlyphEntry => {
-    return (glyphMap.i[name as string] ?? [
-      unitsPerEm,
-      [[63, 'black']],
-    ]) as GlyphEntry;
-  };
+  // dynamically linked font - register and hide icons until ready
+  const managed = glyphMap.m.l === 'd' && font != null;
+  if (managed) {
+    void loadDynamicFont(fontFamilyBasename, font).catch((err) => {
+      if (__DEV__)
+        console.warn(
+          `[react-native-nano-icons] Failed to load dynamic font "${fontFamilyBasename}".`,
+          err
+        );
+    });
+  }
 
   // Pre-compute per-icon static data (codepoints, default colors) once at set creation
   // Avoids layers.map() + processColor per icon mount
@@ -89,9 +110,11 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       ref,
     }: IconProps<keyof GM['i']>) => {
       const fontScale = allowFontScaling ? PixelRatio.getFontScale() : 1;
-      const [adv, layers] = resolveEntry(name);
+      const [adv, layers] = resolveGlyphEntry(glyphMap, name);
       const scaledSize = size * fontScale;
       const width = (adv / unitsPerEm) * scaledSize;
+
+      const pending = useDynamicFontPending(managed, fontFamilyBasename);
 
       const nameStr = name as string;
       const codepoints = getCodepoints(nameStr, layers);
@@ -101,21 +124,33 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
         if (color === undefined || color === null) {
           return getDefaultColors(nameStr, layers);
         }
-        const colorArray = Array.isArray(color) ? color : [color];
-        const lastPaletteColor = colorArray.length
-          ? colorArray[colorArray.length - 1]
-          : undefined;
-        return layers.map(([, srcColor], i) => {
-          const layerColor =
-            colorArray[i] ?? lastPaletteColor ?? srcColor ?? 'black';
-          return cachedProcessColor(layerColor as string);
-        });
+        const resolveColor = createLayerColorResolver(color);
+        return layers.map(([, srcColor], i) =>
+          cachedProcessColor(resolveColor(i, srcColor) as string)
+        );
       }, [nameStr, color]);
 
       const nativeStyle = useMemo(
         () => [{ width, height: scaledSize }, style],
         [scaledSize, width, style]
       );
+
+      // Hide-until-ready: while the dynamic font is registering, render a
+      // placeholder. The native view mounts only once the font is registered.
+      if (pending) {
+        return (
+          <View
+            ref={ref}
+            style={nativeStyle}
+            accessible={accessible}
+            accessibilityRole={accessibilityRole}
+            accessibilityLabel={accessibilityLabel ?? (name as string)}
+            accessibilityElementsHidden={accessibilityElementsHidden}
+            importantForAccessibility={importantForAccessibility}
+            testID={testID}
+          />
+        );
+      }
 
       return (
         <NanoIconViewNative
@@ -148,5 +183,10 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   Icon.displayName = `NanoIcon(${fontFamilyBasename})`;
 
-  return Icon;
+  const IconComp = Icon as unknown as IconComponent<GM>;
+  IconComp.loadFont = (override) =>
+    glyphMap.m.l === 'd'
+      ? loadDynamicFont(fontFamilyBasename, override ?? font, { force: true })
+      : Promise.resolve();
+  return IconComp;
 }

@@ -98,6 +98,7 @@ describe('linkBare — iOS Info.plist target selection', () => {
       fontFamily: 'TestFont',
       ttfPath: path.join(fontDir, 'TestFont.ttf'),
       glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
+      linking: 'static',
     };
 
     await linkBare(projectRoot, [builtFont], makeLogger());
@@ -203,5 +204,228 @@ describe('linkBareSymbols — iOS asset catalog', () => {
     expect(addResourceFileCalls[0]![1]).toMatchObject({
       lastKnownFileType: 'folder.assetcatalog',
     });
+  });
+});
+
+const ANDROID_FONTS_DIR = 'android/app/src/main/assets/fonts';
+
+describe('linkBare - dynamic fonts are excluded from native bundling', () => {
+  let projectRoot: string;
+  let fontDir: string;
+
+  function builtFont(
+    fontFamily: string,
+    linking: 'static' | 'dynamic'
+  ): BuiltFont {
+    const ttfPath = path.join(fontDir, `${fontFamily}.ttf`);
+    fs.writeFileSync(ttfPath, 'fake-ttf');
+    return {
+      fontFamily,
+      ttfPath,
+      glyphmapPath: path.join(fontDir, `${fontFamily}.glyphmap.json`),
+      linking,
+    };
+  }
+
+  beforeEach(() => {
+    projectRoot = makeTmpDir();
+    fontDir = makeTmpDir();
+
+    // iOS target
+    const iosDir = path.join(projectRoot, 'ios');
+    fs.mkdirSync(path.join(iosDir, 'MyApp'), { recursive: true });
+    fs.writeFileSync(path.join(iosDir, 'MyApp', 'Info.plist'), MINIMAL_PLIST);
+    fs.mkdirSync(path.join(iosDir, 'MyApp.xcodeproj'), { recursive: true });
+    fs.writeFileSync(
+      path.join(iosDir, 'MyApp.xcodeproj', 'project.pbxproj'),
+      '// fake pbxproj'
+    );
+
+    // Android target
+    fs.mkdirSync(path.join(projectRoot, 'android'), { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+    fs.rmSync(fontDir, { recursive: true, force: true });
+  });
+
+  test('static font is bundled, dynamic font is skipped (iOS + Android)', async () => {
+    await linkBare(
+      projectRoot,
+      [builtFont('StaticFont', 'static'), builtFont('DynFont', 'dynamic')],
+      makeLogger()
+    );
+
+    // iOS: only the static font lands in UIAppFonts.
+    const plist = path.join(projectRoot, 'ios', 'MyApp', 'Info.plist');
+    const fonts = readUIAppFonts(plist);
+    expect(fonts).toContain('StaticFont.ttf');
+    expect(fonts).not.toContain('DynFont.ttf');
+
+    // Android: only the static TTF is copied into assets/fonts.
+    const androidFonts = path.join(projectRoot, ANDROID_FONTS_DIR);
+    expect(fs.existsSync(path.join(androidFonts, 'StaticFont.ttf'))).toBe(true);
+    expect(fs.existsSync(path.join(androidFonts, 'DynFont.ttf'))).toBe(false);
+  });
+
+  test('all-dynamic set bundles nothing natively', async () => {
+    const logger = makeLogger();
+
+    await linkBare(
+      projectRoot,
+      [builtFont('DynA', 'dynamic'), builtFont('DynB', 'dynamic')],
+      logger
+    );
+
+    // No UIAppFonts entries written.
+    expect(
+      readUIAppFonts(path.join(projectRoot, 'ios', 'MyApp', 'Info.plist'))
+    ).toEqual([]);
+
+    // Android assets/fonts dir is never populated (linkAndroid not called).
+    const androidFonts = path.join(projectRoot, ANDROID_FONTS_DIR);
+    expect(fs.existsSync(path.join(androidFonts, 'DynA.ttf'))).toBe(false);
+    expect(fs.existsSync(path.join(androidFonts, 'DynB.ttf'))).toBe(false);
+
+    expect(logger.succeed).toHaveBeenCalledWith(
+      expect.stringContaining('nothing to bundle natively')
+    );
+  });
+});
+
+const IOS_STAGING_DIR = 'ios/nanoicons-fonts';
+
+describe('linkBare - platform detection & edge cases', () => {
+  let projectRoot: string;
+  let fontDir: string;
+
+  function builtFont(
+    fontFamily: string,
+    linking: 'static' | 'dynamic' = 'static'
+  ): BuiltFont {
+    const ttfPath = path.join(fontDir, `${fontFamily}.ttf`);
+    fs.writeFileSync(ttfPath, 'fake-ttf');
+    return {
+      fontFamily,
+      ttfPath,
+      glyphmapPath: path.join(fontDir, `${fontFamily}.glyphmap.json`),
+      linking,
+    };
+  }
+
+  function addIos(existingFonts?: string[]): string {
+    const iosDir = path.join(projectRoot, 'ios');
+    fs.mkdirSync(path.join(iosDir, 'MyApp'), { recursive: true });
+    const infoPlistPath = path.join(iosDir, 'MyApp', 'Info.plist');
+    fs.writeFileSync(
+      infoPlistPath,
+      existingFonts
+        ? plist.build({
+            CFBundleName: 'placeholder',
+            UIAppFonts: existingFonts,
+          })
+        : MINIMAL_PLIST
+    );
+    fs.mkdirSync(path.join(iosDir, 'MyApp.xcodeproj'), { recursive: true });
+    fs.writeFileSync(
+      path.join(iosDir, 'MyApp.xcodeproj', 'project.pbxproj'),
+      '// fake pbxproj'
+    );
+    return infoPlistPath;
+  }
+
+  function addAndroid(): void {
+    fs.mkdirSync(path.join(projectRoot, 'android'), { recursive: true });
+  }
+
+  beforeEach(() => {
+    projectRoot = makeTmpDir();
+    fontDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+    fs.rmSync(fontDir, { recursive: true, force: true });
+  });
+
+  test('empty font list is a no-op (no platform mutation, no success log)', async () => {
+    addIos();
+    addAndroid();
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [], logger);
+
+    expect(
+      readUIAppFonts(path.join(projectRoot, 'ios', 'MyApp', 'Info.plist'))
+    ).toEqual([]);
+    expect(fs.existsSync(path.join(projectRoot, ANDROID_FONTS_DIR))).toBe(
+      false
+    );
+    expect(fs.existsSync(path.join(projectRoot, IOS_STAGING_DIR))).toBe(false);
+    expect(logger.succeed).not.toHaveBeenCalled();
+  });
+
+  test('android-only project bundles to android and leaves ios untouched', async () => {
+    addAndroid(); // no ios dir
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('OnlyAndroid')], logger);
+
+    expect(
+      fs.existsSync(
+        path.join(projectRoot, ANDROID_FONTS_DIR, 'OnlyAndroid.ttf')
+      )
+    ).toBe(true);
+    expect(fs.existsSync(path.join(projectRoot, 'ios'))).toBe(false);
+    expect(logger.succeed).toHaveBeenCalledWith(
+      expect.stringContaining('android')
+    );
+  });
+
+  test('no native directories (e.g. RN Web) → reports output dir, copies nothing', async () => {
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('WebFont')], logger);
+
+    expect(fs.existsSync(path.join(projectRoot, ANDROID_FONTS_DIR))).toBe(
+      false
+    );
+    expect(fs.existsSync(path.join(projectRoot, IOS_STAGING_DIR))).toBe(false);
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('No native directories found')
+    );
+    expect(logger.succeed).not.toHaveBeenCalled();
+  });
+
+  test('ios TTF is copied into the nanoicons-fonts staging dir', async () => {
+    addIos();
+
+    await linkBare(projectRoot, [builtFont('StagedFont')], makeLogger());
+
+    expect(
+      fs.existsSync(path.join(projectRoot, IOS_STAGING_DIR, 'StagedFont.ttf'))
+    ).toBe(true);
+  });
+
+  test('UIAppFonts merges with pre-existing entries without clobbering them', async () => {
+    const infoPlistPath = addIos(['PreExisting.ttf']);
+
+    await linkBare(projectRoot, [builtFont('NewFont')], makeLogger());
+
+    const fonts = readUIAppFonts(infoPlistPath);
+    expect(fonts).toContain('PreExisting.ttf');
+    expect(fonts).toContain('NewFont.ttf');
+  });
+
+  test('running twice is idempotent — no duplicate UIAppFonts entries', async () => {
+    const infoPlistPath = addIos();
+    const fonts = [builtFont('Idem')];
+
+    await linkBare(projectRoot, fonts, makeLogger());
+    await linkBare(projectRoot, fonts, makeLogger());
+
+    const entries = readUIAppFonts(infoPlistPath);
+    expect(entries.filter((f) => f === 'Idem.ttf')).toHaveLength(1);
   });
 });

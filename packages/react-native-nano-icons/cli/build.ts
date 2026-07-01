@@ -17,12 +17,15 @@ export type IconSetConfig = {
   safeZone?: number;
   /** First Unicode codepoint for glyphs (default 0xe900). Hex string or number. */
   startUnicode?: number | string;
+  /** Linking type for the font (default 'static'). Static bundles the TTF, dynamic delivers it via OTA*/
+  linking?: 'static' | 'dynamic';
 };
 
 export type BuiltFont = {
   fontFamily: string;
   ttfPath: string;
   glyphmapPath: string;
+  linking: 'static' | 'dynamic';
 };
 
 const DEFAULT_SAFE_ZONE = 1020;
@@ -33,6 +36,7 @@ function shouldSkipGeneration(
   inputHash: string,
   outputDir: string,
   fontFamily: string,
+  linking: 'static' | 'dynamic',
   logger?: NanoLogger
 ): boolean {
   const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
@@ -48,8 +52,10 @@ function shouldSkipGeneration(
 
   const glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
   const storedHash: string | undefined = glyphmap?.m?.h;
+  const storedLinking: 'static' | 'dynamic' =
+    glyphmap?.m?.l === 'd' ? 'dynamic' : 'static';
 
-  if (storedHash && storedHash === inputHash) {
+  if (storedHash && storedHash === inputHash && storedLinking === linking) {
     logger?.info(`${fontFamily}: SVG fingerprint unchanged, skipping build.`);
     return true;
   }
@@ -75,6 +81,7 @@ export async function buildAllFonts(
     const set = iconSets[i]!;
     const inputDir = path.resolve(projectRoot, set.inputDir);
     const fontFamily = set.fontFamily ?? path.basename(inputDir);
+    const linking: 'static' | 'dynamic' = set.linking ?? 'static';
 
     if (!fs.existsSync(inputDir)) {
       throw new Error(
@@ -90,8 +97,10 @@ export async function buildAllFonts(
 
     const inputHash = getFingerprintSync(inputDir);
 
-    if (shouldSkipGeneration(inputHash, outputDir, fontFamily, logger)) {
-      results.push({ fontFamily, ttfPath, glyphmapPath });
+    if (
+      shouldSkipGeneration(inputHash, outputDir, fontFamily, linking, logger)
+    ) {
+      results.push({ fontFamily, ttfPath, glyphmapPath, linking });
       continue;
     }
 
@@ -111,6 +120,7 @@ export async function buildAllFonts(
             ? parseInt(set.startUnicode, 16)
             : set.startUnicode
           : DEFAULT_START_UNICODE,
+      linking,
     };
 
     logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
@@ -125,6 +135,7 @@ export async function buildAllFonts(
       fontFamily,
       ttfPath: out.ttfPath,
       glyphmapPath: out.glyphmapPath,
+      linking,
     });
   }
 

@@ -37,3 +37,19 @@ export function loadNanoIconsConfig(configRoot: string): NanoIconsConfig {
 
   return config as NanoIconsConfig;
 }
+
+export function loadDynamicIconSets(configRoot: string): IconSetConfig[] {
+  const config = loadNanoIconsConfig(configRoot);
+  const dynamicSets = (config.iconSets ?? []).filter(
+    (s) => s.linking === 'dynamic'
+  );
+
+  if (dynamicSets.length === 0) {
+    throw new Error(
+      `[react-native-nano-icons] No icon sets with linking: "dynamic" found in .nanoicons.json.\n` +
+        `--dynamic only processes icon sets where linking is set to "dynamic".`
+    );
+  }
+
+  return dynamicSets;
+}

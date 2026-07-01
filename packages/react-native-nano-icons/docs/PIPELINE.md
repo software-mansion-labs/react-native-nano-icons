@@ -349,7 +349,7 @@ Checks if `parent` is a `ReactTextView`. If so, reads the text layout paint's `f
 | `picosvg` | 0.22.3 | SVG flattening (bundled .whl) |
 | `svg2ttf` | ^6.0.3 | SVG font → TTF conversion |
 | `fonteditor-core` | ^2.6.3 | TTF metric correction |
-| `jsdom` | ^28.1.0 | DOM parsing in Node.js |
+| `@xmldom/xmldom` | ^0.9.10 | XML DOM parsing in Node.js |
 
 ---
 

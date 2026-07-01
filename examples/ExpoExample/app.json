@@ -53,7 +53,8 @@
             {
               "inputDir": "../../packages/react-native-nano-icons/test_icons/swm_icons/outline",
               "fontFamily": "SWMIconsOutline",
-              "outputDir": "./assets/nanoicons"
+              "outputDir": "./assets/nanoicons",
+              "linking": "dynamic"
             }
           ],
           "symbolSets": [

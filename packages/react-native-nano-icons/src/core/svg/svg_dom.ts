@@ -1,4 +1,4 @@
-import { JSDOM } from 'jsdom';
+import { DOMParser, type Element } from '@xmldom/xmldom';
 import { parseColor } from '../../utils/parse';
 import {
   SVG_MOVE_PREFIX,
@@ -19,7 +19,7 @@ export type ParsedFlatSvg = {
 
 // if the fill is implicit, walk ancestors for the first explicit fill value
 function resolveInheritedFill(el: Element): string {
-  let current: Element | null = el.parentElement;
+  let current = el.parentElement;
   while (current !== null) {
     const fill = current.getAttribute('fill');
     if (fill !== null && fill !== 'inherit') return fill;
@@ -100,30 +100,27 @@ export function parseFlattenedSvg(
   flattenedSvg: string,
   options?: { onSanitize?: (original: string) => void }
 ): ParsedFlatSvg {
-  const dom = new JSDOM(flattenedSvg);
-  const doc = dom.window.document;
+  const doc = new DOMParser().parseFromString(flattenedSvg, 'image/svg+xml');
+  const svgEl = doc.documentElement;
 
-  const svgEl = doc.querySelector('svg');
   const viewBoxRaw = svgEl
     ?.getAttribute('viewBox')
     ?.split(WHITESPACE)
     .map(Number) ?? [0, 0, 100, 100];
 
   const viewBox: [number, number, number, number] =
-    viewBoxRaw.length === 4 && viewBoxRaw.every((n) => Number.isFinite(n))
+    viewBoxRaw.length === 4 && viewBoxRaw.every(Number.isFinite)
       ? [viewBoxRaw[0]!, viewBoxRaw[1]!, viewBoxRaw[2]!, viewBoxRaw[3]!]
       : [0, 0, 100, 100];
 
-  const pathEls = Array.from(doc.querySelectorAll('path'));
+  const pathEls = svgEl ? Array.from(svgEl.getElementsByTagName('path')) : [];
 
   const paths = pathEls
     .map(parsePath)
     .filter((p) => p.d.trim() !== '')
     .map((p) => {
       const { d, sanitized } = sanitizePathData(p.d);
-      if (sanitized) {
-        options?.onSanitize?.(p.d);
-      }
+      if (sanitized) options?.onSanitize?.(p.d);
       return { ...p, d };
     });
 
@@ -145,6 +142,12 @@ export function validateSvg(content: string): SvgValidation {
   if (XML_FILTER.test(content)) {
     return { valid: false, reason: '<filter> is not supported yet' };
   }
+  if (/<image[\s>]/i.test(content)) {
+    return {
+      valid: false,
+      reason: 'embedded raster <image> is not supported yet',
+    };
+  }
   return { valid: true };
 }
 
@@ -161,18 +164,20 @@ export function extractOriginalEvenoddDs(svgContent: string): string[] {
     return [];
   }
 
-  const dom = new JSDOM(svgContent, { contentType: 'image/svg+xml' });
-  const doc = dom.window.document;
-  const results: string[] = [];
+  const doc = new DOMParser().parseFromString(svgContent, 'image/svg+xml');
 
-  const pathEls = doc.querySelectorAll(
-    'path[fill-rule="evenodd"], path[clip-rule="evenodd"]'
+  return Array.from(doc.getElementsByTagName('path')).reduce<string[]>(
+    (acc, el) => {
+      const isEvenOdd =
+        el.getAttribute('fill-rule') === 'evenodd' ||
+        el.getAttribute('clip-rule') === 'evenodd';
+      if (!isEvenOdd) return acc;
+      const d = el.getAttribute('d');
+      if (d !== null && d !== '') acc.push(d);
+      return acc;
+    },
+    []
   );
-  for (const el of pathEls) {
-    const d = el.getAttribute('d');
-    if (d) results.push(d);
-  }
-  return results;
 }
 
 /**

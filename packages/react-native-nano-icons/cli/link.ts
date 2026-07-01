@@ -343,6 +343,16 @@ export async function linkBare(
 ): Promise<void> {
   if (!builtFonts.length) return;
 
+  const staticFonts = builtFonts.filter((b) => b.linking === 'static');
+  const dynamicFonts = builtFonts.filter((b) => b.linking === 'dynamic');
+
+  for (const b of dynamicFonts) {
+    const rel = path.relative(projectRoot, b.ttfPath);
+    logger.info(
+      `${b.fontFamily}: dynamic linking — skipping native bundle. TTF available at ${rel}`
+    );
+  }
+
   const hasAndroid = fs.existsSync(path.join(projectRoot, 'android'));
   const hasIos = fs.existsSync(path.join(projectRoot, 'ios'));
 
@@ -358,17 +368,31 @@ export async function linkBare(
     return;
   }
 
+  if (!staticFonts.length) {
+    logger.succeed(
+      `All ${dynamicFonts.length} font(s) use dynamic linking — nothing to bundle natively.`
+    );
+    return;
+  }
+
   const linkedPlatforms: string[] = [];
 
   if (hasAndroid) {
-    await linkAndroid(projectRoot, builtFonts);
+    await linkAndroid(projectRoot, staticFonts);
     linkedPlatforms.push('android');
   }
 
   if (hasIos) {
-    await linkIos(projectRoot, builtFonts);
+    await linkIos(projectRoot, staticFonts);
     linkedPlatforms.push('ios');
   }
 
-  logger.succeed(`Linked fonts → ${linkedPlatforms.join(', ')}`);
+  const dynamicSuffix = dynamicFonts.length
+    ? ` (${dynamicFonts.length} dynamic font${
+        dynamicFonts.length === 1 ? '' : 's'
+      } skipped)`
+    : '';
+  logger.succeed(
+    `Linked fonts → ${linkedPlatforms.join(', ')}${dynamicSuffix}`
+  );
 }

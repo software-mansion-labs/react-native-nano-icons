@@ -5,6 +5,7 @@ export type PipelineConfig = {
   upm: number;
   safeZone: number;
   startUnicode: number;
+  linking: 'static' | 'dynamic';
 };
 
 export type PipelinePaths = {

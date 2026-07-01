@@ -43,6 +43,7 @@ describe('Pipeline E2E — clipPath', () => {
         upm: UPM,
         safeZone: SAFE_ZONE,
         startUnicode: START_UNICODE,
+        linking: 'static',
       },
       { inputDir: INPUT_DIR, outputDir, tempDir }
     );

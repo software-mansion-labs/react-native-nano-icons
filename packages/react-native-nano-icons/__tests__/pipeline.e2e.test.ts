@@ -44,6 +44,7 @@ describe('Pipeline E2E — outline (single-colour)', () => {
         upm: UPM,
         safeZone: SAFE_ZONE,
         startUnicode: START_UNICODE,
+        linking: 'static',
       },
       { inputDir: INPUT_DIR, outputDir, tempDir }
     );
@@ -213,6 +214,7 @@ describe('Pipeline E2E — inputHash embedding', () => {
         upm: UPM,
         safeZone: SAFE_ZONE,
         startUnicode: START_UNICODE,
+        linking: 'static',
       },
       { inputDir: INPUT_DIR, outputDir, tempDir },
       { inputHash: INPUT_HASH }

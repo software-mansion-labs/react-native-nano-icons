@@ -10,27 +10,23 @@ This project bundles or depends on the following third-party software:
    License: MIT
    Source: https://www.npmjs.com/package/fonteditor-core
 
-3. jsdom
+3. @xmldom/xmldom
    License: MIT
-   Source: https://github.com/jsdom/jsdom
+   Source: https://github.com/xmldom/xmldom
 
 4. minimist
    License: MIT
    Source: https://github.com/minimistjs/minimist
 
-5. svgicons2svgfont
-   License: MIT
-   Source: https://github.com/nfroidure/svgicons2svgfont
-
-6. svg2ttf
+5. svg2ttf
    License: MIT
    Source: https://www.npmjs.com/package/svg2ttf
 
-7. pathkit-wasm
+6. pathkit-wasm
    License: BSD-3-Clause
    Source: https://www.npmjs.com/package/pathkit-wasm
 
-8. pyodide
+7. pyodide
    License: MPL-2.0
    Source: https://www.npmjs.com/package/pyodide
 
