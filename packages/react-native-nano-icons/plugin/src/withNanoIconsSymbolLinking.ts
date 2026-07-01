@@ -31,7 +31,13 @@ export function withNanoIconsSymbolLinking(
         projectName,
         'Images.xcassets'
       );
-      if (!fs.existsSync(imagesCatalog)) return config;
+      if (!fs.existsSync(imagesCatalog)) {
+        console.warn(
+          `[react-native-nano-icons] ${projectName}/Images.xcassets not found — skipping symbol linking. ` +
+            `Run "expo prebuild" first so the catalog exists.`
+        );
+        return config;
+      }
 
       copySymbolsetsIntoCatalog(imagesCatalog, built);
       return config;

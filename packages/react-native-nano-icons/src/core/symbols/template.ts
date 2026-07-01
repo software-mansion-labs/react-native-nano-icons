@@ -38,6 +38,11 @@ function fmt(n: number): string {
   return Number(n.toFixed(3)).toString();
 }
 
+// Escape XML text so a filename with &/</> can't break the emitted template.
+function escapeXmlText(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export type SymbolTemplateLayer = {
   /** Path data in source viewBox coordinates (nonzero winding). */
   d: string;
@@ -120,7 +125,7 @@ export function buildSymbolTemplate(opts: {
   }
 
   const nameNote = descriptiveName
-    ? `\n      <text id="descriptive-name" fill="#505050" x="785.0" y="560.0" text-anchor="end">Generated from ${descriptiveName}</text>`
+    ? `\n      <text id="descriptive-name" fill="#505050" x="785.0" y="560.0" text-anchor="end">Generated from ${escapeXmlText(descriptiveName)}</text>`
     : '';
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>

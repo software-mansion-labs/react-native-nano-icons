@@ -164,35 +164,58 @@ const XCODEPROJ_RE = /\.xcodeproj$/;
 const NANO_ASSET_RE = /\.(symbolset|imageset)$/;
 const XML_FILE_RE = /\.xml$/;
 
-// Copy generated asset folders into a catalog, first removing previously
-// generated assets for the same prefixes (handles removed icons and mode switches).
+// Ledgers of what we last linked, kept in the build output dir. Read before a
+// re-link so a renamed prefix or a dropped set is cleaned too — the current-prefix
+// scan below only sees names still in the config.
+const SYMBOL_LEDGER = '.nanoicons-catalog.json';
+const DRAWABLE_LEDGER = '.nanoicons-drawables.json';
+
+function readLedger(ledgerPath: string): string[] {
+  try {
+    const names: unknown = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+    return Array.isArray(names) ? (names as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Copy generated asset folders into a catalog, first removing everything we
+// linked last time (ledger) plus any current-prefix match (ledger-less fallback).
+// Handles removed icons, mode switches, prefix renames and dropped sets.
 export function copySymbolsetsIntoCatalog(
   catalogDir: string,
   builtSymbolSets: BuiltSymbolSet[]
 ): void {
-  const prefixes = new Set(builtSymbolSets.map((s) => s.prefix));
+  const outputDir = builtSymbolSets[0]
+    ? path.dirname(builtSymbolSets[0].symbolsDir)
+    : null;
+  const ledgerPath = outputDir ? path.join(outputDir, SYMBOL_LEDGER) : null;
 
-  // Remove stale assets owned by our prefixes.
+  const stale = new Set(ledgerPath ? readLedger(ledgerPath) : []);
+  const prefixes = new Set(builtSymbolSets.map((s) => s.prefix));
   for (const entry of fs.readdirSync(catalogDir, { withFileTypes: true })) {
     if (!entry.isDirectory() || !NANO_ASSET_RE.test(entry.name)) continue;
     const assetName = entry.name.replace(NANO_ASSET_RE, '');
     for (const prefix of prefixes) {
       if (assetName.startsWith(`${prefix}.`)) {
-        fs.rmSync(path.join(catalogDir, entry.name), {
-          recursive: true,
-          force: true,
-        });
+        stale.add(entry.name);
         break;
       }
     }
   }
+  for (const name of stale) {
+    fs.rmSync(path.join(catalogDir, name), { recursive: true, force: true });
+  }
 
+  const linked: string[] = [];
   for (const set of builtSymbolSets) {
     for (const assetDir of set.assetDirs) {
-      const dest = path.join(catalogDir, path.basename(assetDir));
-      fs.cpSync(assetDir, dest, { recursive: true });
+      const base = path.basename(assetDir);
+      fs.cpSync(assetDir, path.join(catalogDir, base), { recursive: true });
+      linked.push(base);
     }
   }
+  if (ledgerPath) fs.writeFileSync(ledgerPath, JSON.stringify(linked));
 }
 
 /**
@@ -275,35 +298,47 @@ export async function linkBareSymbols(
 // Android VectorDrawable linking
 // ---------------------------------------------------------------------------
 
-// Copy generated VectorDrawable XML into a res/drawable dir, first removing
-// previously generated drawables owned by our prefixes (handles removed icons).
+// Copy generated VectorDrawable XML into a res/drawable dir, first removing what
+// we linked last time (ledger) plus any current-prefix match. Handles removed
+// icons, prefix renames and dropped sets.
 export function copyDrawablesIntoResDir(
   drawableDir: string,
   builtSymbolSets: BuiltSymbolSet[]
 ): void {
   fs.mkdirSync(drawableDir, { recursive: true });
 
+  const outputDir = builtSymbolSets[0]
+    ? path.dirname(builtSymbolSets[0].drawablesDir)
+    : null;
+  const ledgerPath = outputDir ? path.join(outputDir, DRAWABLE_LEDGER) : null;
+
+  const stale = new Set(ledgerPath ? readLedger(ledgerPath) : []);
   const prefixes = new Set(
     builtSymbolSets.map((s) => toDrawableResourceName(s.prefix))
   );
-
-  // Remove stale drawables owned by our prefixes (e.g. "nano_*.xml").
   for (const entry of fs.readdirSync(drawableDir, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.xml')) continue;
     const base = entry.name.replace(XML_FILE_RE, '');
     for (const prefix of prefixes) {
       if (base.startsWith(`${prefix}_`)) {
-        fs.rmSync(path.join(drawableDir, entry.name), { force: true });
+        stale.add(entry.name);
         break;
       }
     }
   }
+  for (const name of stale) {
+    fs.rmSync(path.join(drawableDir, name), { force: true });
+  }
 
+  const linked: string[] = [];
   for (const set of builtSymbolSets) {
     for (const file of set.drawableFiles) {
-      fs.copyFileSync(file, path.join(drawableDir, path.basename(file)));
+      const base = path.basename(file);
+      fs.copyFileSync(file, path.join(drawableDir, base));
+      linked.push(base);
     }
   }
+  if (ledgerPath) fs.writeFileSync(ledgerPath, JSON.stringify(linked));
 }
 
 /**
