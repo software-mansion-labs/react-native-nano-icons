@@ -2,9 +2,8 @@ import * as React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SFSymbol } from '@react-navigation/native';
 
-import { TabiconsSymbols } from '../assets/nanoicons/tabicons.symbols';
-
-const customName = (n: string): never => n as never;
+// Custom asset-catalog symbol names typecheck directly on <SFSymbol> thanks to
+// the SFSymbolNames augmentation (see navigation/Tabs.tsx) — react-navigation #13166.
 type Effect = React.ComponentProps<typeof SFSymbol>['effect'];
 
 const MODE_SIZE = 60;
@@ -37,7 +36,7 @@ function AnimCell({ label, effect }: { label: string; effect: Effect }) {
   return (
     <View style={styles.cell}>
       <SFSymbol
-        name={customName(TabiconsSymbols.folder)}
+        name={'nano.folder'}
         size={ANIM_SIZE}
         color="#001A72"
         effect={effect}
@@ -58,13 +57,13 @@ export default function SFSymbolShowcase() {
 
       <ModeRow label="palette">
         <SFSymbol
-          name={customName(TabiconsSymbols.folder)}
+          name={'nano.folder'}
           size={MODE_SIZE}
           renderingMode="palette"
           colors={{ primary: '#E5572B', secondary: '#001A72' }}
         />
         <SFSymbol
-          name={customName(TabiconsSymbols.cloud)}
+          name={'nano.cloud'}
           size={MODE_SIZE}
           renderingMode="palette"
           colors={{ primary: '#0A84FF', secondary: '#34C759' }}
@@ -79,13 +78,13 @@ export default function SFSymbolShowcase() {
 
       <ModeRow label="hierarchical">
         <SFSymbol
-          name={customName(TabiconsSymbols.folder)}
+          name={'nano.folder'}
           size={MODE_SIZE}
           renderingMode="hierarchical"
           color="#001A72"
         />
         <SFSymbol
-          name={customName(TabiconsSymbols.cloud)}
+          name={'nano.cloud'}
           size={MODE_SIZE}
           renderingMode="hierarchical"
           color="#0A84FF"

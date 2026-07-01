@@ -5,15 +5,19 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { Button, HeaderBackButton } from '@react-navigation/elements';
 
-import { nano } from '../helpers/icons';
+import { nativeNanoSymbol } from 'react-native-nano-icons/symbols';
 import SFSymbolShowcase from './SFSymbolShowcase';
 
 // Default-size icon for the header (sfSymbol iOS / image drawable Android).
-const HEADER_ICON = () => nano('nano.swm', 'nano_swm', false);
+const HEADER_ICON = () => nativeNanoSymbol('swm', false);
 
-// Sized variant — on Android the image honors width/height, so the wide logo
-// renders at its intended size instead of the consumer's default box.
-const SIZED_ICON = () => nano('nano.swm', 'nano_swm', false, 40, 20);
+// Sized variant — spread the descriptor and add width/height, which the image
+// (Android) honors so the wide logo renders at its intended size.
+const SIZED_ICON = () => ({
+  ...nativeNanoSymbol('swm', false),
+  width: 40,
+  height: 20,
+});
 
 function Center({ label }: { label: string }) {
   return (

@@ -94,6 +94,18 @@
       },
       "default": "./lib/commonjs/index.node.js"
     },
+    "./symbols": {
+      "source": "./src/symbols/index.ts",
+      "import": {
+        "types": "./lib/typescript/src/symbols/index.d.ts",
+        "default": "./lib/module/symbols/index.js"
+      },
+      "require": {
+        "types": "./lib/typescript/src/symbols/index.d.ts",
+        "default": "./lib/module/symbols/index.js"
+      },
+      "default": "./lib/module/symbols/index.js"
+    },
     "./cli": {
       "source": "./cli/index.ts",
       "types": "./lib/commonjs/cli/index.d.ts",

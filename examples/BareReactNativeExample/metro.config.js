@@ -74,6 +74,26 @@ module.exports = mergeConfig(defaultConfig, {
           platform,
         );
       }
+      // Map nano-icons' exports-only "/symbols" subpath by hand (package exports
+      // are off). Point at the platform-split source; Metro transforms the TS.
+      if (moduleName === 'react-native-nano-icons/symbols') {
+        const fs = require('fs');
+        const dir = path.join(
+          packagesRoot,
+          'react-native-nano-icons/src/symbols',
+        );
+        const candidates = [
+          path.join(dir, `index.${platform}.ts`),
+          path.join(dir, 'index.native.ts'),
+          path.join(dir, 'index.ts'),
+        ];
+        return {
+          type: 'sourceFile',
+          filePath:
+            candidates.find((f) => fs.existsSync(f)) ||
+            candidates[candidates.length - 1],
+        };
+      }
       // Map this exports-only subpath by hand since package exports are off.
       if (moduleName === '@react-navigation/elements/internal') {
         const elementsPkg = require.resolve(

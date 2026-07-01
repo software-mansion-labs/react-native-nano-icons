@@ -47,3 +47,12 @@ index 0d0e9082021ade2ecdbd7fadadfa4d9211561e13..14631ad969ea254eeccd67795d9fcfc4
  };
  type IconSfSymbol = {
      /**
+@@ -35,7 +40,7 @@ type IconSfSymbol = {
+     /**
+      * Name of the SF Symbol to use as the icon.
+      */
+-    name: SFSymbol;
++    name: SFSymbol | keyof import('@react-navigation/native').SFSymbolNames;
+ };
+ type IconMaterialSymbol = {
+     /**

@@ -27,7 +27,7 @@ const DEFAULT_PREFIX = 'nano';
 
 // Bump when emission changes — part of the fingerprint, so upgrades invalidate
 // outputs built from unchanged SVGs.
-const GENERATOR_VERSION = 9;
+const GENERATOR_VERSION = 1;
 
 function shouldSkipGeneration(
   inputHash: string,
@@ -37,15 +37,13 @@ function shouldSkipGeneration(
   logger?: NanoLogger
 ): BuiltSymbolSet | null {
   const symbolmapPath = path.join(outputDir, `${name}.symbolmap.json`);
-  const manifestTsPath = path.join(outputDir, `${name}.symbols.ts`);
-  const drawablesTsPath = path.join(outputDir, `${name}.drawables.ts`);
+  const dtsPath = path.join(outputDir, `${name}.symbols.d.ts`);
   const symbolsDir = path.join(outputDir, `${name}.symbols`);
   const drawablesDir = path.join(outputDir, `${name}.drawables`);
 
   if (
     !fs.existsSync(symbolmapPath) ||
-    !fs.existsSync(manifestTsPath) ||
-    !fs.existsSync(drawablesTsPath) ||
+    !fs.existsSync(dtsPath) ||
     !fs.existsSync(symbolsDir) ||
     !fs.existsSync(drawablesDir)
   ) {
@@ -81,7 +79,7 @@ function shouldSkipGeneration(
     assetDirs,
     drawablesDir,
     drawableFiles,
-    manifestTsPath,
+    dtsPath,
     symbolmapPath,
     symbols,
     drawables,

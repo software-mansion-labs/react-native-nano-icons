@@ -24,3 +24,27 @@ index d36bb6746381abf93ad68fcba2e610009956f08e..b192a4ce2bf97f1c05556d6a3f19ad09
    }
  
    @available(iOS 26.0, *)
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -26,6 +26,8 @@ declare module '@react-navigation/core' {
+     interface Theme extends NativeTheme {
+     }
+ }
++export interface SFSymbolNames {
++}
+ export type LocaleDirection = 'ltr' | 'rtl';
+ export type LinkingPrefix = '*' | (string & {});
+ export type LinkingOptions<ParamList extends {}> = {
+diff --git a/lib/typescript/src/native/types.d.ts b/lib/typescript/src/native/types.d.ts
+--- a/lib/typescript/src/native/types.d.ts
++++ b/lib/typescript/src/native/types.d.ts
+@@ -276,7 +276,7 @@ export type SFSymbolOptions = {
+     /**
+      * The name of the SF Symbol to display.
+      */
+-    name: import('sf-symbols-typescript').SFSymbol;
++    name: import('sf-symbols-typescript').SFSymbol | keyof import('../types').SFSymbolNames;
+     /**
+      * The size of the symbol.
+      *

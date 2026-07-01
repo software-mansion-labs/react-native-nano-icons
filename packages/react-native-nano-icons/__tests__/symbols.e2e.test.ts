@@ -12,7 +12,7 @@ process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
 import { buildAllSymbols } from '../cli/buildSymbols';
 import { copySymbolsetsIntoCatalog } from '../cli/link';
 import { type NanoSymbolMap } from '../src/core/pipeline/runSymbolPipeline';
-import { manifestExportName } from '../src/utils/naming';
+import { manifestBaseName } from '../src/utils/naming';
 import { catalogRootContentsJson } from '../src/core/symbols/contents';
 import { buildColoredSymbolSvg } from '../src/core/symbols/coloredSymbol';
 
@@ -131,14 +131,24 @@ describe('Symbols E2E — .symbolset generation', () => {
     expect(mono).not.toContain('class="monochrome');
   });
 
-  it('writes a typed manifest and a fingerprinted symbolmap', async () => {
+  it('writes a types-only manifest and a fingerprinted symbolmap', async () => {
+    const base = manifestBaseName(SET_NAME);
     const manifest = await fsp.readFile(
-      path.join(outputDir, `${SET_NAME}.symbols.ts`),
+      path.join(outputDir, `${SET_NAME}.symbols.d.ts`),
       'utf8'
     );
-    expect(manifest).toContain(`export const ${manifestExportName(SET_NAME)}`);
-    expect(manifest).toContain(`"home": "${PREFIX}.home"`);
-    expect(manifest).toContain(`"heart.fill": "${PREFIX}.heart.fill"`);
+    // types-only: augments NanoSymbolNames + exports name/symbol unions, no runtime map.
+    expect(manifest).toContain(
+      `declare module 'react-native-nano-icons/symbols'`
+    );
+    expect(manifest).toContain('interface NanoSymbolNames');
+    expect(manifest).toContain('"home": true;');
+    expect(manifest).toContain('"heart.fill": true;');
+    expect(manifest).toContain(`export type ${base}Name =`);
+    expect(manifest).toContain(`export type ${base}Symbol =`);
+    expect(manifest).not.toContain('export const');
+    expect(manifest).toContain(`"${PREFIX}.home"`);
+    expect(manifest).toContain(`"${PREFIX}.heart.fill"`);
 
     const symbolmap = JSON.parse(
       await fsp.readFile(
@@ -346,4 +356,30 @@ describe('Symbols E2E — .symbolset generation', () => {
     },
     120000
   );
+});
+
+describe('Symbols E2E — Android name collisions', () => {
+  let projectRoot: string;
+
+  beforeAll(async () => {
+    projectRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-collide-'));
+    const inputDir = path.join(projectRoot, 'icons');
+    await fsp.mkdir(inputDir);
+    // Distinct filenames that both sanitize to the same Android resource name
+    // (dot vs dash → "nano_heart_fill").
+    await fsp.copyFile(TWOTONE_ICON, path.join(inputDir, 'heart.fill.svg'));
+    await fsp.copyFile(TWOTONE_ICON, path.join(inputDir, 'heart-fill.svg'));
+  }, 120000);
+
+  afterAll(async () => {
+    await fsp.rm(projectRoot, { recursive: true, force: true });
+  });
+
+  it('fails the build naming both colliding files', async () => {
+    await expect(
+      buildAllSymbols([{ inputDir: 'icons', name: 'tabs' }], projectRoot)
+    ).rejects.toThrow(
+      /both map to the Android drawable name "nano_heart_fill"/
+    );
+  });
 });

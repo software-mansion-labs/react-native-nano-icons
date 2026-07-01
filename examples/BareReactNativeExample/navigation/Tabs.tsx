@@ -2,18 +2,22 @@ import {
   createBottomTabNavigator,
   createBottomTabScreen,
 } from '@react-navigation/bottom-tabs';
+import { nativeNanoSymbol } from 'react-native-nano-icons/symbols';
 
 import IconsScreen from '../screens/IconsScreen';
 import MulticolorScreen from '../screens/MulticolorScreen';
 import SystemScreen from '../screens/SystemScreen';
-import { TabiconsSymbols } from '../assets/nanoicons/tabicons.symbols';
-import { TabiconsDrawables } from '../assets/nanoicons/tabicons.drawables';
-import { MciconSymbols } from '../assets/nanoicons/mcicon.symbols';
-import { MciconDrawables } from '../assets/nanoicons/mcicon.drawables';
-import { nano, system } from '../helpers/icons';
+import type { TabiconsSymbol } from '../assets/nanoicons/tabicons.symbols';
+import type { MciconSymbol } from '../assets/nanoicons/mcicon.symbols';
+import { system } from '../helpers/icons';
+
+// react-navigation #13166: teach `{ type: 'sfSymbol', name }` about our forged
+// asset-catalog symbol names, so nativeNanoSymbol(...) type-checks with no cast.
+declare module '@react-navigation/native' {
+  interface SFSymbolNames extends Record<TabiconsSymbol | MciconSymbol, true> {}
+}
 
 const Tabs = createBottomTabNavigator({
-  // implementation: 'custom',
   screenOptions: {
     headerShown: false,
     // Active indicator is bar-wide (android) — set once for the whole bar.
@@ -21,26 +25,23 @@ const Tabs = createBottomTabNavigator({
     tabBarActiveIndicatorHeight: 40,
   },
   screens: {
-    // Monochrome custom symbol (nano.swm) — screen is the original nano-icons
-    // font demo that this example started with.
+    // Monochrome custom symbol (nano.swm) — tinted by the bar.
     Mono: createBottomTabScreen({
       screen: IconsScreen,
       options: {
         title: 'Mono',
         tabBarIconSize: 44,
-
-        tabBarIcon: () => nano(TabiconsSymbols.swm, TabiconsDrawables.swm),
+        tabBarIcon: () => nativeNanoSymbol('swm'),
       },
     }),
     // Colored multicolor image (.imageset on iOS / untinted drawable on
-    // Android) — keeps its own colors in the bar.
+    // Android) — keeps its own colors when focused (tinted: false).
     Multicolor: createBottomTabScreen({
       screen: MulticolorScreen,
       options: {
         title: 'Multicolor',
         tabBarIconSize: 30,
-        tabBarIcon: ({ focused }) =>
-          nano(MciconSymbols.walking, MciconDrawables.walking, !focused),
+        tabBarIcon: ({ focused }) => nativeNanoSymbol('walking', !focused),
       },
     }),
     // Built-in system symbol — SF Symbol on iOS, Material Symbol on Android.

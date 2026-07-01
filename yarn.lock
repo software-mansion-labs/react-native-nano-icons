@@ -5828,28 +5828,28 @@ __metadata:
   linkType: hard
 
 "@react-navigation/elements@npm:^2.9.12":
-  version: 2.9.26
-  resolution: "@react-navigation/elements@npm:2.9.26"
+  version: 2.9.27
+  resolution: "@react-navigation/elements@npm:2.9.27"
   dependencies:
     color: "npm:^4.2.3"
     use-latest-callback: "npm:^0.2.4"
     use-sync-external-store: "npm:^1.5.0"
   peerDependencies:
     "@react-native-masked-view/masked-view": ">= 0.2.0"
-    "@react-navigation/native": ^7.3.4
+    "@react-navigation/native": ^7.3.5
     react: ">= 18.2.0"
     react-native: "*"
     react-native-safe-area-context: ">= 4.0.0"
   peerDependenciesMeta:
     "@react-native-masked-view/masked-view":
       optional: true
-  checksum: 10c0/c1775f41ed94a0c2be7c33a4be16eed56d595febfeee85b162efcedbd77f55f0545fe713d5711311297a4ddb3703b44badca983ce0ef1313680814e1cf2e5a27
+  checksum: 10c0/870019bd92b9b2e1055f53b4dab94cae1bffc0c93e52af7a8bb5dee97b167db9572a1524472edd46b5d570e6eaaffb1e8a41ffd4340992eb7586a34ea9515491
   languageName: node
   linkType: hard
 
 "@react-navigation/elements@patch:@react-navigation/elements@npm%3A3.0.0-alpha.37#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.37-673c5008d9.patch":
   version: 3.0.0-alpha.37
-  resolution: "@react-navigation/elements@patch:@react-navigation/elements@npm%3A3.0.0-alpha.37#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.37-673c5008d9.patch::version=3.0.0-alpha.37&hash=c1e893"
+  resolution: "@react-navigation/elements@patch:@react-navigation/elements@npm%3A3.0.0-alpha.37#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.37-673c5008d9.patch::version=3.0.0-alpha.37&hash=b9e27d"
   dependencies:
     sf-symbols-typescript: "npm:^2.2.0"
     use-latest-callback: "npm:^0.3.4"
@@ -5861,7 +5861,7 @@ __metadata:
     react-native: "*"
     react-native-safe-area-context: ">= 5.5.0"
     react-native-screens: ">= 4.25.0"
-  checksum: 10c0/0125ec68d6e07fd4c7403c0459828c10eb79b9b6451b2aaf997dbd3ea6b293eecec9ce2df417135c672c15e1ee1528699f4a7c4740d6aeba705b8a99269e2d1b
+  checksum: 10c0/e820be5ef55d32bfb8d274cdebba8ec2efd31c2dc264abd4d930a4a49986bec07f57e04490a9369a3f822d8bc6fedc13943ae8096ee4beca49713a12f85a4952
   languageName: node
   linkType: hard
 
@@ -5951,7 +5951,7 @@ __metadata:
 
 "@react-navigation/native@patch:@react-navigation/native@npm%3A8.0.0-alpha.33#~/.yarn/patches/@react-navigation-native-npm-8.0.0-alpha.33-dfa4e38945.patch":
   version: 8.0.0-alpha.33
-  resolution: "@react-navigation/native@patch:@react-navigation/native@npm%3A8.0.0-alpha.33#~/.yarn/patches/@react-navigation-native-npm-8.0.0-alpha.33-dfa4e38945.patch::version=8.0.0-alpha.33&hash=48cdd7"
+  resolution: "@react-navigation/native@patch:@react-navigation/native@npm%3A8.0.0-alpha.33#~/.yarn/patches/@react-navigation-native-npm-8.0.0-alpha.33-dfa4e38945.patch::version=8.0.0-alpha.33&hash=c1704a"
   dependencies:
     "@react-navigation/core": "npm:^8.0.0-alpha.24"
     escape-string-regexp: "npm:^5.0.0"
@@ -5963,7 +5963,7 @@ __metadata:
   peerDependencies:
     react: ">= 19.2.0"
     react-native: "*"
-  checksum: 10c0/e38b2844fc7bbc081d40075a291698a19d2cf22e1d1a98b4ed8a3aaceab3702b20e443a35cfc299a31ee4e56df97389b114ce8715fcd69010b2af62d57a6fac2
+  checksum: 10c0/6893cda27632a0af14aaae69d2c88d4ece24de686e5d52ac1f636dca27df12082e22e7024d8a2de0f1b127a931e2d26e544b5a6581e9ccbf0b0b6a67db7969eb
   languageName: node
   linkType: hard
 

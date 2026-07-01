@@ -158,7 +158,7 @@ describe('linkBareSymbols — iOS asset catalog', () => {
       assetDirs: [symbolsetDir],
       drawablesDir,
       drawableFiles: [drawableFile],
-      manifestTsPath: path.join(symbolsOutDir, 'tabs.symbols.ts'),
+      dtsPath: path.join(symbolsOutDir, 'tabs.symbols.d.ts'),
       symbolmapPath: path.join(symbolsOutDir, 'tabs.symbolmap.json'),
       symbols: { home: 'nano.home' },
       drawables: { home: 'nano_home' },
