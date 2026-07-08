@@ -23,4 +23,3 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.9"
-        CODE_SIGNING_ALLOWED: NO
