@@ -186,6 +186,9 @@ void NanoIconInvalidateFontCache(NSString *family) {
   NanoIconDrawingLayer *layer = [NanoIconDrawingLayer layer];
   layer.owner = self;
   layer.opaque = NO;
+  // Without this, a resize stretches the stale pixel buffer instead of
+  // redrawing at the recomputed _fitScale.
+  layer.needsDisplayOnBoundsChange = YES;
   layer.contentsScale = [UIScreen mainScreen].scale;
   [self.layer addSublayer:layer];
   _drawingLayer = layer;
@@ -204,10 +207,14 @@ void NanoIconInvalidateFontCache(NSString *family) {
   }
 }
 
-// Invalidate cached offset when size changes (text relayout).
+// Invalidate size-derived state when size changes (text relayout, Yoga
+// relayout, view recycling). _fitScale is computed from bounds.height, so
+// metrics must be recomputed on the next layout pass or the glyph is drawn
+// at the previous bounds' scale (overflowing or underfilling the new box).
 - (void)setBounds:(CGRect)bounds {
   if (!CGSizeEqualToSize(self.bounds.size, bounds.size)) {
     _baselineOffsetValid = NO;
+    _metricsValid = NO;
   }
   [super setBounds:bounds];
 }
@@ -403,6 +410,51 @@ void NanoIconInvalidateFontCache(NSString *family) {
       [self setNeedsDisplay];
     }
   }
+}
+
+#pragma mark - Recycling
+
+// Fabric recycles component views, so state that outlives a mount has to be
+// cleared here. Deliberately left alone:
+//
+//   - `_props`. Both `updateProps:` implementations diff against `*_props`,
+//     not against the `oldProps` argument (which is `nullptr` on a fresh
+//     mount). Resetting it to defaults makes every prop the next icon leaves
+//     at its default value compare equal and never get re-applied, so the
+//     recycled view keeps the previous mount's state — a `transform` still
+//     on the layer, a stale `opacity`, `pointerEvents`, `hitSlop`… No RN
+//     component view resets `_props` on recycle for that reason;
+//     `RCTScrollViewComponentView` even reads `*_props` in its own
+//     `prepareForRecycle`. The concrete default belongs in the initializer,
+//     which is where we set it.
+//   - `_font`, `_fontFamily`, `_fontSize`, `_glyphs`, `_colors` and the
+//     cached `CGColorRef`s. They all derive from `_props`, so they stay
+//     coherent with it as long as it is left in place, and `updateProps:`
+//     recomputes each of them on its own prop change. (`_rebuildCachedColors`
+//     releases the previous refs, `dealloc` releases the last ones.)
+//
+// `_fitScale` and `_baselinePosition` are size-derived, not prop-derived:
+// invalidating `_metricsValid` is what forces them to be recomputed against
+// the new bounds before the next draw.
+- (void)prepareForRecycle {
+  [super prepareForRecycle];
+
+  _metricsValid = NO;
+
+  _inlineDetected = NO;
+  _isInlineInText = NO;
+  _paragraphView = nil;
+  _cachedBaselineOffset = 0;
+  _baselineOffsetValid = NO;
+  if (_drawingLayer) {
+    [_drawingLayer removeFromSuperlayer];
+    _drawingLayer = nil;
+  }
+
+  // The previous mount may have drawn into `_drawingLayer` rather than into
+  // `self`, and an icon recycled with identical props produces no redraw from
+  // `updateProps:`. Mark the view dirty so the next mount always repaints.
+  [self setNeedsDisplay];
 }
 
 - (void)dealloc {
