@@ -1,8 +1,0 @@
-{
-  "name": "nano-icons-android",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Pure-native Android library for nano icons (TTF glyph rendering, no React Native)",
-  "author": "Software Mansion",
-  "license": "MIT"
-}
