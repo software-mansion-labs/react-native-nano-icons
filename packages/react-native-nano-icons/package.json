@@ -96,6 +96,10 @@
     },
     "./symbols": {
       "source": "./src/symbols/index.ts",
+      "react-native": {
+        "types": "./lib/typescript/src/symbols/index.d.ts",
+        "default": "./lib/module/symbols/index.native.js"
+      },
       "import": {
         "types": "./lib/typescript/src/symbols/index.d.ts",
         "default": "./lib/module/symbols/index.js"

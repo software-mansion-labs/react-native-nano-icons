@@ -15,9 +15,21 @@ type NanoSymbolName = [keyof NanoSymbolNames] extends [never]
   : Extract<keyof NanoSymbolNames, string>;
 
 /**
- * Default (non-platform) resolution. Metro substitutes `index.ios.ts` /
- * `index.android.ts` on device; this base implementation is what the type checker
- * sees and what runs off-RN. It returns the iOS-style `sfSymbol` descriptor.
+ * Resolve a forged icon (by its SVG filename) to a native tab-bar descriptor.
+ *
+ * iOS — the asset is referenced by its asset-catalog name via the `sfSymbol`
+ * path. Coloring is fixed at build time by the asset's render intent: a
+ * monochrome `.symbolset` (`template`) is tinted by the bar, a multicolor
+ * `.imageset` (`original`) keeps its colors. `tinted` has no effect and is ignored.
+ *
+ * Android — the drawable resource name is derived from `${prefix}.${name}` with
+ * the same pure transform the build uses. `tinted` controls whether the bar
+ * recolors the drawable — pass `false` (e.g. `!focused`) to keep a multicolor
+ * drawable's own colors.
+ *
+ *     tabBarIcon: () => nativeNanoSymbol('home')
+ *     // tints only when unfocused, keeps the icon's own colors while focused
+ *     tabBarIcon: ({ focused }) => nativeNanoSymbol('home', !focused)
  */
 export function nativeNanoSymbol<Name extends NanoSymbolName>(
   name: Name,

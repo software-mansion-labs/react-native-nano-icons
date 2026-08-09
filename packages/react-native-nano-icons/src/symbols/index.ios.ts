@@ -15,14 +15,21 @@ type NanoSymbolName = [keyof NanoSymbolNames] extends [never]
   : Extract<keyof NanoSymbolNames, string>;
 
 /**
- * Resolve a forged icon (by its SVG filename) to an iOS tab-bar descriptor.
+ * Resolve a forged icon (by its SVG filename) to a native tab-bar descriptor.
  *
- * On iOS every forged asset — monochrome `.symbolset` and multicolor `.imageset`
- * alike — is referenced by its asset-catalog name through the `sfSymbol` path (the
- * imageset's `original` render intent keeps its colors). `tinted` is meaningless
- * here, so it is ignored.
+ * iOS — the asset is referenced by its asset-catalog name via the `sfSymbol`
+ * path. Coloring is fixed at build time by the asset's render intent: a
+ * monochrome `.symbolset` (`template`) is tinted by the bar, a multicolor
+ * `.imageset` (`original`) keeps its colors. `tinted` has no effect and is ignored.
+ *
+ * Android — the drawable resource name is derived from `${prefix}.${name}` with
+ * the same pure transform the build uses. `tinted` controls whether the bar
+ * recolors the drawable — pass `false` (e.g. `!focused`) to keep a multicolor
+ * drawable's own colors.
  *
  *     tabBarIcon: () => nativeNanoSymbol('home')
+ *     // tints only when unfocused, keeps the icon's own colors while focused
+ *     tabBarIcon: ({ focused }) => nativeNanoSymbol('home', !focused)
  */
 export function nativeNanoSymbol<Name extends NanoSymbolName>(
   name: Name,

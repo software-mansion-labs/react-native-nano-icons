@@ -1,20 +1,18 @@
 diff --git a/lib/module/views/DrawerItem.js b/lib/module/views/DrawerItem.js
-index 42a873f2ddbf02bc49780518d5ca20447c48f165..bf3929bb6e7fde97019e719c9dffe4171a15af6e 100644
+index 42a873f2ddbf02bc49780518d5ca20447c48f165..8ef46241144d334eddb5ef5804a4b6dd73d32d02 100644
 --- a/lib/module/views/DrawerItem.js
 +++ b/lib/module/views/DrawerItem.js
-@@ -57,8 +57,8 @@ export function DrawerItem(props) {
+@@ -57,7 +57,7 @@ export function DrawerItem(props) {
            return /*#__PURE__*/_jsx(Image, {
              source: iconValue.source,
              style: {
 -              width: size,
--              height: size,
-+              width: iconValue.width ?? size,
-+              height: iconValue.height ?? size,
++              width: size * (iconValue.aspectRatio ?? 1),
+               height: size,
                tintColor: iconValue.tinted === false ? undefined : color
              }
-           });
 diff --git a/lib/module/views/DrawerToggleButton.js b/lib/module/views/DrawerToggleButton.js
-index 06d2ba06e1b9a4a637a02d972657c70531f09886..1b0011f449b17b8ea4da33600221fe36acf633ba 100644
+index 06d2ba06e1b9a4a637a02d972657c70531f09886..6e0046228db7b507d79f542c3395a65b5682ebcb 100644
 --- a/lib/module/views/DrawerToggleButton.js
 +++ b/lib/module/views/DrawerToggleButton.js
 @@ -49,8 +49,11 @@ export function DrawerToggleButton({
@@ -25,8 +23,8 @@ index 06d2ba06e1b9a4a637a02d972657c70531f09886..1b0011f449b17b8ea4da33600221fe36
 -      style: styles.icon
 +      tintColor: drawerIcon.tinted === false ? undefined : tintColor,
 +      style: [styles.icon, {
-+        width: drawerIcon.width ?? ICON_SIZE,
-+        height: drawerIcon.height ?? ICON_SIZE
++        width: ICON_SIZE * (drawerIcon.aspectRatio ?? 1),
++        height: ICON_SIZE
 +      }]
      })
    });

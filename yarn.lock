@@ -5738,7 +5738,7 @@ __metadata:
 
 "@react-navigation/bottom-tabs@patch:@react-navigation/bottom-tabs@npm%3A8.0.0-alpha.39#~/.yarn/patches/@react-navigation-bottom-tabs-npm-8.0.0-alpha.39-3250e3b580.patch":
   version: 8.0.0-alpha.39
-  resolution: "@react-navigation/bottom-tabs@patch:@react-navigation/bottom-tabs@npm%3A8.0.0-alpha.39#~/.yarn/patches/@react-navigation-bottom-tabs-npm-8.0.0-alpha.39-3250e3b580.patch::version=8.0.0-alpha.39&hash=8b92b9"
+  resolution: "@react-navigation/bottom-tabs@patch:@react-navigation/bottom-tabs@npm%3A8.0.0-alpha.39#~/.yarn/patches/@react-navigation-bottom-tabs-npm-8.0.0-alpha.39-3250e3b580.patch::version=8.0.0-alpha.39&hash=b2d240"
   dependencies:
     "@react-navigation/elements": "npm:^3.0.0-alpha.37"
   peerDependencies:
@@ -5747,7 +5747,7 @@ __metadata:
     react-native: "*"
     react-native-safe-area-context: ">= 5.5.0"
     react-native-screens: ">= 4.25.0"
-  checksum: 10c0/e3ea009a32ad91406d91df65b94012e0e67613fbc2273d6494f42432258b06be55718155cc00d000a4345d287c76e48eeb4a2029662feb778880abb722fbbd16
+  checksum: 10c0/d1ced9f84e4dbc49c722e790ca4eceac844185c7498e2bd2b87ee614c028ec5f5829195271d4b90fc3bf5c27d1ba770be7929ff30c44a69ce3ce23357c58c909
   languageName: node
   linkType: hard
 
@@ -5791,7 +5791,7 @@ __metadata:
 
 "@react-navigation/drawer@patch:@react-navigation/drawer@npm%3A8.0.0-alpha.40#~/.yarn/patches/@react-navigation-drawer-npm-8.0.0-alpha.40-4bee7e4945.patch":
   version: 8.0.0-alpha.40
-  resolution: "@react-navigation/drawer@patch:@react-navigation/drawer@npm%3A8.0.0-alpha.40#~/.yarn/patches/@react-navigation-drawer-npm-8.0.0-alpha.40-4bee7e4945.patch::version=8.0.0-alpha.40&hash=cec00f"
+  resolution: "@react-navigation/drawer@patch:@react-navigation/drawer@npm%3A8.0.0-alpha.40#~/.yarn/patches/@react-navigation-drawer-npm-8.0.0-alpha.40-4bee7e4945.patch::version=8.0.0-alpha.40&hash=7d6d2e"
   dependencies:
     "@react-navigation/elements": "npm:^3.0.0-alpha.37"
     react-native-drawer-layout: "npm:^5.0.0-alpha.12"
@@ -5805,7 +5805,7 @@ __metadata:
     react-native-safe-area-context: ">= 5.5.0"
     react-native-screens: ">= 4.25.0"
     react-native-worklets: ">= 0.4.0"
-  checksum: 10c0/76dc979dd2f79ba90990f58ea84bbf91e8a999c4ddc678bc0a9f3a6d1957f986158d92f7d3197e0bdb5922a6a03ec1954ca767177ddb99040bbea6c41f366648
+  checksum: 10c0/4768004af2db5350b1fc87c777952510d7cbbe245418515ab252ae033e63bdef3cd10e28ccc6d38918f03cce312f653861271001fddce90ac7dc1ded26a52088
   languageName: node
   linkType: hard
 
@@ -5828,28 +5828,28 @@ __metadata:
   linkType: hard
 
 "@react-navigation/elements@npm:^2.9.12":
-  version: 2.9.27
-  resolution: "@react-navigation/elements@npm:2.9.27"
+  version: 2.9.35
+  resolution: "@react-navigation/elements@npm:2.9.35"
   dependencies:
     color: "npm:^4.2.3"
     use-latest-callback: "npm:^0.2.4"
     use-sync-external-store: "npm:^1.5.0"
   peerDependencies:
     "@react-native-masked-view/masked-view": ">= 0.2.0"
-    "@react-navigation/native": ^7.3.5
+    "@react-navigation/native": ^7.3.13
     react: ">= 18.2.0"
     react-native: "*"
     react-native-safe-area-context: ">= 4.0.0"
   peerDependenciesMeta:
     "@react-native-masked-view/masked-view":
       optional: true
-  checksum: 10c0/870019bd92b9b2e1055f53b4dab94cae1bffc0c93e52af7a8bb5dee97b167db9572a1524472edd46b5d570e6eaaffb1e8a41ffd4340992eb7586a34ea9515491
+  checksum: 10c0/96c581a41d8c3fd2bfdc35777c4ab4758772848b5073c4a9bd5ea4f2582cfe6c8de82d6dd26242809336d19f1edb68ccc47ed0bd82f506005314a923fd8209dd
   languageName: node
   linkType: hard
 
 "@react-navigation/elements@patch:@react-navigation/elements@npm%3A3.0.0-alpha.37#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.37-673c5008d9.patch":
   version: 3.0.0-alpha.37
-  resolution: "@react-navigation/elements@patch:@react-navigation/elements@npm%3A3.0.0-alpha.37#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.37-673c5008d9.patch::version=3.0.0-alpha.37&hash=b9e27d"
+  resolution: "@react-navigation/elements@patch:@react-navigation/elements@npm%3A3.0.0-alpha.37#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.37-673c5008d9.patch::version=3.0.0-alpha.37&hash=5d647d"
   dependencies:
     sf-symbols-typescript: "npm:^2.2.0"
     use-latest-callback: "npm:^0.3.4"
@@ -5861,7 +5861,7 @@ __metadata:
     react-native: "*"
     react-native-safe-area-context: ">= 5.5.0"
     react-native-screens: ">= 4.25.0"
-  checksum: 10c0/e820be5ef55d32bfb8d274cdebba8ec2efd31c2dc264abd4d930a4a49986bec07f57e04490a9369a3f822d8bc6fedc13943ae8096ee4beca49713a12f85a4952
+  checksum: 10c0/3bebf6ae3294227c56cd82b7eb599a961fb5f15f63567ce4d38130f48ed4f63fc16f60539266ccc148c3a08e8afc4802012de8f1d5f0a88ba66270dbd7243b4d
   languageName: node
   linkType: hard
 
@@ -5883,7 +5883,7 @@ __metadata:
 
 "@react-navigation/material-top-tabs@patch:@react-navigation/material-top-tabs@npm%3A8.0.0-alpha.38#~/.yarn/patches/@react-navigation-material-top-tabs-npm-8.0.0-alpha.38-1411ff1783.patch":
   version: 8.0.0-alpha.38
-  resolution: "@react-navigation/material-top-tabs@patch:@react-navigation/material-top-tabs@npm%3A8.0.0-alpha.38#~/.yarn/patches/@react-navigation-material-top-tabs-npm-8.0.0-alpha.38-1411ff1783.patch::version=8.0.0-alpha.38&hash=279a54"
+  resolution: "@react-navigation/material-top-tabs@patch:@react-navigation/material-top-tabs@npm%3A8.0.0-alpha.38#~/.yarn/patches/@react-navigation-material-top-tabs-npm-8.0.0-alpha.38-1411ff1783.patch::version=8.0.0-alpha.38&hash=d584a3"
   dependencies:
     "@react-navigation/elements": "npm:^3.0.0-alpha.37"
     react-native-tab-view: "npm:^5.0.0-alpha.11"
@@ -5893,7 +5893,7 @@ __metadata:
     react-native: "*"
     react-native-pager-view: ">= 7.0.0"
     react-native-safe-area-context: ">= 5.5.0"
-  checksum: 10c0/b47e149e42224348b672f93b42280ce5b8a748c7d2ccc6f55e48c767de834656d9d8b8cf72cd3c56ec5a2eb578eadf40bcca1a1bdca0b07c16e308278721eaac
+  checksum: 10c0/2fbcd56536e655ca50778db1d1858853789efa56792ade2c89f20868687f543055da402bc86640dd8cf61b06d2deeef2dea345c65d21e1f5f51cf1617f50bf71
   languageName: node
   linkType: hard
 
@@ -17304,14 +17304,14 @@ __metadata:
 
 "react-native-screens@patch:react-native-screens@npm%3A4.26.0-nightly-20260629-43756187e#~/.yarn/patches/react-native-screens-npm-4.26.0-nightly-20260629-43756187e-7c88773b68.patch":
   version: 4.26.0-nightly-20260629-43756187e
-  resolution: "react-native-screens@patch:react-native-screens@npm%3A4.26.0-nightly-20260629-43756187e#~/.yarn/patches/react-native-screens-npm-4.26.0-nightly-20260629-43756187e-7c88773b68.patch::version=4.26.0-nightly-20260629-43756187e&hash=630584"
+  resolution: "react-native-screens@patch:react-native-screens@npm%3A4.26.0-nightly-20260629-43756187e#~/.yarn/patches/react-native-screens-npm-4.26.0-nightly-20260629-43756187e-7c88773b68.patch::version=4.26.0-nightly-20260629-43756187e&hash=d249a8"
   dependencies:
     react-freeze: "npm:^1.0.0"
     warn-once: "npm:^0.1.0"
   peerDependencies:
     react: "*"
     react-native: ">=0.82.0"
-  checksum: 10c0/63949102aecbe9ab493fd81b1780d979003f4ba340c2db9ab405311345e86696c788893d176ef32d8575e70b51effd07bd4a8a58bc9fa04da57a2bbd7a8a5b84
+  checksum: 10c0/820d7833a48c6578258de1f9e510ec0b2b11ddc921fdc5a1f77c34aa14354161f12fa75e151b684d00132086cd1de32b0c4de5a29769850ed9f994185d17e9fd
   languageName: node
   linkType: hard
 

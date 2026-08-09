@@ -11,12 +11,11 @@ import SFSymbolShowcase from './SFSymbolShowcase';
 // Default-size icon for the header (sfSymbol iOS / image drawable Android).
 const HEADER_ICON = () => nativeNanoSymbol('swm', false);
 
-// Sized variant — spread the descriptor and add width/height, which the image
-// (Android) honors so the wide logo renders at its intended size.
+// Sized variant — spread the descriptor and add aspectRatio, which the image
+// (Android) honors so the wide logo renders at its intended proportions.
 const SIZED_ICON = () => ({
   ...nativeNanoSymbol('swm', false),
-  width: 40,
-  height: 20,
+  aspectRatio: 2,
 });
 
 function Center({ label }: { label: string }) {

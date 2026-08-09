@@ -1,15 +1,13 @@
 diff --git a/lib/module/views/MaterialTopTabBar.js b/lib/module/views/MaterialTopTabBar.js
-index 69835b291b7d24ce100e606c5c5400912cf2c8b0..45978d095c4bdf1623396854f87086604ecaa971 100644
+index 69835b291b7d24ce100e606c5c5400912cf2c8b0..b66bfc9cd9a08e47af8e29ba0b7974184cba48af 100644
 --- a/lib/module/views/MaterialTopTabBar.js
 +++ b/lib/module/views/MaterialTopTabBar.js
-@@ -89,8 +89,8 @@ export function MaterialTopTabBar({
+@@ -89,7 +89,7 @@ export function MaterialTopTabBar({
                return /*#__PURE__*/_jsx(Image, {
                  source: iconValue.source,
                  style: {
 -                  width: size,
--                  height: size,
-+                  width: iconValue.width ?? size,
-+                  height: iconValue.height ?? size,
++                  width: size * (iconValue.aspectRatio ?? 1),
+                   height: size,
                    tintColor: iconValue.tinted === false ? undefined : color
                  }
-               });
