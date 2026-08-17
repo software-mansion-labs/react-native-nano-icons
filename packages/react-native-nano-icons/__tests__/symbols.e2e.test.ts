@@ -141,9 +141,15 @@ describe('Symbols E2E — .symbolset generation', () => {
     expect(manifest).toContain(
       `declare module 'react-native-nano-icons/symbols'`
     );
-    expect(manifest).toContain('interface NanoSymbolNames');
-    expect(manifest).toContain('"home": true;');
-    expect(manifest).toContain('"heart.fill": true;');
+    expect(manifest).toContain(
+      `interface NanoSymbolNames extends Record<${base}Name, true> {}`
+    );
+    expect(manifest).toContain(`declare module '@react-navigation/native'`);
+    expect(manifest).toContain(
+      `interface SFSymbolNames extends Record<${base}Symbol, true> {}`
+    );
+    expect(manifest).toContain('| "home"');
+    expect(manifest).toContain('| "heart.fill"');
     expect(manifest).toContain(`export type ${base}Name =`);
     expect(manifest).toContain(`export type ${base}Symbol =`);
     expect(manifest).not.toContain('export const');
