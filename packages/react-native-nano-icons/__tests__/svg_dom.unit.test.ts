@@ -6,6 +6,11 @@ import {
   parseFlattenedSvg,
   preprocessSvg,
   validateSvg,
+  sanitizePathData,
+  shouldSkipPath,
+  extractOriginalEvenoddDs,
+  restoreOriginalEvenoddDs,
+  type ParsedFlatSvg,
 } from '../src/core/svg/svg_dom';
 import { parseColor } from '../src/utils/parse';
 
@@ -236,5 +241,101 @@ describe('preprocessSvg', () => {
   test('string without <svg tag is returned unchanged', () => {
     const s = '<g><path d="M0 0"/></g>';
     expect(preprocessSvg(s)).toBe(s);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sanitizePathData
+// ---------------------------------------------------------------------------
+
+describe('sanitizePathData', () => {
+  test('path already starting with M is left untouched', () => {
+    const { d, sanitized } = sanitizePathData('M10 10 H20 Z');
+    expect(sanitized).toBe(false);
+    expect(d).toBe('M10 10 H20 Z');
+  });
+
+  test('lowercase m also counts as having an initial moveto', () => {
+    expect(sanitizePathData('m5 5 l10 0').sanitized).toBe(false);
+  });
+
+  test('path missing moveto gets M prepended from its last coordinate pair', () => {
+    // closed shape: endpoint equals the start, so this reconstructs it
+    const { d, sanitized } = sanitizePathData('L30 40 L0 0 Z');
+    expect(sanitized).toBe(true);
+    expect(d).toBe('M0,0 L30 40 L0 0 Z');
+  });
+
+  test('empty / coordinate-less input is returned as a no-op', () => {
+    expect(sanitizePathData('   ').sanitized).toBe(false);
+    expect(sanitizePathData('Z').sanitized).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// shouldSkipPath
+// ---------------------------------------------------------------------------
+
+describe('shouldSkipPath', () => {
+  test('empty or whitespace d is skipped', () => {
+    expect(shouldSkipPath('', '#000')).toBe(true);
+    expect(shouldSkipPath('   ', '#000')).toBe(true);
+  });
+
+  test('fill "none" and "transparent" are skipped (case/space-insensitive)', () => {
+    expect(shouldSkipPath('M0 0 H1', 'none')).toBe(true);
+    expect(shouldSkipPath('M0 0 H1', ' TRANSPARENT ')).toBe(true);
+  });
+
+  test('a real path with a real fill is kept', () => {
+    expect(shouldSkipPath('M0 0 H1 V1 Z', '#ff0000')).toBe(false);
+    expect(shouldSkipPath('M0 0 H1 V1 Z', null)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// extractOriginalEvenoddDs / restoreOriginalEvenoddDs
+// ---------------------------------------------------------------------------
+
+describe('extract/restore original evenodd d strings', () => {
+  const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M0 0 H24 V24 H0 Z M6 6 H18 V18 H6 Z" fill-rule="evenodd" fill="black"/>
+    <path d="M1 1 H2 V2 H1 Z" fill="red"/>
+    <path d="M3 3 H4 V4 H3 Z" clip-rule="evenodd" fill="blue"/>
+  </svg>`;
+
+  test('extracts one d per evenodd path (fill-rule or clip-rule), in order', () => {
+    const ds = extractOriginalEvenoddDs(SVG);
+    expect(ds).toHaveLength(2);
+    expect(ds[0]).toContain('M0 0 H24');
+    expect(ds[1]).toBe('M3 3 H4 V4 H3 Z');
+  });
+
+  test('returns [] when the SVG has no evenodd rule at all', () => {
+    const plain =
+      '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0 H1 Z" fill="black"/></svg>';
+    expect(extractOriginalEvenoddDs(plain)).toEqual([]);
+  });
+
+  test('restore overwrites evenodd paths positionally, leaving others alone', () => {
+    const paths: ParsedFlatSvg['paths'] = [
+      { d: 'DAMAGED-A', fill: 'black', fillRule: 'evenodd' },
+      { d: 'keep-me', fill: 'red' },
+      { d: 'DAMAGED-B', fill: 'blue', fillRule: 'evenodd' },
+    ];
+    restoreOriginalEvenoddDs(paths, ['ORIG-A', 'ORIG-B']);
+    expect(paths[0]!.d).toBe('ORIG-A');
+    expect(paths[1]!.d).toBe('keep-me');
+    expect(paths[2]!.d).toBe('ORIG-B');
+  });
+
+  test('restore stops when originals run out (no out-of-range writes)', () => {
+    const paths: ParsedFlatSvg['paths'] = [
+      { d: 'A', fill: null, fillRule: 'evenodd' },
+      { d: 'B', fill: null, fillRule: 'evenodd' },
+    ];
+    restoreOriginalEvenoddDs(paths, ['only-one']);
+    expect(paths[0]!.d).toBe('only-one');
+    expect(paths[1]!.d).toBe('B'); // no original left
   });
 });

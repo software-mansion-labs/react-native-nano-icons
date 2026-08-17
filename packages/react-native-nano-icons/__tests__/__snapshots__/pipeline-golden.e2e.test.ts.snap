@@ -1,0 +1,382 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`pipeline golden — glyph geometry compiled glyph outlines match their frozen fingerprints 1`] = `
+[
+  {
+    "contourCount": 5,
+    "shape": {
+      "area": 72011,
+      "bbox": [
+        208,
+        242,
+        758,
+        792,
+      ],
+      "contours": 5,
+    },
+    "unicode": 57344,
+  },
+  {
+    "contourCount": 4,
+    "shape": {
+      "area": 108073,
+      "bbox": [
+        175,
+        175,
+        825,
+        825,
+      ],
+      "contours": 4,
+    },
+    "unicode": 57345,
+  },
+  {
+    "contourCount": 3,
+    "shape": {
+      "area": 231917,
+      "bbox": [
+        267,
+        267,
+        733,
+        733,
+      ],
+      "contours": 3,
+    },
+    "unicode": 57346,
+  },
+  {
+    "contourCount": 3,
+    "shape": {
+      "area": 162949,
+      "bbox": [
+        200,
+        200,
+        800,
+        800,
+      ],
+      "contours": 3,
+    },
+    "unicode": 57347,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 31287,
+      "bbox": [
+        667,
+        667,
+        867,
+        867,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57348,
+  },
+  {
+    "contourCount": 3,
+    "shape": {
+      "area": 81434,
+      "bbox": [
+        208,
+        242,
+        758,
+        792,
+      ],
+      "contours": 3,
+    },
+    "unicode": 57349,
+  },
+  {
+    "contourCount": 5,
+    "shape": {
+      "area": 484012,
+      "bbox": [
+        175,
+        175,
+        825,
+        825,
+      ],
+      "contours": 5,
+    },
+    "unicode": 57350,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 223674,
+      "bbox": [
+        233,
+        200,
+        767,
+        733,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57351,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 167885,
+      "bbox": [
+        367,
+        207.73,
+        785.33,
+        767,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57353,
+  },
+  {
+    "contourCount": 3,
+    "shape": {
+      "area": 447978,
+      "bbox": [
+        208,
+        182.56,
+        810.79,
+        792,
+      ],
+      "contours": 3,
+    },
+    "unicode": 57354,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 246118,
+      "bbox": [
+        167,
+        267,
+        833,
+        733,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57355,
+  },
+  {
+    "contourCount": 4,
+    "shape": {
+      "area": 504752,
+      "bbox": [
+        142,
+        242,
+        858,
+        758,
+      ],
+      "contours": 4,
+    },
+    "unicode": 57356,
+  },
+  {
+    "contourCount": 8,
+    "shape": {
+      "area": 146400,
+      "bbox": [
+        167,
+        300,
+        833,
+        700,
+      ],
+      "contours": 8,
+    },
+    "unicode": 57357,
+  },
+  {
+    "contourCount": 11,
+    "shape": {
+      "area": 525625,
+      "bbox": [
+        133,
+        133,
+        867,
+        867,
+      ],
+      "contours": 11,
+    },
+    "unicode": 57358,
+  },
+  {
+    "contourCount": 4,
+    "shape": {
+      "area": 218198,
+      "bbox": [
+        267,
+        267,
+        733,
+        733,
+      ],
+      "contours": 4,
+    },
+    "unicode": 57359,
+  },
+  {
+    "contourCount": 5,
+    "shape": {
+      "area": 617125,
+      "bbox": [
+        200,
+        200,
+        800,
+        800,
+      ],
+      "contours": 5,
+    },
+    "unicode": 57360,
+  },
+  {
+    "contourCount": 4,
+    "shape": {
+      "area": 610772,
+      "bbox": [
+        175,
+        175,
+        825,
+        825,
+      ],
+      "contours": 4,
+    },
+    "unicode": 57363,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 197240,
+      "bbox": [
+        100,
+        100,
+        900,
+        900,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57364,
+  },
+]
+`;
+
+exports[`pipeline golden — structural summary (Tier S) curated icons produce a stable structural glyphmap 1`] = `
+{
+  "icons": [
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+      ],
+      "name": "broken_Air",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+      ],
+      "name": "broken_Alarm",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "rgba(0,0,0,0.3)",
+        "black",
+        "red",
+      ],
+      "name": "clippath_teest",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+      ],
+      "name": "curved_Air",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+      ],
+      "name": "curved_Alarm",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "rgba(0,26,114,0.15)",
+        "#001A72",
+      ],
+      "name": "duotone_Alarm",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "rgba(0,26,114,0.15)",
+        "#001A72",
+      ],
+      "name": "duotone_Dislike",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "rgba(0,26,114,0.15)",
+        "#001A72",
+      ],
+      "name": "duotone_EyeOpen",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "black",
+      ],
+      "name": "evenodd_barcode",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "black",
+      ],
+      "name": "evenodd_qrcode",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "rgba(0,0,0,0.3)",
+        "black",
+      ],
+      "name": "opacity_10k",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+      ],
+      "name": "outline_Air",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+      ],
+      "name": "outline_Alarm",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+      ],
+      "name": "outline_ArrowCircleDown",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "black",
+      ],
+      "name": "sanitize_elephant",
+    },
+  ],
+  "meta": {
+    "f": "GoldenCurated",
+    "s": 57344,
+    "u": 1000,
+    "z": 800,
+  },
+}
+`;

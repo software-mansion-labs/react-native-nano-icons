@@ -83,7 +83,8 @@
   },
   "exports": {
     ".": {
-      "source": "./src/index.tsx",
+      "source": "./src/index.ts",
+      "react-native": "./lib/module/index.js",
       "require": {
         "types": "./lib/typescript/src/index.d.ts",
         "default": "./lib/commonjs/index.node.js"

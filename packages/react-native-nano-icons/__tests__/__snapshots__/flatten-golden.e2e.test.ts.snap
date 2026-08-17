@@ -1,0 +1,938 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`flatten seam golden — picoFromFile output broken/Air: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 11,
+        "bbox": [
+          7.25,
+          11.25,
+          14.75,
+          12.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 27,
+        "bbox": [
+          4.25,
+          3.25,
+          19.75,
+          9.75,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 27,
+        "bbox": [
+          3.25,
+          14.25,
+          19.75,
+          19.75,
+        ],
+        "contours": 2,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output broken/Alarm: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 12,
+        "bbox": [
+          11.25,
+          8.25,
+          14.75,
+          15.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 69,
+        "bbox": [
+          3.25,
+          4.25,
+          20.75,
+          21.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          17.25,
+          2.25,
+          21.75,
+          6.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          2.25,
+          2.25,
+          6.75,
+          6.75,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output clippath/teest: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "rgba(0,0,0,0.3)",
+      "fillRule": null,
+      "shape": {
+        "area": 209,
+        "bbox": [
+          5,
+          5,
+          19,
+          19,
+        ],
+        "contours": 3,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 109,
+        "bbox": [
+          3,
+          3,
+          21,
+          21,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 38,
+        "bbox": [
+          6,
+          9,
+          16,
+          15,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "red",
+      "fillRule": null,
+      "shape": {
+        "area": 0,
+        "bbox": [
+          23,
+          4,
+          23,
+          4,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output curved/Air: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 11,
+        "bbox": [
+          7.25,
+          11.25,
+          14.75,
+          12.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 32,
+        "bbox": [
+          4.25,
+          3.25,
+          19.75,
+          9.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 31,
+        "bbox": [
+          3.25,
+          14.25,
+          19.75,
+          19.75,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output curved/Alarm: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 12,
+        "bbox": [
+          11.25,
+          8.25,
+          14.75,
+          15.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 407,
+        "bbox": [
+          3.25,
+          4.25,
+          20.75,
+          21.75,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          17.25,
+          2.25,
+          21.75,
+          6.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          2.25,
+          2.25,
+          6.75,
+          6.75,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output duotone/Alarm: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "rgba(0,26,114,0.15)",
+      "fillRule": null,
+      "shape": {
+        "area": 201,
+        "bbox": [
+          4,
+          5,
+          20,
+          21,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 12,
+        "bbox": [
+          11.25,
+          8.25,
+          14.75,
+          15.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 407,
+        "bbox": [
+          3.25,
+          4.25,
+          20.75,
+          21.75,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          17.25,
+          2.25,
+          21.75,
+          6.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          2.25,
+          2.25,
+          6.75,
+          6.75,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output duotone/Dislike: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "rgba(0,26,114,0.15)",
+      "fillRule": null,
+      "shape": {
+        "area": 151,
+        "bbox": [
+          8,
+          4,
+          20.56,
+          20.76,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 17,
+        "bbox": [
+          7.25,
+          3.25,
+          8.75,
+          14.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 386,
+        "bbox": [
+          3.25,
+          3.25,
+          21.32,
+          21.53,
+        ],
+        "contours": 2,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output duotone/EyeOpen: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "rgba(0,26,114,0.15)",
+      "fillRule": null,
+      "shape": {
+        "area": 222,
+        "bbox": [
+          2,
+          5,
+          22,
+          19,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 391,
+        "bbox": [
+          1.25,
+          4.25,
+          22.75,
+          19.75,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 64,
+        "bbox": [
+          8.25,
+          8.25,
+          15.75,
+          15.75,
+        ],
+        "contours": 2,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output evenodd/barcode: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 132,
+        "bbox": [
+          2,
+          6,
+          22,
+          18,
+        ],
+        "contours": 8,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output evenodd/qrcode: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 136,
+        "bbox": [
+          1,
+          1,
+          11,
+          11,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 4,
+        "bbox": [
+          5,
+          5,
+          7,
+          7,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 136,
+        "bbox": [
+          13,
+          1,
+          23,
+          11,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 4,
+        "bbox": [
+          17,
+          5,
+          19,
+          7,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 136,
+        "bbox": [
+          1,
+          13,
+          11,
+          23,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 4,
+        "bbox": [
+          5,
+          17,
+          7,
+          19,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 52,
+        "bbox": [
+          13,
+          13,
+          23,
+          23,
+        ],
+        "contours": 2,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output opacity/10k: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "rgba(0,0,0,0.3)",
+      "fillRule": null,
+      "shape": {
+        "area": 11,
+        "bbox": [
+          10,
+          9,
+          19,
+          15,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "rgba(0,0,0,0.3)",
+      "fillRule": null,
+      "shape": {
+        "area": 186,
+        "bbox": [
+          5,
+          5,
+          19,
+          19,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 506,
+        "bbox": [
+          3,
+          3,
+          21,
+          21,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 50,
+        "bbox": [
+          8.5,
+          9,
+          19,
+          15,
+        ],
+        "contours": 3,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output outline/Air: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 11,
+        "bbox": [
+          7.25,
+          11.25,
+          14.75,
+          12.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 32,
+        "bbox": [
+          4.25,
+          3.25,
+          19.75,
+          9.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 31,
+        "bbox": [
+          3.25,
+          14.25,
+          19.75,
+          19.75,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output outline/Alarm: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 12,
+        "bbox": [
+          11.25,
+          8.25,
+          14.75,
+          15.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 407,
+        "bbox": [
+          3.25,
+          4.25,
+          20.75,
+          21.75,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          17.25,
+          2.25,
+          21.75,
+          6.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          2.25,
+          2.25,
+          6.75,
+          6.75,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output outline/ArrowCircleDown: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 17,
+        "bbox": [
+          11.25,
+          6.25,
+          12.75,
+          17.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 19,
+        "bbox": [
+          7.25,
+          12.25,
+          16.75,
+          17.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 514,
+        "bbox": [
+          2.25,
+          2.25,
+          21.75,
+          21.75,
+        ],
+        "contours": 2,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;
+
+exports[`flatten seam golden — picoFromFile output sanitize/elephant: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 1,
+        "bbox": [
+          19.5,
+          9.75,
+          21,
+          12,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": null,
+      "fillRule": null,
+      "shape": {
+        "area": 103,
+        "bbox": [
+          0,
+          0.37,
+          24,
+          24,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    24,
+    24,
+  ],
+}
+`;

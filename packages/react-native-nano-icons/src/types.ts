@@ -22,6 +22,11 @@ export type IconProps<Name> = {
   importantForAccessibility?: 'auto' | 'yes' | 'no' | 'no-hide-descendants'; // Android
   ref?: Ref<ViewRef>;
   testID?: string;
+  /**
+   * Forwarded to the container element on web.
+   * @platform Web only - no-op on native.
+   */
+  className?: string;
 };
 
 export type IconComponent<GM extends NanoGlyphMapInput> = React.FC<
