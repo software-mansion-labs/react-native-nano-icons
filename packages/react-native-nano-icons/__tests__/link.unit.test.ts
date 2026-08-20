@@ -5,16 +5,18 @@ import os from 'node:os';
 import path from 'node:path';
 import * as plist from 'plist';
 
+const mockXcodeProject = {
+  parseSync() {
+    return this;
+  },
+  getFirstTarget: () => ({ uuid: 'fake-target-uuid' }),
+  addBuildPhase: () => {},
+  writeSync: () => '// fake pbxproj',
+  hash: { project: { objects: {} as Record<string, unknown> } },
+};
+
 jest.mock('xcode', () => ({
-  project: () => ({
-    parseSync() {
-      return this;
-    },
-    getFirstTarget: () => ({ uuid: 'fake-target-uuid' }),
-    addBuildPhase: () => {},
-    writeSync: () => '// fake pbxproj',
-    hash: { project: { objects: {} } },
-  }),
+  project: () => mockXcodeProject,
 }));
 
 import { linkBare } from '../cli/link';
@@ -22,6 +24,10 @@ import type { NanoLogger } from '../cli/logger';
 import type { BuiltFont } from '../cli/build';
 
 const MINIMAL_PLIST = plist.build({ CFBundleName: 'placeholder' });
+
+beforeEach(() => {
+  mockXcodeProject.hash.project.objects = {};
+});
 
 function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'nano-link-'));
@@ -85,7 +91,7 @@ describe('linkBare — iOS Info.plist target selection', () => {
     fs.rmSync(fontDir, { recursive: true, force: true });
   });
 
-  test('updates the main app Info.plist, not the alphabetically-first sibling', async () => {
+  test('uses the conventional Info.plist path as a fallback, not the alphabetically-first sibling', async () => {
     const builtFont: BuiltFont = {
       fontFamily: 'TestFont',
       ttfPath: path.join(fontDir, 'TestFont.ttf'),
@@ -106,6 +112,75 @@ describe('linkBare — iOS Info.plist target selection', () => {
     expect(readUIAppFonts(mainPlist)).toContain('TestFont.ttf');
     expect(readUIAppFonts(decoyPlist)).not.toContain('TestFont.ttf');
     expect(readUIAppFonts(decoyPlist)).toEqual([]);
+  });
+
+  test('uses INFOPLIST_FILE from the first app target build configuration', async () => {
+    const conventionalPlist = path.join(
+      projectRoot,
+      'ios',
+      'MyApp',
+      'Info.plist'
+    );
+    fs.rmSync(conventionalPlist);
+    const debugPlist = path.join(
+      projectRoot,
+      'ios',
+      'Resources',
+      'Debug-Info.plist'
+    );
+    const releasePlist = path.join(
+      projectRoot,
+      'ios',
+      'Resources',
+      'Release-Info.plist'
+    );
+    fs.mkdirSync(path.dirname(debugPlist));
+    fs.writeFileSync(debugPlist, MINIMAL_PLIST);
+    fs.writeFileSync(releasePlist, MINIMAL_PLIST);
+
+    mockXcodeProject.hash.project.objects = {
+      PBXNativeTarget: {
+        APP_TARGET: {
+          productType: '"com.apple.product-type.application"',
+          buildConfigurationList: 'APP_CONFIGURATIONS',
+        },
+      },
+      XCConfigurationList: {
+        APP_CONFIGURATIONS: {
+          buildConfigurations: [
+            { value: 'DEBUG_CONFIGURATION' },
+            { value: 'RELEASE_CONFIGURATION' },
+          ],
+        },
+      },
+      XCBuildConfiguration: {
+        DEBUG_CONFIGURATION: {
+          buildSettings: { INFOPLIST_FILE: 'Resources/Debug-Info.plist' },
+        },
+        RELEASE_CONFIGURATION: {
+          buildSettings: {
+            INFOPLIST_FILE: '$(SRCROOT)/Resources/Release-Info.plist',
+          },
+        },
+      },
+    };
+
+    const builtFont: BuiltFont = {
+      fontFamily: 'TestFont',
+      ttfPath: path.join(fontDir, 'TestFont.ttf'),
+      glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
+      linking: 'static',
+    };
+
+    await linkBare(projectRoot, [builtFont], makeLogger());
+
+    expect(readUIAppFonts(debugPlist)).toContain('TestFont.ttf');
+    expect(readUIAppFonts(releasePlist)).toContain('TestFont.ttf');
+    expect(
+      readUIAppFonts(
+        path.join(projectRoot, 'ios', 'AppExtension', 'Info.plist')
+      )
+    ).toEqual([]);
   });
 });
 
@@ -308,6 +383,23 @@ describe('linkBare - platform detection & edge cases', () => {
     expect(
       fs.existsSync(path.join(projectRoot, IOS_STAGING_DIR, 'StagedFont.ttf'))
     ).toBe(true);
+  });
+
+  test('does not report iOS as linked when no Info.plist can be resolved', async () => {
+    const iosDir = path.join(projectRoot, 'ios');
+    fs.mkdirSync(path.join(iosDir, 'MyApp.xcodeproj'), { recursive: true });
+    fs.writeFileSync(
+      path.join(iosDir, 'MyApp.xcodeproj', 'project.pbxproj'),
+      '// fake pbxproj'
+    );
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('UnlinkedIos')], logger);
+
+    expect(fs.existsSync(path.join(projectRoot, IOS_STAGING_DIR))).toBe(false);
+    expect(logger.succeed).toHaveBeenCalledWith(
+      expect.not.stringContaining('ios')
+    );
   });
 
   test('UIAppFonts merges with pre-existing entries without clobbering them', async () => {
