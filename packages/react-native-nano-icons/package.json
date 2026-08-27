@@ -70,6 +70,7 @@
     "@types/node": "^25.2.3",
     "@types/plist": "^3.0.5",
     "@types/react": "~19.1.0",
+    "@types/react-test-renderer": "^19.1.0",
     "@types/svg2ttf": "^5.0.3",
     "babel-plugin-module-resolver": "^5.0.2",
     "del-cli": "^6.0.0",
@@ -79,6 +80,7 @@
     "react": "19.1.0",
     "react-native": "^0.84.0",
     "react-native-builder-bob": "^0.40.18",
+    "react-test-renderer": "19.1.0",
     "typescript": "^5.9.3"
   },
   "exports": {
