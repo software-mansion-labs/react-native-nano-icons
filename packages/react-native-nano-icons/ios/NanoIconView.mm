@@ -204,12 +204,20 @@ void NanoIconInvalidateFontCache(NSString *family) {
   }
 }
 
-// Invalidate cached offset when size changes (text relayout).
+// Size changes affect both text layout and the font-to-bounds fit scale.
 - (void)setBounds:(CGRect)bounds {
-  if (!CGSizeEqualToSize(self.bounds.size, bounds.size)) {
+  BOOL sizeChanged = !CGSizeEqualToSize(self.bounds.size, bounds.size);
+  if (sizeChanged) {
+    _metricsValid = NO;
     _baselineOffsetValid = NO;
   }
   [super setBounds:bounds];
+
+  if (sizeChanged) {
+    // UIViewContentModeRedraw invalidates this view's backing layer, but it
+    // does not invalidate the separately-rendered inline icon sublayer.
+    if (_drawingLayer) [_drawingLayer setNeedsDisplay];
+  }
 }
 
 #pragma mark - Layout
