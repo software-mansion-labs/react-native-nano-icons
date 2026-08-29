@@ -1,5 +1,11 @@
 import { memo, useMemo } from 'react';
-import { PixelRatio, UIManager, View, processColor } from 'react-native';
+import {
+  PixelRatio,
+  Platform,
+  UIManager,
+  View,
+  processColor,
+} from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
 import { shallowEqualColor } from './utils/shallowEqualColor';
@@ -19,6 +25,11 @@ export type { IconComponent, IconProps };
 export { shallowEqualColor };
 
 const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
+const PHYSICAL_PIXEL_EPSILON = 1e-6;
+
+function ceilToPhysicalPixel(value: number, density: number): number {
+  return Math.ceil(value * density - PHYSICAL_PIXEL_EPSILON) / density;
+}
 
 // Shared processColor cache — avoids redundant color parsing for repeated
 // color strings like "black", "rgba(0,0,0,0.3)" across thousands of icons
@@ -113,6 +124,14 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
       const scaledSize = size * fontScale;
       const width = (adv / unitsPerEm) * scaledSize;
+      const isAndroid = Platform.OS === 'android';
+      const density = isAndroid ? PixelRatio.get() : 1;
+      const layoutWidth = isAndroid
+        ? ceilToPhysicalPixel(width, density)
+        : width;
+      const layoutHeight = isAndroid
+        ? ceilToPhysicalPixel(scaledSize, density)
+        : scaledSize;
 
       const pending = useDynamicFontPending(managed, fontFamilyBasename);
 
@@ -131,8 +150,8 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       }, [nameStr, color]);
 
       const nativeStyle = useMemo(
-        () => [{ width, height: scaledSize }, style],
-        [scaledSize, width, style]
+        () => [{ width: layoutWidth, height: layoutHeight }, style],
+        [layoutHeight, layoutWidth, style]
       );
 
       // Hide-until-ready: while the dynamic font is registering, render a
