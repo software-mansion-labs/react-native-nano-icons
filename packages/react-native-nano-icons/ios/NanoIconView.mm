@@ -186,6 +186,7 @@ void NanoIconInvalidateFontCache(NSString *family) {
   NanoIconDrawingLayer *layer = [NanoIconDrawingLayer layer];
   layer.owner = self;
   layer.opaque = NO;
+  layer.needsDisplayOnBoundsChange = YES;
   layer.contentsScale = [UIScreen mainScreen].scale;
   [self.layer addSublayer:layer];
   _drawingLayer = layer;
@@ -204,10 +205,11 @@ void NanoIconInvalidateFontCache(NSString *family) {
   }
 }
 
-// Invalidate cached offset when size changes (text relayout).
+// _cachedBaselineOffset and _fitScale are both derived from bounds.
 - (void)setBounds:(CGRect)bounds {
   if (!CGSizeEqualToSize(self.bounds.size, bounds.size)) {
     _baselineOffsetValid = NO;
+    _metricsValid = NO;
   }
   [super setBounds:bounds];
 }
