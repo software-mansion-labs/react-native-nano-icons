@@ -334,6 +334,41 @@ The chart shows time in milliseconds across three phases: **JS Thread** (JavaScr
 > [!NOTE]
 > For full methodology, device specifications, and reproduction steps see [BENCHMARKS.md](packages/react-native-nano-icons/docs/BENCHMARKS.md).
 
+### Memory
+
+Profiled with the Xcode Profiler on an iPhone 17 while rendering the same 1,000 icons (median of multiple runs).
+
+- **Peak Memory** — the highest total live memory in the process at any point (heap + anonymous VM combined), i.e. the RAM ceiling the OS must hold to keep the app running.
+- **Persistent Heap** — heap allocations (`malloc`/`new`/`alloc`/`CFCreate`) created and not yet freed; lower means fewer objects retained per icon.
+- **Anonymous VM** — memory mapped without a file backing (font data, image decode buffers, JS engine pages) that the heap instrument does not track.
+
+| Library | Peak Memory | Persistent Heap | Anonymous VM | Freed on back-nav | Render lag |
+|---|---|---|---|---|---|
+| `react-native-svg` | **105.67 MiB** | 34.23 MiB | 53.84 MiB | partial | **yes** |
+| `react-native-nano-icons` | **139.48 MiB** | 26.69 MiB | 55.16 MiB | yes (visible) | no |
+| `expo-image` (SVG) | **162.54 MiB** | 38.84 MiB | 2.59 MiB | yes | no |
+| `@expo/vector-icons` | **343.78 MiB** | 36.80 MiB | 310.09 MiB | no | no |
+
+### Memory (Android)
+
+Profiled via `adb shell dumpsys meminfo` on a release build rendering the same 1,000 icons.
+
+- **Peak PSS** — Proportional Set Size: total RAM the process uses, with shared pages counted proportionally. The primary memory footprint metric on Android.
+- **Java Heap** — memory allocated by the Android Runtime (ART) for Java/Kotlin objects.
+- **Native Heap** — memory allocated in native (C/C++) code — includes the Hermes engine, JSI bridge, and native modules.
+- **Graphics** — GPU memory for textures, surfaces, and render buffers.
+- **Code** — memory-mapped code pages (`.dex`, `.so` files, AOT-compiled native code).
+
+| Library | Peak PSS | Java Heap | Native Heap | Graphics | Code |
+|---|---|---|---|---|---|
+| `react-native-nano-icons` | 148.2 MB | 18.8 MB | 57.7 MB | 2.9 MB | 33.8 MB |
+| `expo-image` | 161.1 MB | 26.4 MB | 77.7 MB | 2.7 MB | 32.4 MB |
+| `@expo/vector-icons` | 162.5 MB | 24.4 MB | 64.4 MB | 3.1 MB | 34.1 MB |
+| `react-native-svg` | 274.4 MB | 29.2 MB | 173.9 MB | 2.8 MB | 34.1 MB |
+
+> [!NOTE]
+> For full methodology and raw snapshots see [MEMORY_BENCHMARK.md](examples/NanoIconsBenchmarking/MEMORY_BENCHMARK.md).
+
 ---
 
 ## ⚠️ Known Limitations
