@@ -1,0 +1,58 @@
+diff --git a/lib/module/Button.js b/lib/module/Button.js
+index 7ec194a3287c1713671c5d1b6f789e56bb307b53..db29592832c2b24337b2135e4a2076243fd3c2da 100644
+--- a/lib/module/Button.js
++++ b/lib/module/Button.js
+@@ -131,7 +131,7 @@ function renderIcon(icon, color, size) {
+         return /*#__PURE__*/_jsx(Image, {
+           source: iconValue.source,
+           style: {
+-            width: size,
++            width: size * (iconValue.aspectRatio ?? 1),
+             height: size,
+             tintColor: iconValue.tinted === false ? undefined : color
+           }
+diff --git a/lib/module/Header/HeaderIcon.js b/lib/module/Header/HeaderIcon.js
+index 000c96a06161bdd25a3f739fa3d1ed756dbe16f6..ab5fb9620742931a49e9e96026c66593e2745a91 100644
+--- a/lib/module/Header/HeaderIcon.js
++++ b/lib/module/Header/HeaderIcon.js
+@@ -37,8 +37,11 @@ export function HeaderIcon({
+     source: icon.source,
+     resizeMode: "contain",
+     fadeDuration: 0,
+-    tintColor: color,
+-    style: iconStyle,
++    tintColor: icon.tinted === false ? undefined : color,
++    style: [iconStyle, {
++      width: ICON_SIZE * (icon.aspectRatio ?? 1),
++      height: ICON_SIZE
++    }],
+     ...rest
+   });
+ }
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+index 0d0e9082021ade2ecdbd7fadadfa4d9211561e13..baf68021462d7443100af5d83c71952b66ac81cf 100644
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -26,6 +26,13 @@ type IconImage = {
+      * Defaults to `true`.
+      */
+     tinted?: boolean;
++    /**
++     * Width to height ratio for non-square images.
++     * The image renders at `size * aspectRatio` × `size` of the consumer's icon size.
++     *
++     * Defaults to `1`.
++     */
++    aspectRatio?: number;
+ };
+ type IconSfSymbol = {
+     /**
+@@ -35,7 +42,7 @@ type IconSfSymbol = {
+     /**
+      * Name of the SF Symbol to use as the icon.
+      */
+-    name: SFSymbol;
++    name: SFSymbol | keyof import('@react-navigation/native').SFSymbolNames;
+ };
+ type IconMaterialSymbol = {
+     /**

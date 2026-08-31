@@ -3,6 +3,9 @@ import path from 'node:path';
 import * as plist from 'plist';
 import type { NanoLogger } from './logger.js';
 import type { BuiltFont } from './build.js';
+import type { BuiltSymbolSet } from './buildSymbols.js';
+import { catalogRootContentsJson } from '../src/core/symbols/contents.js';
+import { toDrawableResourceName } from '../src/utils/naming.js';
 
 type ShellScriptOptions = {
   shellPath?: string;
@@ -21,6 +24,16 @@ type XcodeProject = {
     target: string,
     options?: ShellScriptOptions
   ) => void;
+  addResourceFile: (
+    filePath: string,
+    opt?: {
+      target?: string;
+      lastKnownFileType?: string;
+      sourceTree?: string;
+    },
+    group?: string | null
+  ) => unknown;
+  hasFile: (filePath: string) => boolean;
   writeSync: () => string;
   hash: {
     project: {
@@ -33,6 +46,7 @@ type XcodeProject = {
 };
 
 const ANDROID_FONTS_DIR = 'android/app/src/main/assets/fonts';
+const ANDROID_DRAWABLES_DIR = 'android/app/src/main/res/drawable';
 const IOS_NANOICONS_FONTS_DIR = 'nanoicons-fonts';
 const IOS_RUN_SCRIPT_PHASE_NAME = 'Copy nanoicons fonts';
 
@@ -61,7 +75,7 @@ async function linkIos(
 
   if (!xcodeprojDir) return;
 
-  const appName = xcodeprojDir.name.replace(/\.xcodeproj$/, '');
+  const appName = xcodeprojDir.name.replace(XCODEPROJ_RE, '');
   const infoPlistPath = path.join(iosDir, appName, 'Info.plist');
   if (!fs.existsSync(infoPlistPath)) return;
 
@@ -119,6 +133,234 @@ async function linkIos(
 
     fs.writeFileSync(pbxprojPath, project.writeSync(), 'utf8');
   }
+}
+
+// ---------------------------------------------------------------------------
+// Custom SF Symbol linking (iOS)
+// ---------------------------------------------------------------------------
+
+const IOS_SYMBOLS_CATALOG = 'NanoIconsSymbols.xcassets';
+
+function findIosApp(
+  projectRoot: string
+): { iosDir: string; xcodeprojName: string; appName: string } | null {
+  const iosDir = path.join(projectRoot, 'ios');
+  if (!fs.existsSync(iosDir)) return null;
+
+  const xcodeprojDir = fs
+    .readdirSync(iosDir, { withFileTypes: true })
+    .find((d) => d.name.endsWith('.xcodeproj'));
+  if (!xcodeprojDir) return null;
+
+  return {
+    iosDir,
+    xcodeprojName: xcodeprojDir.name,
+    appName: xcodeprojDir.name.replace(XCODEPROJ_RE, ''),
+  };
+}
+
+// File/folder name matchers (filesystem, CLI-specific).
+const XCODEPROJ_RE = /\.xcodeproj$/;
+const NANO_ASSET_RE = /\.(symbolset|imageset)$/;
+const XML_FILE_RE = /\.xml$/;
+
+// Ledgers of what we last linked, kept in the build output dir. Read before a
+// re-link so a renamed prefix or a dropped set is cleaned too — the current-prefix
+// scan below only sees names still in the config.
+const SYMBOL_LEDGER = '.nanoicons-catalog.json';
+const DRAWABLE_LEDGER = '.nanoicons-drawables.json';
+
+function readLedger(ledgerPath: string): string[] {
+  try {
+    const names: unknown = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+    return Array.isArray(names) ? (names as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Copy generated asset folders into a catalog, first removing everything we
+// linked last time (ledger) plus any current-prefix match (ledger-less fallback).
+// Handles removed icons, mode switches, prefix renames and dropped sets.
+export function copySymbolsetsIntoCatalog(
+  catalogDir: string,
+  builtSymbolSets: BuiltSymbolSet[]
+): void {
+  const outputDir = builtSymbolSets[0]
+    ? path.dirname(builtSymbolSets[0].symbolsDir)
+    : null;
+  const ledgerPath = outputDir ? path.join(outputDir, SYMBOL_LEDGER) : null;
+
+  const stale = new Set(ledgerPath ? readLedger(ledgerPath) : []);
+  const prefixes = new Set(builtSymbolSets.map((s) => s.prefix));
+  for (const entry of fs.readdirSync(catalogDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !NANO_ASSET_RE.test(entry.name)) continue;
+    const assetName = entry.name.replace(NANO_ASSET_RE, '');
+    for (const prefix of prefixes) {
+      if (assetName.startsWith(`${prefix}.`)) {
+        stale.add(entry.name);
+        break;
+      }
+    }
+  }
+  for (const name of stale) {
+    fs.rmSync(path.join(catalogDir, name), { recursive: true, force: true });
+  }
+
+  const linked: string[] = [];
+  for (const set of builtSymbolSets) {
+    for (const assetDir of set.assetDirs) {
+      const base = path.basename(assetDir);
+      fs.cpSync(assetDir, path.join(catalogDir, base), { recursive: true });
+      linked.push(base);
+    }
+  }
+  if (ledgerPath) fs.writeFileSync(ledgerPath, JSON.stringify(linked));
+}
+
+/**
+ * Link custom SF Symbols into the iOS app. Primary path writes into the app's
+ * existing Images.xcassets (no pbxproj changes). Fallback (no Images.xcassets)
+ * creates NanoIconsSymbols.xcassets and registers it on the first target.
+ */
+export async function linkBareSymbols(
+  projectRoot: string,
+  builtSymbolSets: BuiltSymbolSet[],
+  logger: NanoLogger
+): Promise<void> {
+  if (!builtSymbolSets.length) return;
+
+  const app = findIosApp(projectRoot);
+  if (!app) {
+    const outputDirs = [
+      ...new Set(builtSymbolSets.map((s) => path.dirname(s.symbolsDir))),
+    ];
+    const rel = path.relative(projectRoot, outputDirs[0] ?? '');
+    logger.info(
+      `No ios/ project found — symbols saved to ${rel}/  (skipping link)`
+    );
+    return;
+  }
+
+  const imagesCatalog = path.join(app.iosDir, app.appName, 'Images.xcassets');
+
+  if (fs.existsSync(imagesCatalog)) {
+    copySymbolsetsIntoCatalog(imagesCatalog, builtSymbolSets);
+    logger.succeed(`Linked symbols → ios/${app.appName}/Images.xcassets`);
+    return;
+  }
+
+  // Fallback: dedicated catalog + pbxproj resource entry
+  const catalogDir = path.join(app.iosDir, IOS_SYMBOLS_CATALOG);
+  fs.mkdirSync(catalogDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(catalogDir, 'Contents.json'),
+    catalogRootContentsJson(),
+    'utf8'
+  );
+  copySymbolsetsIntoCatalog(catalogDir, builtSymbolSets);
+
+  const pbxprojPath = path.join(
+    app.iosDir,
+    app.xcodeprojName,
+    'project.pbxproj'
+  );
+  const xcode = require('xcode') as { project: (p: string) => XcodeProject };
+  const project = xcode.project(pbxprojPath);
+  project.parseSync();
+
+  if (!project.hasFile(IOS_SYMBOLS_CATALOG)) {
+    try {
+      project.addResourceFile(
+        IOS_SYMBOLS_CATALOG,
+        {
+          target: project.getFirstTarget().uuid,
+          lastKnownFileType: 'folder.assetcatalog',
+          sourceTree: '"<group>"',
+        },
+        null
+      );
+      fs.writeFileSync(pbxprojPath, project.writeSync(), 'utf8');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.warn(
+        `Could not register ${IOS_SYMBOLS_CATALOG} in the Xcode project (${message}). ` +
+          `Add ios/${IOS_SYMBOLS_CATALOG} to your app target's resources in Xcode once.`
+      );
+      return;
+    }
+  }
+
+  logger.succeed(`Linked symbols → ios/${IOS_SYMBOLS_CATALOG}`);
+}
+
+// ---------------------------------------------------------------------------
+// Android VectorDrawable linking
+// ---------------------------------------------------------------------------
+
+// Copy generated VectorDrawable XML into a res/drawable dir, first removing what
+// we linked last time (ledger) plus any current-prefix match. Handles removed
+// icons, prefix renames and dropped sets.
+export function copyDrawablesIntoResDir(
+  drawableDir: string,
+  builtSymbolSets: BuiltSymbolSet[]
+): void {
+  fs.mkdirSync(drawableDir, { recursive: true });
+
+  const outputDir = builtSymbolSets[0]
+    ? path.dirname(builtSymbolSets[0].drawablesDir)
+    : null;
+  const ledgerPath = outputDir ? path.join(outputDir, DRAWABLE_LEDGER) : null;
+
+  const stale = new Set(ledgerPath ? readLedger(ledgerPath) : []);
+  const prefixes = new Set(
+    builtSymbolSets.map((s) => toDrawableResourceName(s.prefix))
+  );
+  for (const entry of fs.readdirSync(drawableDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.xml')) continue;
+    const base = entry.name.replace(XML_FILE_RE, '');
+    for (const prefix of prefixes) {
+      if (base.startsWith(`${prefix}_`)) {
+        stale.add(entry.name);
+        break;
+      }
+    }
+  }
+  for (const name of stale) {
+    fs.rmSync(path.join(drawableDir, name), { force: true });
+  }
+
+  const linked: string[] = [];
+  for (const set of builtSymbolSets) {
+    for (const file of set.drawableFiles) {
+      const base = path.basename(file);
+      fs.copyFileSync(file, path.join(drawableDir, base));
+      linked.push(base);
+    }
+  }
+  if (ledgerPath) fs.writeFileSync(ledgerPath, JSON.stringify(linked));
+}
+
+/**
+ * Link generated VectorDrawables into the Android app's res/drawable. They are
+ * compiled automatically by AGP and resolve by name via getIdentifier — the
+ * native-tab-bar counterpart to the iOS asset catalog. No gradle changes needed.
+ */
+export async function linkBareAndroidDrawables(
+  projectRoot: string,
+  builtSymbolSets: BuiltSymbolSet[],
+  logger: NanoLogger
+): Promise<void> {
+  if (!builtSymbolSets.length) return;
+
+  if (!fs.existsSync(path.join(projectRoot, 'android'))) {
+    logger.info('No android/ project found — skipping drawable link');
+    return;
+  }
+
+  const drawableDir = path.join(projectRoot, ANDROID_DRAWABLES_DIR);
+  copyDrawablesIntoResDir(drawableDir, builtSymbolSets);
+  logger.succeed(`Linked drawables → ${ANDROID_DRAWABLES_DIR}`);
 }
 
 /**

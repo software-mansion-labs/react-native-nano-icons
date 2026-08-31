@@ -1,0 +1,31 @@
+diff --git a/lib/module/views/DrawerItem.js b/lib/module/views/DrawerItem.js
+index 42a873f2ddbf02bc49780518d5ca20447c48f165..8ef46241144d334eddb5ef5804a4b6dd73d32d02 100644
+--- a/lib/module/views/DrawerItem.js
++++ b/lib/module/views/DrawerItem.js
+@@ -57,7 +57,7 @@ export function DrawerItem(props) {
+           return /*#__PURE__*/_jsx(Image, {
+             source: iconValue.source,
+             style: {
+-              width: size,
++              width: size * (iconValue.aspectRatio ?? 1),
+               height: size,
+               tintColor: iconValue.tinted === false ? undefined : color
+             }
+diff --git a/lib/module/views/DrawerToggleButton.js b/lib/module/views/DrawerToggleButton.js
+index 06d2ba06e1b9a4a637a02d972657c70531f09886..6e0046228db7b507d79f542c3395a65b5682ebcb 100644
+--- a/lib/module/views/DrawerToggleButton.js
++++ b/lib/module/views/DrawerToggleButton.js
+@@ -49,8 +49,11 @@ export function DrawerToggleButton({
+       resizeMode: "contain",
+       source: drawerIcon.source,
+       fadeDuration: 0,
+-      tintColor: tintColor,
+-      style: styles.icon
++      tintColor: drawerIcon.tinted === false ? undefined : tintColor,
++      style: [styles.icon, {
++        width: ICON_SIZE * (drawerIcon.aspectRatio ?? 1),
++        height: ICON_SIZE
++      }]
+     })
+   });
+ }

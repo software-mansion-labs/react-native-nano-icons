@@ -14,8 +14,8 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
     "@react-native/new-app-screen": "0.84.0",
-    "@react-navigation/elements": "^2.9.12",
-    "@react-navigation/native": "^7.2.0",
+    "@react-navigation/elements": "patch:@react-navigation/elements@npm%3A3.0.0-alpha.37#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.37-673c5008d9.patch",
+    "@react-navigation/native": "patch:@react-navigation/native@npm%3A8.0.0-alpha.33#~/.yarn/patches/@react-navigation-native-npm-8.0.0-alpha.33-dfa4e38945.patch",
     "@react-navigation/native-stack": "^7.14.7",
     "expo": "~55.0.8",
     "expo-font": "^55.0.5-canary-20260328-bdc6273",
@@ -26,7 +26,7 @@
     "react-native-nano-icons": "workspace:*",
     "react-native-release-profiler": "^0.4.4",
     "react-native-safe-area-context": "~5.6.2",
-    "react-native-screens": "~4.23.0",
+    "react-native-screens": "patch:react-native-screens@npm%3A4.26.0-nightly-20260629-43756187e#~/.yarn/patches/react-native-screens-npm-4.26.0-nightly-20260629-43756187e-7c88773b68.patch",
     "react-native-svg": "15.15.3"
   },
   "devDependencies": {

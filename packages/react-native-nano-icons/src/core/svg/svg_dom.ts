@@ -1,5 +1,16 @@
 import { DOMParser, type Element } from '@xmldom/xmldom';
 import { parseColor } from '../../utils/parse';
+import {
+  SVG_MOVE_PREFIX,
+  SVG_TRAILING_CLOSE,
+  SVG_NUMBER,
+  WHITESPACE,
+  XML_MASK,
+  XML_FILTER,
+  XML_EVENODD,
+  XML_XMLNS,
+  SVG_OPEN_TAG,
+} from '../../utils/svgPatterns';
 
 export type ParsedFlatSvg = {
   viewBox: [number, number, number, number];
@@ -36,13 +47,13 @@ export function calculateOpColor(
  */
 export function sanitizePathData(d: string): { d: string; sanitized: boolean } {
   const trimmed = d.trim();
-  if (!trimmed || /^[Mm]/.test(trimmed)) {
+  if (!trimmed || SVG_MOVE_PREFIX.test(trimmed)) {
     return { d: trimmed, sanitized: false };
   }
 
   // Strip trailing close commands, then grab the last two numbers as x,y
-  const withoutClose = trimmed.replace(/[Zz]\s*$/, '');
-  const nums = withoutClose.match(/-?\d+(?:\.\d+)?/g);
+  const withoutClose = trimmed.replace(SVG_TRAILING_CLOSE, '');
+  const nums = withoutClose.match(SVG_NUMBER);
   if (!nums || nums.length < 2) {
     return { d: trimmed, sanitized: false };
   }
@@ -94,7 +105,7 @@ export function parseFlattenedSvg(
 
   const viewBoxRaw = svgEl
     ?.getAttribute('viewBox')
-    ?.split(/\s+/)
+    ?.split(WHITESPACE)
     .map(Number) ?? [0, 0, 100, 100];
 
   const viewBox: [number, number, number, number] =
@@ -125,10 +136,10 @@ export function shouldSkipPath(d: string, fill: string | null): boolean {
 export type SvgValidation = { valid: true } | { valid: false; reason: string };
 
 export function validateSvg(content: string): SvgValidation {
-  if (/<mask[\s>]/i.test(content)) {
+  if (XML_MASK.test(content)) {
     return { valid: false, reason: '<mask> is not supported yet' };
   }
-  if (/<filter[\s>]/i.test(content)) {
+  if (XML_FILTER.test(content)) {
     return { valid: false, reason: '<filter> is not supported yet' };
   }
   if (/<image[\s>]/i.test(content)) {
@@ -149,7 +160,7 @@ export function validateSvg(content: string): SvgValidation {
  * Returns one `d` string per evenodd path, in document order.
  */
 export function extractOriginalEvenoddDs(svgContent: string): string[] {
-  if (!/<[^>]*fill-rule\s*=\s*["']evenodd/i.test(svgContent)) {
+  if (!XML_EVENODD.test(svgContent)) {
     return [];
   }
 
@@ -189,6 +200,9 @@ export function restoreOriginalEvenoddDs(
 
 // ensure the svg has a xmlns attribute
 export function preprocessSvg(content: string): string {
-  if (/xmlns\s*=/.test(content)) return content;
-  return content.replace(/<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
+  if (XML_XMLNS.test(content)) return content;
+  return content.replace(
+    SVG_OPEN_TAG,
+    '<svg xmlns="http://www.w3.org/2000/svg"'
+  );
 }

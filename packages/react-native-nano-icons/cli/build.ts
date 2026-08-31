@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { runPipeline } from '../src/core/pipeline/index.js';
+import { runFontPipeline } from '../src/core/pipeline/index.js';
 import type { NanoLogger } from './logger.js';
 import { getFingerprintSync } from '../src/utils/fingerPrint.js';
 
@@ -125,7 +125,7 @@ export async function buildAllFonts(
 
     logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
 
-    const out = await runPipeline(
+    const out = await runFontPipeline(
       config,
       { inputDir, outputDir, tempDir },
       { logger, inputHash }

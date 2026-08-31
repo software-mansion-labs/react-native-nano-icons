@@ -17,7 +17,10 @@ import {
   loadDynamicIconSets,
   loadDynamicSetsFromAppConfig,
   buildAllFonts,
+  buildAllSymbols,
   linkBare,
+  linkBareSymbols,
+  linkBareAndroidDrawables,
 } from '../cli/index.js';
 
 async function main(): Promise<void> {
@@ -50,9 +53,23 @@ async function main(): Promise<void> {
     await buildAllFonts(dynamicIconSets, projectRoot, { logger });
   } else {
     const config = loadNanoIconsConfig(configRoot);
-    const built = await buildAllFonts(config.iconSets, projectRoot, { logger });
 
-    await linkBare(projectRoot, built, logger);
+    if (config.iconSets?.length) {
+      const built = await buildAllFonts(config.iconSets, projectRoot, {
+        logger,
+      });
+      await linkBare(projectRoot, built, logger);
+    }
+
+    if (config.symbolSets?.length) {
+      const builtSymbols = await buildAllSymbols(
+        config.symbolSets,
+        projectRoot,
+        { logger }
+      );
+      await linkBareSymbols(projectRoot, builtSymbols, logger);
+      await linkBareAndroidDrawables(projectRoot, builtSymbols, logger);
+    }
   }
 }
 

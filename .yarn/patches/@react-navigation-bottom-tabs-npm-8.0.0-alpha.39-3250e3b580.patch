@@ -1,0 +1,200 @@
+diff --git a/lib/module/views/BottomTabBar.js b/lib/module/views/BottomTabBar.js
+index 5e8202bf9c6610b4f6361987c4da5dcd068fbe10..72d9139c521c0d5658e84ef6569b63c4e3cc92f3 100644
+--- a/lib/module/views/BottomTabBar.js
++++ b/lib/module/views/BottomTabBar.js
+@@ -332,6 +332,7 @@ export function BottomTabBar({
+             label: label,
+             labelVisibilityMode: tabBarLabelVisibilityMode,
+             labelStyle: options.tabBarLabelStyle,
++            iconSize: options.tabBarIconSize,
+             iconStyle: options.tabBarIconStyle,
+             style: [sidebar ? {
+               marginVertical: hasHorizontalLabels ? tabBarVariant === 'material' ? 0 : 1 : spacing / 2
+diff --git a/lib/module/views/BottomTabItem.js b/lib/module/views/BottomTabItem.js
+index bd0a20b26c83bdf2bdafef05ac89c50a8e6a4207..60577c874249fb67f3b2ef5fe0192bc144dbb576 100644
+--- a/lib/module/views/BottomTabItem.js
++++ b/lib/module/views/BottomTabItem.js
+@@ -40,6 +40,7 @@ export function BottomTabItem({
+   // https://developer.apple.com/documentation/uikit/uiview/3183939-largecontenttitle
+   allowFontScaling = SUPPORTS_LARGE_CONTENT_VIEWER ? false : undefined,
+   labelStyle,
++  iconSize,
+   iconStyle,
+   style
+ }) {
+@@ -99,6 +100,7 @@ export function BottomTabItem({
+       route: route,
+       variant: variant,
+       size: compact ? 'compact' : 'regular',
++      iconSize: iconSize,
+       badge: badge,
+       badgeStyle: badgeStyle,
+       activeOpacity: activeOpacity,
+diff --git a/lib/module/views/BottomTabViewNativeImpl.js b/lib/module/views/BottomTabViewNativeImpl.js
+index a1536bfad924ce09c75c07356d903743f5301fbc..8827d3f1c442226aad3c775a29aedd44610a270a 100644
+--- a/lib/module/views/BottomTabViewNativeImpl.js
++++ b/lib/module/views/BottomTabViewNativeImpl.js
+@@ -315,6 +315,7 @@ export function BottomTabViewNative({
+           tabBarSelectionEnabled,
+           tabBarBadgeStyle,
+           tabBarIcon,
++          tabBarIconSize,
+           tabBarBadge,
+           tabBarSystemItem,
+           tabBarBlurEffect = dark ? 'systemMaterialDark' : 'systemMaterial',
+@@ -404,6 +405,7 @@ export function BottomTabViewNative({
+           android: {
+             icon: icon?.android ?? icon?.shared,
+             selectedIcon: selectedIcon?.android ?? selectedIcon?.shared,
++            drawableIconSize: tabBarIconSize,
+             standardAppearance: {
+               tabBarBackgroundColor: tabBarBackgroundColor ?? backgroundColor,
+               tabBarItemRippleColor: currentOptions?.tabBarRippleColor,
+@@ -412,6 +414,8 @@ export function BottomTabViewNative({
+               selected: selectedTabItemAppearance,
+               tabBarItemActiveIndicatorColor: activeIndicatorColor,
+               tabBarItemActiveIndicatorEnabled: currentOptions?.tabBarActiveIndicatorEnabled,
++              tabBarItemActiveIndicatorWidth: currentOptions?.tabBarActiveIndicatorWidth,
++              tabBarItemActiveIndicatorHeight: currentOptions?.tabBarActiveIndicatorHeight,
+               tabBarItemTitleFontFamily: fontFamily,
+               tabBarItemTitleFontWeight: fontWeight,
+               tabBarItemTitleSmallLabelFontSize: fontSize,
+@@ -538,20 +542,28 @@ function getPlatformIcon(icon) {
+         shared: undefined
+       };
+     case 'image':
+-      return {
+-        ios: icon.tinted === false ? {
+-          type: 'imageSource',
+-          imageSource: icon.source
+-        } : {
+-          type: 'templateSource',
+-          templateSource: icon.source
+-        },
+-        android: undefined,
+-        shared: {
+-          type: 'imageSource',
+-          imageSource: icon.source
+-        }
+-      };
++      {
++        // A `{ uri: 'name' }` source maps to an Android drawable by name.
++        const drawableName = typeof icon.source === 'object' && icon.source != null && !Array.isArray(icon.source) && typeof icon.source.uri === 'string' ? icon.source.uri : undefined;
++        return {
++          ios: icon.tinted === false ? {
++            type: 'imageSource',
++            imageSource: icon.source
++          } : {
++            type: 'templateSource',
++            templateSource: icon.source
++          },
++          android: drawableName != null ? {
++            type: 'drawableResource',
++            name: drawableName,
++            tinted: icon.tinted
++          } : undefined,
++          shared: {
++            type: 'imageSource',
++            imageSource: icon.source
++          }
++        };
++      }
+     default:
+       {
+         const _exhaustiveCheck = icon;
+diff --git a/lib/module/views/TabBarIcon.js b/lib/module/views/TabBarIcon.js
+index 778d9c2e1f2aa291fcc1a4ca6b5ff6d25758bb31..8e066a89df2638fc6cfce8e1e7ec4456eece69e8 100644
+--- a/lib/module/views/TabBarIcon.js
++++ b/lib/module/views/TabBarIcon.js
+@@ -21,6 +21,7 @@ export function TabBarIcon({
+   route: _,
+   variant,
+   size,
++  iconSize: iconSizeOverride,
+   badge,
+   badgeStyle,
+   activeOpacity,
+@@ -31,12 +32,19 @@ export function TabBarIcon({
+   allowFontScaling,
+   style
+ }) {
+-  const iconSize = variant === 'material' ? ICON_SIZE_MATERIAL : size === 'compact' ? ICON_SIZE_SQUARE_COMPACT : ICON_SIZE_SQUARE;
++  const iconSize = iconSizeOverride ?? (variant === 'material' ? ICON_SIZE_MATERIAL : size === 'compact' ? ICON_SIZE_SQUARE_COMPACT : ICON_SIZE_SQUARE);
++
++  // Grow only the container's width to fit a wider image (e.g. a logo); height
++  // stays the default so icons stay vertically aligned across tabs.
++  const imageAspectRatio = typeof icon === 'object' && icon != null && 'type' in icon ? icon.type === 'image' ? icon.aspectRatio : undefined : undefined;
++  const boxWidth = imageAspectRatio != null ? iconSize * imageAspectRatio : iconSizeOverride;
+ 
+   // We render the icon twice at the same position on top of each other:
+   // active and inactive one, so we can fade between them.
+   return /*#__PURE__*/_jsxs(View, {
+-    style: [variant === 'material' ? styles.wrapperMaterial : size === 'compact' ? styles.wrapperUikitCompact : styles.wrapperUikit, style],
++    style: [variant === 'material' ? styles.wrapperMaterial : size === 'compact' ? styles.wrapperUikitCompact : styles.wrapperUikit, boxWidth != null && {
++      width: boxWidth
++    }, style],
+     children: [/*#__PURE__*/_jsx(View, {
+       style: [styles.icon, {
+         opacity: activeOpacity,
+@@ -87,8 +95,9 @@ function renderIcon({
+       case 'image':
+         return /*#__PURE__*/_jsx(Image, {
+           source: iconValue.source,
++          resizeMode: "contain",
+           style: {
+-            width: size,
++            width: size * (iconValue.aspectRatio ?? 1),
+             height: size,
+             tintColor: iconValue.tinted === false ? undefined : color
+           }
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+index 2450bdff4008492b388457cf3b4cba6fcce6468b..0952fde243e81dd0762b96071a10e31fed5a44d4 100644
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -111,7 +111,7 @@ type BottomTabCustomOptions = {
+      *
+      * Only supported with `custom` implementation.
+      */
+-    tabBarIconStyle?: StyleProp<TextStyle>;
++    tabBarIconStyle?: StyleProp<ViewStyle>;
+     /**
+      * Whether the tab bar gets hidden when the keyboard is shown.
+      *
+@@ -319,6 +319,37 @@ export type BottomTabNavigationOptions = {
+      * Only supported on Android with `native` implementation.
+      */
+     tabBarLabelVisibilityMode?: TabBarItemLabelVisibilityMode;
++    /**
++     * Size (in dp) of this tab's icon. Can be set globally via `screenOptions`
++     * and/or overridden per screen. Unset tabs use the default size.
++     *
++     * On the `custom` implementation it sizes the icon on all platforms. On the
++     * `native` implementation the largest value across tabs sets the bar's icon
++     * box and smaller icons are inset to their own size (Android only).
++     */
++    tabBarIconSize?: number;
++    /**
++     * Width (in dp) of the active indicator. Bar-wide, taken from the focused
++     * tab (like `tabBarActiveIndicatorColor`); set it in `screenOptions` for a
++     * consistent value. If unset, it auto-scales to wrap the icon box when icons
++     * are enlarged via `tabBarIconSize`.
++     *
++     * Only supported with `native` implementation.
++     *
++     * @platform android
++     */
++    tabBarActiveIndicatorWidth?: number;
++    /**
++     * Height (in dp) of the active indicator. Bar-wide, taken from the focused
++     * tab (like `tabBarActiveIndicatorColor`); set it in `screenOptions` for a
++     * consistent value. If unset, it auto-scales to wrap the icon box when icons
++     * are enlarged via `tabBarIconSize`.
++     *
++     * Only supported with `native` implementation.
++     *
++     * @platform android
++     */
++    tabBarActiveIndicatorHeight?: number;
+     /**
+      * Style object for the tab label.
+      */

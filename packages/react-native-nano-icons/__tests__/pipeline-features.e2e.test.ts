@@ -8,7 +8,7 @@ import path from 'node:path';
 // Must be set before any pipeline import so getPackageRoot() picks it up.
 process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
 
-import { runPipeline } from '../src/core/pipeline/run';
+import { runFontPipeline } from '../src/core/pipeline/runFontPipeline';
 import type { NanoGlyphMap, NanoLogger } from '../src/core/types';
 
 // ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ async function runOnSubset(opts: {
       await fsp.copyFile(path.join(srcDir, name), path.join(inputDir, name));
     }
 
-    await runPipeline(
+    await runFontPipeline(
       { ...PIPELINE, fontFamily: opts.fontFamily },
       { inputDir, outputDir, tempDir },
       opts.onWarn ? { logger: quietLogger(opts.onWarn) } : undefined
