@@ -19,6 +19,9 @@ class NanoIconView(context: Context) : View(context) {
   private var cachedTexts: Array<String> = emptyArray()
   // Cached baseline — rebuilt when font, size, or bounds change
   private var cachedBaseline: Float = 0f
+  // Derived from the loaded font's metrics; recomputed on typeface change.
+  private var textSizeFactor = 0f
+  private var baselineFactor = 0f
 
   init {
     // Transparent background, no default drawing
@@ -31,18 +34,18 @@ class NanoIconView(context: Context) : View(context) {
       cachedTypeface = ReactFontManager.getInstance()
         .getTypeface(fontFamily, Typeface.NORMAL, context.assets)
       paint.typeface = cachedTypeface
-      fitPaintToBounds()
+      updateFontFactors()
+      fitToBounds()
       invalidate()
     }
   }
 
   fun setFontSize(size: Float) {
-    val sizeInPx = size * resources.displayMetrics.density
-    if (paint.textSize != sizeInPx) {
-      paint.textSize = sizeInPx
-      fitPaintToBounds()
-      invalidate()
-    }
+    // Only seeds a size for use before the first layout; bounds win after that.
+    paint.textSize = size * resources.displayMetrics.density
+    if (textSizeFactor <= 0f) updateFontFactors()
+    fitToBounds()
+    invalidate()
   }
 
   fun setCodepoints(values: IntArray) {
@@ -58,25 +61,27 @@ class NanoIconView(context: Context) : View(context) {
 
   override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
     super.onSizeChanged(w, h, oldw, oldh)
-    fitPaintToBounds()
+    fitToBounds()
     invalidate()
   }
 
-  // Scale the glyph em square to fill the view height (mirrors iOS _fitScale).
-  // The view bounds — not the fontSize prop — carry the resolved size: JS sizes
-  // the box to size * fontScale while the fontSize prop is the unscaled size,
-  // so fitting to bounds is what applies allowFontScaling to the drawn glyph.
-  private fun fitPaintToBounds() {
-    val h = height.toFloat()
-    if (h <= 0f || paint.textSize <= 0f) return
+  private fun updateFontFactors() {
+    val ts = paint.textSize
+    if (cachedTypeface == null || ts <= 0f) return
     paint.getFontMetrics(fontMetrics)
-    val em = fontMetrics.descent - fontMetrics.ascent
-    if (em > 0f) {
-      paint.textSize = paint.textSize * h / em
-      paint.getFontMetrics(fontMetrics)
-    }
-    // Bottom-anchor the baseline like iOS so ascent + descent spans the box.
-    cachedBaseline = h - fontMetrics.descent
+    val band = fontMetrics.descent - fontMetrics.ascent
+    if (band <= 0f) return
+    textSizeFactor = ts / band
+    baselineFactor = 1f - fontMetrics.descent / band
+  }
+
+  // Font scale is derived from the bounds, not from the fontSize prop.
+  private fun fitToBounds() {
+    val h = height.toFloat()
+    if (h <= 0f || textSizeFactor <= 0f) return
+    cachedBaseline = h * baselineFactor
+    val size = h * textSizeFactor
+    if (paint.textSize != size) paint.textSize = size
   }
 
   override fun onDraw(canvas: Canvas) {
