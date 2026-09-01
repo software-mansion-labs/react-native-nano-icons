@@ -154,10 +154,27 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 2. **Build and link** – From the app root run:
 
    ```sh
-   npx react-native-nano-icons --path path/to/.nanoicons.json
+   npx react-native-nano-icons
    ```
 
-   This works exactly like the config plugin, removing any necessity for manual Xcode/Android Studio font linking steps.
+   This works exactly like the config plugin, removing any necessity for manual Xcode/Android Studio font linking steps. It looks for `.nanoicons.json` in the current directory and searches upward. Pass `--path <dir|file>` to point at it explicitly.
+
+##### Generate fonts automatically on every native build (optional)
+
+Wire generation into the native build so fonts are regenerated and linked whenever you build the app.
+
+**iOS** – running `npx react-native-nano-icons` once installs an Xcode "Copy nanoicons fonts" Run Script phase that regenerates and copies the fonts on each build. No further action needed - just rebuild from Xcode or `npx react-native run-ios`.
+
+**Android** – add one line to `android/app/build.gradle`:
+
+```gradle
+apply from: file("../../node_modules/react-native-nano-icons/android/nanoicons.gradle")
+```
+
+This registers a `nanoiconsGenerate` task that runs before `preBuild` and copies the fonts into `android/app/src/main/assets/fonts`.
+
+Both hooks call `react-native-nano-icons generate --platform <ios|android>`, which only rebuilds when your SVGs change (fingerprint cache) and never mutates your Xcode project or `Info.plist`, so it is safe to run on every build.
+
 
 > [!TIP]
 > Run `EXPO_DEBUG=1 npx expo prebuild` or `npx react-native-nano-icons --verbose` to get font build-time logs.

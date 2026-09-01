@@ -9,7 +9,10 @@ export {
 export {
   loadNanoIconsConfig,
   loadDynamicIconSets,
+  resolveConfigPath,
+  CONFIG_FILENAME,
   type NanoIconsConfig,
+  type ResolvedConfig,
 } from './config.js';
 export { loadDynamicSetsFromAppConfig } from './expoConfig.js';
-export { linkBare } from './link.js';
+export { linkBare, stageFonts, type Platform } from './link.js';

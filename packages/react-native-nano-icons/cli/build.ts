@@ -64,22 +64,26 @@ function shouldSkipGeneration(
 }
 
 /**
- * Build TTF + glyphmap for all icon sets using a single Pyodide/PathKit instance.
- * Output is placed in a "nanoicons" folder next to each input dir (sibling to inputDir).
- * Skips generation for a set if that output folder already contains the expected .ttf and .glyphmap.json.
+ * Build TTF + glyphmap for every icon set, reusing one Pyodide/PathKit instance.
+ * Outputs land in a sibling "nanoicons" folder and are skipped when the SVGs
+ * haven't changed.
+ *
+ * `resolveRoot` is the base for each set's relative paths (defaults to
+ * `projectRoot`); pass the config's folder so a relocated config stays portable.
  */
 export async function buildAllFonts(
   iconSets: IconSetConfig[],
   projectRoot: string,
-  options?: { logger?: NanoLogger }
+  options?: { logger?: NanoLogger; resolveRoot?: string }
 ): Promise<BuiltFont[]> {
   const logger = options?.logger;
+  const resolveRoot = options?.resolveRoot ?? projectRoot;
   const results: BuiltFont[] = [];
   let allSkipped = true;
 
   for (let i = 0; i < iconSets.length; i++) {
     const set = iconSets[i]!;
-    const inputDir = path.resolve(projectRoot, set.inputDir);
+    const inputDir = path.resolve(resolveRoot, set.inputDir);
     const fontFamily = set.fontFamily ?? path.basename(inputDir);
     const linking: 'static' | 'dynamic' = set.linking ?? 'static';
 
@@ -90,7 +94,7 @@ export async function buildAllFonts(
     }
 
     const outputDir = set.outputDir
-      ? path.resolve(projectRoot, set.outputDir)
+      ? path.resolve(resolveRoot, set.outputDir)
       : path.join(path.dirname(inputDir), 'nanoicons');
     const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
     const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);

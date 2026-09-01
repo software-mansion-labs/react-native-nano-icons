@@ -1,0 +1,56 @@
+/**
+ * react-native-nano-icons — regenerates icon fonts into assets/fonts on every build.
+ *
+ * Apply from your app module:
+ *   apply from: file("../../node_modules/react-native-nano-icons/android/nanoicons.gradle")
+ *
+ * Optional gradle.properties overrides:
+ *   nanoicons.nodeBinary=node          # node executable
+ *   nanoicons.configPath=config/icons  # only needed if .nanoicons.json is below the root
+ */
+
+// rootProject.projectDir is android/; the JS project root is its parent.
+def nanoiconsProjectRoot = file("${rootProject.projectDir}/..")
+def nanoiconsNodeBinary = project.findProperty("nanoicons.nodeBinary") ?: "node"
+def nanoiconsConfigPath = project.findProperty("nanoicons.configPath")
+
+ext.resolveNanoIconsCli = {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        workingDir nanoiconsProjectRoot
+        commandLine nanoiconsNodeBinary, "--print",
+            "require.resolve('react-native-nano-icons/package.json', { paths: ['${nanoiconsProjectRoot}'] })"
+        standardOutput = stdout
+    }
+    def pkgJson = new File(stdout.toString().trim())
+    return new File(pkgJson.parentFile, "lib/commonjs/scripts/cli.js")
+}
+
+tasks.register("nanoiconsGenerate") {
+    description = "Generate and stage react-native-nano-icons fonts into android assets."
+    group = "react-native-nano-icons"
+
+    doLast {
+        def cli = resolveNanoIconsCli()
+        def command = [
+            nanoiconsNodeBinary,
+            cli.absolutePath,
+            "generate",
+            "--platform", "android",
+            "--root", nanoiconsProjectRoot.absolutePath,
+        ]
+        if (nanoiconsConfigPath) {
+            command += ["--path", nanoiconsConfigPath.toString()]
+        }
+
+        exec {
+            workingDir nanoiconsProjectRoot
+            commandLine command
+        }
+    }
+}
+
+// Ensure fonts exist before Gradle assembles assets into the APK/AAB.
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn "nanoiconsGenerate"
+}
