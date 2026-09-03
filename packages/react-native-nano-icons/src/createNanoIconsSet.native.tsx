@@ -151,7 +151,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           />
         );
       }
-
+      console.log({ processedColors });
       return (
         <NanoIconViewNative
           ref={ref}
