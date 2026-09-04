@@ -61,7 +61,9 @@ void NanoIconInvalidateFontCache(NSString *family) {
   NSString *_fontFamily;
   CGFloat _fontSize;
   std::vector<CGGlyph> _glyphs;
-  std::vector<uint32_t> _colors;
+  // Unresolved layer colors — may be trait-dependent (DynamicColorIOS, PlatformColor).
+  NSArray<UIColor *> *_layerColors;
+  // _layerColors resolved against the current trait collection.
   std::vector<CGColorRef> _cachedCGColors;
   CGFloat _fitScale;
   CGPoint _baselinePosition;
@@ -330,17 +332,17 @@ void NanoIconInvalidateFontCache(NSString *family) {
   _cachedCGColors.clear();
 }
 
-// Convert ARGB uint32 color values into cached CGColorRefs.
+// Resolve the layer colors against the current traits into cached CGColorRefs.
+// Resolving up front (rather than relying on UIKit's current trait collection at
+// draw time) keeps the CALayer inline-in-Text path correct — CoreAnimation does
+// not install a trait collection around -drawInContext:.
 - (void)_rebuildCachedColors {
   [self _releaseCachedColors];
-  _cachedCGColors.resize(_colors.size());
-  for (size_t i = 0; i < _colors.size(); i++) {
-    uint32_t ci = _colors[i];
-    _cachedCGColors[i] = CGColorCreateSRGB(
-        ((ci >> 16) & 0xFF) / 255.0,
-        ((ci >> 8)  & 0xFF) / 255.0,
-        ( ci        & 0xFF) / 255.0,
-        ((ci >> 24) & 0xFF) / 255.0);
+  UITraitCollection *traits = self.traitCollection;
+  _cachedCGColors.resize(_layerColors.count);
+  for (NSUInteger i = 0; i < _layerColors.count; i++) {
+    UIColor *resolved = [_layerColors[i] resolvedColorWithTraitCollection:traits];
+    _cachedCGColors[i] = CGColorRetain(resolved.CGColor);
   }
 }
 
@@ -389,10 +391,12 @@ void NanoIconInvalidateFontCache(NSString *family) {
 
   if (oldViewProps.colors != newViewProps.colors) {
     const auto &colors = newViewProps.colors;
-    _colors.resize(colors.size());
+    NSMutableArray<UIColor *> *layerColors = [NSMutableArray arrayWithCapacity:colors.size()];
     for (size_t i = 0; i < colors.size(); i++) {
-      _colors[i] = (uint32_t)colors[i];
+      UIColor *color = RCTUIColorFromSharedColor(colors[i]);
+      [layerColors addObject:color ?: [UIColor blackColor]];
     }
+    _layerColors = layerColors;
     [self _rebuildCachedColors];
     needsRedraw = YES;
   }
@@ -404,6 +408,25 @@ void NanoIconInvalidateFontCache(NSString *family) {
     } else {
       [self setNeedsDisplay];
     }
+  }
+}
+
+// Trait-dependent colors (DynamicColorIOS, PlatformColor) resolve to a different
+// CGColor when the interface style or contrast changes. Fabric does not re-send
+// props for that, so re-resolve and redraw here.
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+  [super traitCollectionDidChange:previousTraitCollection];
+
+  if (_layerColors.count == 0) return;
+  if (![self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+    return;
+  }
+
+  [self _rebuildCachedColors];
+  if (_isInlineInText && _drawingLayer) {
+    [_drawingLayer setNeedsDisplay];
+  } else {
+    [self setNeedsDisplay];
   }
 }
 
