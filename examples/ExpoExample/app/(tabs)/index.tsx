@@ -1,10 +1,4 @@
-import {
-  DynamicColorIOS,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon, SWMIconsOutline } from '@/components/Icon';
 import { Text, useThemeColor } from '@/components/Themed';
@@ -28,11 +22,7 @@ export default function TabOneScreen() {
             <Text style={styles.subtitle}>Standalone icon:</Text>
             <Icon name="react-logo" size={80} />
             <Pressable style={styles.button}>
-              <SWMIconsOutline
-                name="ZoomIn"
-                size={28}
-                color={DynamicColorIOS({ light: '#007AFF', dark: '#0A84FF' })}
-              />
+              <SWMIconsOutline name="ZoomIn" size={28} color={'#007AFF'} />
               <Text style={styles.buttonText}>Monochrome Button Icon</Text>
             </Pressable>
           </View>
@@ -115,7 +105,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   buttonText: {
-    color: DynamicColorIOS({ light: 'green', dark: 'red' }),
+    color: '#007AFF',
     textAlignVertical: 'center',
     fontSize: 25,
   },
