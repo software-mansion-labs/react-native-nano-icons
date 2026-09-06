@@ -137,7 +137,7 @@ function rectEquals(a: Rect, b: Rect): boolean {
   return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
 }
 
-export type NestedSvgAttrs = {
+type NestedSvgAttrs = {
   x?: string | null;
   y?: string | null;
   width?: string | null;
@@ -148,9 +148,8 @@ export type NestedSvgAttrs = {
 };
 
 // viewport/viewBox mapping a nested <svg> imposes on its children, plus the
-// viewBox its children resolve against. Shared with the evenodd source walk in
-// svg_dom so the two can't drift.
-export function nestedSvgTransform(
+// viewBox its children resolve against
+function nestedSvgTransform(
   attrs: NestedSvgAttrs,
   parentWidth: number,
   parentHeight: number

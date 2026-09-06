@@ -18,8 +18,6 @@ import {
   preprocessSvg,
   shouldSkipPath,
   validateSvg,
-  extractOriginalEvenoddDs,
-  restoreOriginalEvenoddDs,
 } from '../svg/svg_dom.js';
 import { computePlacement, transformPathForFont } from '../svg/layers.js';
 import { convertEvenoddToWinding } from '../svg/svg_pathops.js';
@@ -163,11 +161,6 @@ export async function runPipeline(
 
     const preprocessed = preprocessSvg(rawContent);
 
-    // Preserve original evenodd `d` strings BEFORE picosvg processes them.
-    // Picosvg's simplify (via our PathKit shim) can drop contours from
-    // multi-subpath evenodd paths — we restore the originals after.
-    const originalEvenoddDs = extractOriginalEvenoddDs(preprocessed);
-
     const flattenedSvg = await picoFromFile(filePath, preprocessed);
     const parsed = parseFlattenedSvg(flattenedSvg, {
       onSanitize: (original) => {
@@ -178,13 +171,10 @@ export async function runPipeline(
       },
     });
 
-    // Restore original evenodd path data (undamaged by picosvg's simplify),
-    // then convert to nonzero winding with our containment-based algorithm.
-    // Mark as noMerge — compound paths with holes must stay separate so their
-    // CW hole contours don't cancel adjacent paths' CCW contours.
-    if (originalEvenoddDs.length > 0) {
-      restoreOriginalEvenoddDs(parsed.paths, originalEvenoddDs);
-    }
+    // Convert evenodd to nonzero winding with our containment-based
+    // algorithm. Mark as noMerge — compound paths with holes must stay
+    // separate so their CW hole contours don't cancel adjacent paths' CCW
+    // contours.
     for (const p of parsed.paths) {
       if (p.fillRule === 'evenodd') {
         logger?.info(

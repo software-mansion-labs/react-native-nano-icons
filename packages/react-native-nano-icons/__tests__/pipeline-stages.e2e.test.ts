@@ -9,8 +9,6 @@ import {
   preprocessSvg,
   parseFlattenedSvg,
   validateSvg,
-  extractOriginalEvenoddDs,
-  restoreOriginalEvenoddDs,
 } from '../src/core/svg/svg_dom';
 import { convertEvenoddToWinding } from '../src/core/svg/svg_pathops';
 
@@ -38,7 +36,6 @@ type StageOutputs = {
   preprocessed: string;
   flattened: string;
   parsed: PathsSnapshot;
-  restored: PathsSnapshot;
   converted: PathsSnapshot;
   merged: PathsSnapshot;
 };
@@ -68,7 +65,6 @@ async function computeStages(file: string): Promise<StageOutputs> {
   const PathKit = await PathKitManager.getInstance();
 
   const preprocessed = preprocessSvg(raw);
-  const originalEvenoddDs = extractOriginalEvenoddDs(preprocessed);
 
   const flattened = await picoFromFile(abs, preprocessed);
 
@@ -77,11 +73,6 @@ async function computeStages(file: string): Promise<StageOutputs> {
     paths: ParsedPath[];
   };
   const parsed = snapshotPaths(viewBox, paths);
-
-  if (originalEvenoddDs.length > 0) {
-    restoreOriginalEvenoddDs(paths, originalEvenoddDs);
-  }
-  const restored = snapshotPaths(viewBox, paths);
 
   for (const p of paths) {
     if (p.fillRule === 'evenodd') {
@@ -94,7 +85,7 @@ async function computeStages(file: string): Promise<StageOutputs> {
 
   const merged = snapshotPaths(viewBox, mergeSameColorPaths(paths));
 
-  return { preprocessed, flattened, parsed, restored, converted, merged };
+  return { preprocessed, flattened, parsed, converted, merged };
 }
 
 test('testicons corpus is present', () => {
@@ -118,10 +109,6 @@ describe.each(ICONS)('pipeline stages golden — %s', (file) => {
 
   test('after parseFlattenedSvg', () => {
     expect(stages.parsed).toMatchSnapshot();
-  });
-
-  test('after restoreOriginalEvenoddDs', () => {
-    expect(stages.restored).toMatchSnapshot();
   });
 
   test('after convertEvenoddToWinding', () => {

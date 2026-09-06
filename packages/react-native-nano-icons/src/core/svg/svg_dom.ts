@@ -140,53 +140,6 @@ export function validateSvg(content: string): SvgValidation {
   return { valid: true };
 }
 
-/**
- * Extract the original `d` strings of evenodd paths from the raw SVG
- * BEFORE picosvg processes it. Picosvg's simplify (via our PathKit shim)
- * can drop contours from multi-subpath evenodd paths, so we preserve
- * the originals and apply our own winding conversion later.
- *
- * Returns one `d` string per evenodd path, in document order.
- */
-export function extractOriginalEvenoddDs(svgContent: string): string[] {
-  if (!/<[^>]*fill-rule\s*=\s*["']evenodd/i.test(svgContent)) {
-    return [];
-  }
-
-  const doc = new DOMParser().parseFromString(svgContent, 'image/svg+xml');
-
-  return Array.from(doc.getElementsByTagName('path')).reduce<string[]>(
-    (acc, el) => {
-      const isEvenOdd =
-        el.getAttribute('fill-rule') === 'evenodd' ||
-        el.getAttribute('clip-rule') === 'evenodd';
-      if (!isEvenOdd) return acc;
-      const d = el.getAttribute('d');
-      if (d !== null && d !== '') acc.push(d);
-      return acc;
-    },
-    []
-  );
-}
-
-/**
- * Replace picosvg's (potentially damaged) evenodd path data with the
- * preserved originals. Matches by position: the Nth evenodd path in
- * the parsed output gets the Nth original `d` string.
- */
-export function restoreOriginalEvenoddDs(
-  paths: ParsedFlatSvg['paths'],
-  originalDs: string[]
-): void {
-  let oi = 0;
-  for (const p of paths) {
-    if (p.fillRule === 'evenodd' && oi < originalDs.length) {
-      p.d = originalDs[oi]!;
-      oi++;
-    }
-  }
-}
-
 // ensure the svg has a xmlns attribute
 export function preprocessSvg(content: string): string {
   if (/xmlns\s*=/.test(content)) return content;

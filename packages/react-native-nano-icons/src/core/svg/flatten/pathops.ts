@@ -119,8 +119,9 @@ export function createPathOps(PathKit: PathKitModule) {
         if (merged === null) {
           throw new PathOpsError('operation did not succeed');
         }
-        // shim op(fix_winding=True)
-        backend.set_fill_type(merged, FILL_WINDING);
+        // the result keeps its own fill rule until simplify resolves it below:
+        // relabelling it nonzero here would leave hole contours wound as if
+        // they still subtract, and simplify would then discard them
         backend.delete_path(skPath);
         skPath = merged;
       }
