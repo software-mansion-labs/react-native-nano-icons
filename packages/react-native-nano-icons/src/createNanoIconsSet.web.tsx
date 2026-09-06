@@ -31,6 +31,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       accessibilityRole = 'image',
       accessibilityElementsHidden,
       testID,
+      className,
       ref,
     }: IconProps<keyof GM['i']>) => {
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
@@ -72,6 +73,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       return (
         <span
           ref={ref as React.Ref<HTMLSpanElement>}
+          className={className}
           style={containerStyle}
           role={isHidden ? undefined : role}
           aria-label={
@@ -97,6 +99,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       prev.name === next.name &&
       prev.size === next.size &&
       prev.style === next.style &&
+      prev.className === next.className &&
       shallowEqualColor(prev.color, next.color)
   );
 

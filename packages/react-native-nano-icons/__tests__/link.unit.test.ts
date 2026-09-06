@@ -5,16 +5,52 @@ import os from 'node:os';
 import path from 'node:path';
 import * as plist from 'plist';
 
-jest.mock('xcode', () => ({
-  project: () => ({
-    parseSync() {
-      return this;
+const APP_TARGET_UUID = 'APP_TARGET';
+const FIRST_TARGET_UUID = 'FIRST_TARGET';
+const CONFIGURATION_LIST_UUID = 'APP_CONFIGURATION_LIST';
+
+type MockTarget = { name: string; buildConfigurationList: string };
+
+const mockPbxproj = {
+  appTarget: null as { uuid: string; target: MockTarget } | null,
+  firstTarget: { uuid: FIRST_TARGET_UUID, firstTarget: {} as MockTarget },
+  configurationLists: {} as Record<string, { buildConfigurations: unknown[] }>,
+  buildConfigurations: {} as Record<
+    string,
+    { buildSettings: Record<string, string> }
+  >,
+  objects: {} as Record<string, unknown>,
+  addedBuildPhaseTargets: [] as (string | undefined)[],
+};
+
+const mockXcodeProject = {
+  parseSync() {
+    return this;
+  },
+  getTarget: () => mockPbxproj.appTarget,
+  getFirstTarget: () => mockPbxproj.firstTarget,
+  pbxXCConfigurationList: () => mockPbxproj.configurationLists,
+  pbxXCBuildConfigurationSection: () => mockPbxproj.buildConfigurations,
+  addBuildPhase: (
+    _files: string[],
+    _phaseType: string,
+    _comment: string,
+    target?: string
+  ) => {
+    mockPbxproj.addedBuildPhaseTargets.push(target);
+  },
+  writeSync: () => '// fake pbxproj',
+  hash: {
+    project: {
+      get objects() {
+        return mockPbxproj.objects;
+      },
     },
-    getFirstTarget: () => ({ uuid: 'fake-target-uuid' }),
-    addBuildPhase: () => {},
-    writeSync: () => '// fake pbxproj',
-    hash: { project: { objects: {} } },
-  }),
+  },
+};
+
+jest.mock('xcode', () => ({
+  project: () => mockXcodeProject,
 }));
 
 import { linkBare } from '../cli/link';
@@ -22,6 +58,48 @@ import type { NanoLogger } from '../cli/logger';
 import type { BuiltFont } from '../cli/build';
 
 const MINIMAL_PLIST = plist.build({ CFBundleName: 'placeholder' });
+
+function setInfoPlistFiles(
+  infoPlistFiles: string[],
+  { resolvableAppTarget = true }: { resolvableAppTarget?: boolean } = {}
+): void {
+  const uuids = infoPlistFiles.map((_, index) => `CONFIGURATION_${index}`);
+  const target: MockTarget = {
+    name: 'MyApp',
+    buildConfigurationList: CONFIGURATION_LIST_UUID,
+  };
+
+  if (resolvableAppTarget) {
+    mockPbxproj.appTarget = { uuid: APP_TARGET_UUID, target };
+  } else {
+    mockPbxproj.appTarget = null;
+    mockPbxproj.firstTarget = { uuid: FIRST_TARGET_UUID, firstTarget: target };
+  }
+
+  mockPbxproj.configurationLists = {
+    [CONFIGURATION_LIST_UUID]: {
+      buildConfigurations: uuids.map((value) => ({ value })),
+    },
+  };
+  mockPbxproj.buildConfigurations = Object.fromEntries(
+    uuids.map((uuid, index) => [
+      uuid,
+      { buildSettings: { INFOPLIST_FILE: infoPlistFiles[index]! } },
+    ])
+  );
+}
+
+beforeEach(() => {
+  mockPbxproj.appTarget = null;
+  mockPbxproj.firstTarget = {
+    uuid: FIRST_TARGET_UUID,
+    firstTarget: { name: 'MyApp', buildConfigurationList: 'MISSING_LIST' },
+  };
+  mockPbxproj.configurationLists = {};
+  mockPbxproj.buildConfigurations = {};
+  mockPbxproj.objects = {};
+  mockPbxproj.addedBuildPhaseTargets = [];
+});
 
 function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'nano-link-'));
@@ -85,7 +163,7 @@ describe('linkBare — iOS Info.plist target selection', () => {
     fs.rmSync(fontDir, { recursive: true, force: true });
   });
 
-  test('updates the main app Info.plist, not the alphabetically-first sibling', async () => {
+  test('uses the conventional Info.plist path as a fallback, not the alphabetically-first sibling', async () => {
     const builtFont: BuiltFont = {
       fontFamily: 'TestFont',
       ttfPath: path.join(fontDir, 'TestFont.ttf'),
@@ -106,6 +184,100 @@ describe('linkBare — iOS Info.plist target selection', () => {
     expect(readUIAppFonts(mainPlist)).toContain('TestFont.ttf');
     expect(readUIAppFonts(decoyPlist)).not.toContain('TestFont.ttf');
     expect(readUIAppFonts(decoyPlist)).toEqual([]);
+  });
+
+  test('uses INFOPLIST_FILE from the first app target build configuration', async () => {
+    const conventionalPlist = path.join(
+      projectRoot,
+      'ios',
+      'MyApp',
+      'Info.plist'
+    );
+    fs.rmSync(conventionalPlist);
+    const debugPlist = path.join(
+      projectRoot,
+      'ios',
+      'Resources',
+      'Debug-Info.plist'
+    );
+    const releasePlist = path.join(
+      projectRoot,
+      'ios',
+      'Resources',
+      'Release-Info.plist'
+    );
+    fs.mkdirSync(path.dirname(debugPlist));
+    fs.writeFileSync(debugPlist, MINIMAL_PLIST);
+    fs.writeFileSync(releasePlist, MINIMAL_PLIST);
+
+    setInfoPlistFiles([
+      'Resources/Debug-Info.plist',
+      '$(SRCROOT)/Resources/Release-Info.plist',
+    ]);
+
+    const builtFont: BuiltFont = {
+      fontFamily: 'TestFont',
+      ttfPath: path.join(fontDir, 'TestFont.ttf'),
+      glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
+      linking: 'static',
+    };
+
+    await linkBare(projectRoot, [builtFont], makeLogger());
+
+    expect(readUIAppFonts(debugPlist)).toContain('TestFont.ttf');
+    expect(readUIAppFonts(releasePlist)).toContain('TestFont.ttf');
+    expect(
+      readUIAppFonts(
+        path.join(projectRoot, 'ios', 'AppExtension', 'Info.plist')
+      )
+    ).toEqual([]);
+  });
+
+  test('resolves INFOPLIST_FILE when only getFirstTarget() is available', async () => {
+    fs.rmSync(path.join(projectRoot, 'ios', 'MyApp', 'Info.plist'));
+    const customPlist = path.join(
+      projectRoot,
+      'ios',
+      'Resources',
+      'Info.plist'
+    );
+    fs.mkdirSync(path.dirname(customPlist));
+    fs.writeFileSync(customPlist, MINIMAL_PLIST);
+
+    setInfoPlistFiles(['$(PROJECT_DIR)/Resources/Info.plist'], {
+      resolvableAppTarget: false,
+    });
+
+    const builtFont: BuiltFont = {
+      fontFamily: 'TestFont',
+      ttfPath: path.join(fontDir, 'TestFont.ttf'),
+      glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
+      linking: 'static',
+    };
+
+    await linkBare(projectRoot, [builtFont], makeLogger());
+
+    expect(readUIAppFonts(customPlist)).toContain('TestFont.ttf');
+    expect(mockPbxproj.addedBuildPhaseTargets).toEqual([FIRST_TARGET_UUID]);
+  });
+
+  test('adds the run script phase to the application target', async () => {
+    setInfoPlistFiles(['MyApp/Info.plist']);
+
+    await linkBare(
+      projectRoot,
+      [
+        {
+          fontFamily: 'TestFont',
+          ttfPath: path.join(fontDir, 'TestFont.ttf'),
+          glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
+          linking: 'static',
+        },
+      ],
+      makeLogger()
+    );
+
+    expect(mockPbxproj.addedBuildPhaseTargets).toEqual([APP_TARGET_UUID]);
   });
 });
 
@@ -308,6 +480,54 @@ describe('linkBare - platform detection & edge cases', () => {
     expect(
       fs.existsSync(path.join(projectRoot, IOS_STAGING_DIR, 'StagedFont.ttf'))
     ).toBe(true);
+  });
+
+  test('warns and reports no platforms when no Info.plist can be resolved', async () => {
+    const iosDir = path.join(projectRoot, 'ios');
+    fs.mkdirSync(path.join(iosDir, 'MyApp.xcodeproj'), { recursive: true });
+    fs.writeFileSync(
+      path.join(iosDir, 'MyApp.xcodeproj', 'project.pbxproj'),
+      '// fake pbxproj'
+    );
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('UnlinkedIos')], logger);
+
+    expect(fs.existsSync(path.join(projectRoot, IOS_STAGING_DIR))).toBe(false);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('No Info.plist resolved for target "MyApp"')
+    );
+    expect(logger.succeed).not.toHaveBeenCalled();
+    expect(logger.fail).toHaveBeenCalledWith('No platforms linked.');
+  });
+
+  test('android still reports as linked when iOS cannot be resolved', async () => {
+    addAndroid();
+    const iosDir = path.join(projectRoot, 'ios');
+    fs.mkdirSync(path.join(iosDir, 'MyApp.xcodeproj'), { recursive: true });
+    fs.writeFileSync(
+      path.join(iosDir, 'MyApp.xcodeproj', 'project.pbxproj'),
+      '// fake pbxproj'
+    );
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('AndroidOnly')], logger);
+
+    expect(logger.succeed).toHaveBeenCalledWith('Linked fonts → android');
+  });
+
+  test('skips iOS when the .xcodeproj has no project.pbxproj', async () => {
+    fs.mkdirSync(path.join(projectRoot, 'ios', 'MyApp.xcodeproj'), {
+      recursive: true,
+    });
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('NoPbxproj')], logger);
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('project.pbxproj not found')
+    );
+    expect(logger.fail).toHaveBeenCalledWith('No platforms linked.');
   });
 
   test('UIAppFonts merges with pre-existing entries without clobbering them', async () => {
