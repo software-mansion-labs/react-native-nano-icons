@@ -1,7 +1,6 @@
 // Ported from picosvg svg.py (Apache-2.0, Copyright 2020 Google LLC).
 // Minimal-subset port: gradient normalization is skipped (fills keep their
-// url(#...) strings, downstream never reads gradient defs) and nested <svg>
-// elements are rejected instead of resolved.
+// url(#...) strings, downstream never reads gradient defs).
 
 import type { Rect } from './geometry.js';
 import { ntos } from './geometry.js';
@@ -132,6 +131,80 @@ function idOfTarget(url: string): string {
     throw new Error(`Unrecognized url "${url}"`);
   }
   return match[1]!;
+}
+
+function rectEquals(a: Rect, b: Rect): boolean {
+  return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+}
+
+export type NestedSvgAttrs = {
+  x?: string | null;
+  y?: string | null;
+  width?: string | null;
+  height?: string | null;
+  viewBox?: string | null;
+  transform?: string | null;
+  preserveAspectRatio?: string | null;
+};
+
+// viewport/viewBox mapping a nested <svg> imposes on its children, plus the
+// viewBox its children resolve against. Shared with the evenodd source walk in
+// svg_dom so the two can't drift.
+export function nestedSvgTransform(
+  attrs: NestedSvgAttrs,
+  parentWidth: number,
+  parentHeight: number
+): { transform: Affine2D; viewport: Rect; viewBox: Rect } {
+  const num = (raw: string | null | undefined, fallback: number): number => {
+    if (raw === null || raw === undefined || !raw.trim()) return fallback;
+    const value = parseFloat(raw);
+    return Number.isFinite(value) ? value : fallback;
+  };
+
+  const x = num(attrs.x, 0);
+  const y = num(attrs.y, 0);
+  const viewport: Rect = {
+    x,
+    y,
+    w: num(attrs.width, parentWidth),
+    h: num(attrs.height, parentHeight),
+  };
+  const viewBox =
+    attrs.viewBox === null || attrs.viewBox === undefined
+      ? viewport
+      : parseViewBox(attrs.viewBox);
+
+  let transform = rectEquals(viewport, viewBox)
+    ? Affine2D.identity().translate(x, y)
+    : Affine2D.rectToRect(
+        viewBox,
+        viewport,
+        attrs.preserveAspectRatio ?? 'xMidYMid'
+      );
+
+  if (attrs.transform !== null && attrs.transform !== undefined) {
+    transform = Affine2D.composeLtr([
+      transform,
+      Affine2D.fromString(attrs.transform),
+    ]);
+  }
+
+  return { transform, viewport, viewBox };
+}
+
+function viewportRect(
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): XEl {
+  const el = new XEl(svgTag('rect'), [
+    ['x', ntos(x)],
+    ['y', ntos(y)],
+    ['width', ntos(width)],
+    ['height', ntos(height)],
+  ]);
+  return toElement(fromElement(el));
 }
 
 function parseViewBox(s: string): Rect {
@@ -527,13 +600,108 @@ export class PicoSVG {
     }
   }
 
-  rejectNestedSvgs(): void {
-    // deviation from picosvg (which resolves them): unsupported here
-    for (const el of this.svgRoot.iter()) {
-      if (el !== this.svgRoot && stripNs(el.tag) === 'svg') {
-        throw new Error('nested <svg> elements are not supported');
+  private _newId(template: (i: number) => string): string {
+    for (let i = 0; i < 1 << 16; i++) {
+      const candidate = template(i);
+      if (
+        !findAll(this.svgRoot, (el) => el.attrib.get('id') === candidate).length
+      ) {
+        return candidate;
       }
     }
+    throw new Error('No free id for nested svg viewport');
+  }
+
+  // immediate nested <svg> descendants, without descending into them
+  private _iterNestedSvgs(root: XEl): XEl[] {
+    const found: XEl[] = [];
+    const frontier: XEl[] = [...root.children];
+    while (frontier.length) {
+      const el = frontier.shift()!;
+      if (stripNs(el.tag) === 'svg') {
+        found.push(el);
+      } else if (el.children.length) {
+        frontier.push(...el.children);
+      }
+    }
+    return found;
+  }
+
+  private _unnestSvg(
+    svg: XEl,
+    parentWidth: number,
+    parentHeight: number
+  ): XEl[] {
+    const { transform, viewport, viewBox } = nestedSvgTransform(
+      {
+        x: svg.attrib.get('x') ?? null,
+        y: svg.attrib.get('y') ?? null,
+        width: svg.attrib.get('width') ?? null,
+        height: svg.attrib.get('height') ?? null,
+        viewBox: svg.attrib.get('viewBox') ?? null,
+        transform: svg.attrib.get('transform') ?? null,
+        preserveAspectRatio: svg.attrib.get('preserveAspectRatio') ?? null,
+      },
+      parentWidth,
+      parentHeight
+    );
+    const { x, y, w: width, h: height } = viewport;
+
+    // un-nest any nested nested svgs first
+    for (const inner of this._iterNestedSvgs(svg)) {
+      replaceEl(inner, this._unnestSvg(inner, viewBox.w, viewBox.h));
+    }
+
+    const g = new XEl(svgTag('g'));
+    for (const child of [...svg.children]) {
+      g.append(child);
+    }
+
+    if (!transform.equals(Affine2D.identity())) {
+      g.attrib.set('transform', transform.toString());
+    }
+
+    // non-root <svg> defaults to overflow="hidden", i.e. clipped to its viewport
+    // https://www.w3.org/TR/SVG/render.html#OverflowAndClipProperties
+    const overflow = svg.attrib.get('overflow') ?? 'hidden';
+    if (overflow === 'visible') {
+      return [g];
+    }
+    if (overflow !== 'hidden') {
+      throw new Error(`overflow='${overflow}' is not supported`);
+    }
+
+    const clipId = this._newId((i) => `nested-svg-viewport-${i}`);
+    const clipPath = new XEl(svgTag('clipPath'), [['id', clipId]]);
+    clipPath.append(viewportRect(x, y, width, height));
+    const clippedG = new XEl(svgTag('g'), [['clip-path', `url(#${clipId})`]]);
+    clippedG.append(g);
+    return [clipPath, clippedG];
+  }
+
+  resolveNestedSvgs(): void {
+    this._updateEtree();
+
+    const nested = this._iterNestedSvgs(this.svgRoot);
+    if (!nested.length) {
+      return;
+    }
+
+    const vbox = this.viewBox();
+    if (vbox === null) {
+      throw new Error(
+        "Can't determine root SVG width/height, which is required for " +
+          'resolving nested SVGs'
+      );
+    }
+
+    // swap one at a time so each generated clip-path id is already in the
+    // tree before the next id is picked
+    for (const el of nested) {
+      replaceEl(el, this._unnestSvg(el, vbox.w, vbox.h));
+    }
+
+    this.elements = null;
   }
 
   shapesToPaths(): void {
@@ -856,7 +1024,7 @@ export class PicoSVG {
 
     // Simplify things that simplify in isolation
     this.applyStyleAttributes();
-    this.rejectNestedSvgs();
+    this.resolveNestedSvgs();
     this.shapesToPaths();
     this.expandShorthand();
     this.resolveUse();

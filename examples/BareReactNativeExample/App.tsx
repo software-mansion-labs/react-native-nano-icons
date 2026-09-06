@@ -4,70 +4,87 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon, SWMIconsOutline } from './Icon';
 
 export default function App() {
-  <SafeAreaProvider>
-    <SafeAreaView edges={['top']} style={styles.container}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.section}>
-          <Text style={styles.subtitle}>
-            Inline <Icon name="SWM_logo" size={22} /> multicolor font icon
-          </Text>
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.section}>
+            <Text style={styles.subtitle}>
+              Inline <Icon name="SWM_logo" size={22} /> multicolor font icon
+            </Text>
 
-          <Text style={styles.subtitle}>Standalone icon:</Text>
-          <Icon name="react-logo" size={80} />
-          <Pressable style={styles.button}>
-            <SWMIconsOutline name="ZoomIn" size={28} color={'#007AFF'} />
-            <Text style={styles.buttonText}>Go to 1k icons screen</Text>
-          </Pressable>
-        </View>
-        <View style={styles.row}>
-          <View style={styles.rowItem}>
-            <Icon name="person-walking" size={150} />
-            <Text style={styles.caption}>
-              "person-walking" font icon original
+            <Text style={styles.subtitle}>Standalone icon:</Text>
+            <Icon name="react-logo" size={80} />
+
+            <Text style={styles.subtitle}>
+              nested &lt;svg&gt; composite (SWM logo + person-walking):
             </Text>
+            <View style={styles.row}>
+              <View style={styles.rowItem}>
+                <Icon name="swm-walker" size={150} />
+                <Text style={styles.caption}>stacked viewports</Text>
+              </View>
+              <View style={styles.rowItem}>
+                <Icon name="swm-walker-overlay" size={150} />
+                <Text style={styles.caption}>overlapping viewports</Text>
+              </View>
+            </View>
+
+            <Pressable style={styles.button}>
+              <SWMIconsOutline name="ZoomIn" size={28} color={'#007AFF'} />
+              <Text style={styles.buttonText}>Go to 1k icons screen</Text>
+            </Pressable>
           </View>
-          <View style={styles.rowItem}>
-            <Icon
-              name="person-walking"
-              size={150}
-              color={[
-                '#FCC9A7',
-                '#1F252A',
-                '#FCC9A7',
-                '#1F252A',
-                '#092330',
-                '#0C2C40',
-                '#FCC9A7',
-                '#1C2226',
-                '#9a4219',
-                '#9a4219',
-                '#FCC9A7',
-                '#F4BE9A',
-                '#FCC9A7',
-                '#045286',
-                '#FCC9A7',
-                '#ff166f',
-                '#9a4219',
-                '#EADDD8',
-                '#AFAFAF',
-                '#D1D1D1',
-                '#FCC9A7',
-                '#9a4219',
-                '#EADDD8',
-                '#1C2226',
-              ]}
-            />
-            <Text style={styles.caption}>
-              "person-walking" font icon shirt color override via color prop
-            </Text>
+          <View style={styles.row}>
+            <View style={styles.rowItem}>
+              <Icon name="person-walking" size={150} />
+              <Text style={styles.caption}>
+                "person-walking" font icon original
+              </Text>
+            </View>
+            <View style={styles.rowItem}>
+              <Icon
+                name="person-walking"
+                size={150}
+                color={[
+                  '#FCC9A7',
+                  '#1F252A',
+                  '#FCC9A7',
+                  '#1F252A',
+                  '#092330',
+                  '#0C2C40',
+                  '#FCC9A7',
+                  '#1C2226',
+                  '#9a4219',
+                  '#9a4219',
+                  '#FCC9A7',
+                  '#F4BE9A',
+                  '#FCC9A7',
+                  '#045286',
+                  '#FCC9A7',
+                  '#ff166f',
+                  '#9a4219',
+                  '#EADDD8',
+                  '#AFAFAF',
+                  '#D1D1D1',
+                  '#FCC9A7',
+                  '#9a4219',
+                  '#EADDD8',
+                  '#1C2226',
+                ]}
+              />
+              <Text style={styles.caption}>
+                "person-walking" font icon shirt color override via color prop
+              </Text>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  </SafeAreaProvider>;
+        </ScrollView>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
 }
 
 const styles = StyleSheet.create({
