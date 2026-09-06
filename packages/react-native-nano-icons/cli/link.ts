@@ -1,123 +1,83 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as plist from 'plist';
+import type { PBXNativeTarget, XcodeProject } from 'xcode';
 import type { NanoLogger } from './logger.js';
 import type { BuiltFont } from './build.js';
-
-type ShellScriptOptions = {
-  shellPath?: string;
-  shellScript: string;
-  inputPaths?: string[];
-  outputPaths?: string[];
-};
-
-type XcodeProject = {
-  parseSync: () => XcodeProject;
-  getFirstTarget: () => { uuid: string; buildConfigurationList?: unknown };
-  addBuildPhase: (
-    filePaths: string[],
-    phaseType: string,
-    comment: string,
-    target: string,
-    options?: ShellScriptOptions
-  ) => void;
-  writeSync: () => string;
-  hash: {
-    project: {
-      objects: Record<string, Record<string, XcodeObject>>;
-    };
-  };
-};
-
-type XcodeObject = {
-  buildConfigurationList?: unknown;
-  buildConfigurations?: unknown;
-  buildSettings?: Record<string, unknown>;
-  name?: string;
-  productType?: string;
-  shellScript?: string;
-};
 
 const ANDROID_FONTS_DIR = 'android/app/src/main/assets/fonts';
 const IOS_NANOICONS_FONTS_DIR = 'nanoicons-fonts';
 const IOS_RUN_SCRIPT_PHASE_NAME = 'Copy nanoicons fonts';
+const IOS_APPLICATION_PRODUCT_TYPE = 'com.apple.product-type.application';
+const XCODE_PROJECT_DIR_VARIABLE = /\$[({](?:SRCROOT|PROJECT_DIR)[)}]/g;
+const SURROUNDING_QUOTES = /^["']|["']$/g;
 
-function xcodeReferenceUuid(reference: unknown): string | undefined {
-  if (typeof reference === 'string') return reference;
-  if (
-    typeof reference === 'object' &&
-    reference !== null &&
-    'value' in reference &&
-    typeof reference.value === 'string'
-  ) {
-    return reference.value;
-  }
-  return undefined;
-}
-
-function getFirstAppTarget(project: XcodeProject): {
+function getAppTarget(project: XcodeProject): {
   uuid: string;
-  target: XcodeObject;
+  target: PBXNativeTarget;
 } {
-  const targets = project.hash.project.objects['PBXNativeTarget'] ?? {};
-  const appTarget = Object.entries(targets).find(
-    ([uuid, target]) =>
-      !uuid.endsWith('_comment') &&
-      target.productType?.replace(/['\"]/g, '') ===
-        'com.apple.product-type.application'
-  );
+  const appTarget = project.getTarget(IOS_APPLICATION_PRODUCT_TYPE);
+  if (appTarget) return appTarget;
 
-  if (appTarget) return { uuid: appTarget[0], target: appTarget[1] };
-
-  const target = project.getFirstTarget();
-  return { uuid: target.uuid, target };
+  const { uuid, firstTarget } = project.getFirstTarget();
+  return { uuid, target: firstTarget };
 }
 
 function resolveInfoPlistPaths(
   project: XcodeProject,
+  target: PBXNativeTarget,
   iosDir: string,
   fallbackPath: string
 ): string[] {
-  const { target } = getFirstAppTarget(project);
-  const configurationListUuid = xcodeReferenceUuid(
-    target.buildConfigurationList
+  const configurationList =
+    project.pbxXCConfigurationList()[target.buildConfigurationList];
+  const buildConfigurations = project.pbxXCBuildConfigurationSection();
+
+  const configuredPaths = new Set<string>();
+
+  if (typeof configurationList === 'object') {
+    for (const { value } of configurationList.buildConfigurations) {
+      const configuration = buildConfigurations[value];
+      if (typeof configuration !== 'object') continue;
+
+      const setting = configuration.buildSettings['INFOPLIST_FILE'];
+      if (typeof setting !== 'string') continue;
+
+      configuredPaths.add(
+        path.resolve(
+          iosDir,
+          setting
+            .replace(SURROUNDING_QUOTES, '')
+            .replace(XCODE_PROJECT_DIR_VARIABLE, iosDir)
+        )
+      );
+    }
+  }
+
+  const existingPaths = [...configuredPaths].filter((plistPath) =>
+    fs.existsSync(plistPath)
   );
-  const configurationList = configurationListUuid
-    ? project.hash.project.objects['XCConfigurationList']?.[
-        configurationListUuid
-      ]
-    : undefined;
-  const buildConfigurationUuids = Array.isArray(
-    configurationList?.buildConfigurations
-  )
-    ? configurationList.buildConfigurations
-        .map(xcodeReferenceUuid)
-        .filter((uuid): uuid is string => uuid !== undefined)
+  if (existingPaths.length) return existingPaths;
+
+  return fs.existsSync(fallbackPath) ? [fallbackPath] : [];
+}
+
+function addUIAppFonts(infoPlistPath: string, fontNames: string[]): void {
+  const parsed = plist.parse(fs.readFileSync(infoPlistPath, 'utf8')) as Record<
+    string,
+    unknown
+  >;
+
+  const existing = Array.isArray(parsed['UIAppFonts'])
+    ? (parsed['UIAppFonts'] as string[])
     : [];
 
-  const paths = buildConfigurationUuids
-    .map(
-      (uuid) =>
-        project.hash.project.objects['XCBuildConfiguration']?.[uuid]
-          ?.buildSettings?.['INFOPLIST_FILE']
-    )
-    .filter((setting): setting is string => typeof setting === 'string')
-    .map((setting) =>
-      setting
-        .replace(/^['\"]|['\"]$/g, '')
-        .replace(
-          /\$\((?:SRCROOT|PROJECT_DIR)\)|\$\{(?:SRCROOT|PROJECT_DIR)\}/g,
-          iosDir
-        )
-    )
-    .map((setting) => path.resolve(iosDir, setting))
-    .filter((plistPath) => fs.existsSync(plistPath));
+  const updated: plist.PlistObject = {
+    ...parsed,
+    UIAppFonts: [...new Set([...existing, ...fontNames])],
+  };
 
-  return paths.length
-    ? [...new Set(paths)]
-    : fs.existsSync(fallbackPath)
-      ? [fallbackPath]
-      : [];
+  fs.writeFileSync(infoPlistPath, plist.build(updated), 'utf8');
 }
 
 async function linkAndroid(
@@ -135,7 +95,8 @@ async function linkAndroid(
 
 async function linkIos(
   projectRoot: string,
-  builtFonts: BuiltFont[]
+  builtFonts: BuiltFont[],
+  logger: NanoLogger
 ): Promise<boolean> {
   const iosDir = path.join(projectRoot, 'ios');
 
@@ -143,20 +104,38 @@ async function linkIos(
     .readdirSync(iosDir, { withFileTypes: true })
     .find((d) => d.name.endsWith('.xcodeproj'));
 
-  if (!xcodeprojDir) return false;
+  if (!xcodeprojDir) {
+    logger.warn(`No .xcodeproj found in ${iosDir} — skipping iOS linking.`);
+    return false;
+  }
+
+  const pbxprojPath = path.join(iosDir, xcodeprojDir.name, 'project.pbxproj');
+  if (!fs.existsSync(pbxprojPath)) {
+    logger.warn(
+      `${path.relative(projectRoot, pbxprojPath)} not found — skipping iOS linking.`
+    );
+    return false;
+  }
+
+  const xcode = require('xcode') as typeof import('xcode');
+  const project = xcode.project(pbxprojPath).parseSync();
 
   const appName = xcodeprojDir.name.replace(/\.xcodeproj$/, '');
-  const pbxprojPath = path.join(iosDir, xcodeprojDir.name, 'project.pbxproj');
-  const xcode = require('xcode') as { project: (p: string) => XcodeProject };
-  const project = xcode.project(pbxprojPath);
-  project.parseSync();
-
+  const { uuid: targetUuid, target } = getAppTarget(project);
   const infoPlistPaths = resolveInfoPlistPaths(
     project,
+    target,
     iosDir,
     path.join(iosDir, appName, 'Info.plist')
   );
-  if (!infoPlistPaths.length) return false;
+
+  if (!infoPlistPaths.length) {
+    logger.warn(
+      `No Info.plist resolved for target "${target.name}" — set INFOPLIST_FILE in its build settings, ` +
+        `or place one at ios/${appName}/Info.plist. Skipping iOS linking.`
+    );
+    return false;
+  }
 
   const fontNames: string[] = [];
   const iosFontsStaging = path.join(iosDir, IOS_NANOICONS_FONTS_DIR);
@@ -169,25 +148,16 @@ async function linkIos(
   }
 
   for (const infoPlistPath of infoPlistPaths) {
-    const plistContent = fs.readFileSync(infoPlistPath, 'utf8');
-    const obj = plist.parse(plistContent) as plist.PlistObject;
-    const existing = Array.isArray(
-      (obj as Record<string, unknown>)['UIAppFonts']
-    )
-      ? ((obj as Record<string, unknown>)['UIAppFonts'] as string[])
-      : [];
-    const updated: plist.PlistObject = {
-      ...(obj as Record<string, unknown>),
-      UIAppFonts: [...new Set([...existing, ...fontNames])],
-    };
-    fs.writeFileSync(infoPlistPath, plist.build(updated), 'utf8');
+    addUIAppFonts(infoPlistPath, fontNames);
   }
 
-  const hasPhase = Object.entries(
+  const hasPhase = Object.values(
     project.hash.project.objects['PBXShellScriptBuildPhase'] ?? {}
   ).some(
-    ([, v]) =>
-      typeof v === 'object' && v?.name?.includes(IOS_RUN_SCRIPT_PHASE_NAME)
+    (phase) =>
+      typeof phase === 'object' &&
+      typeof phase['name'] === 'string' &&
+      phase['name'].includes(IOS_RUN_SCRIPT_PHASE_NAME)
   );
 
   if (!hasPhase) {
@@ -202,7 +172,7 @@ async function linkIos(
       [],
       'PBXShellScriptBuildPhase',
       IOS_RUN_SCRIPT_PHASE_NAME,
-      getFirstAppTarget(project).uuid,
+      targetUuid,
       { shellPath: '/bin/sh', shellScript: script }
     );
 
@@ -266,10 +236,8 @@ export async function linkBare(
     linkedPlatforms.push('android');
   }
 
-  if (hasIos) {
-    if (await linkIos(projectRoot, staticFonts)) {
-      linkedPlatforms.push('ios');
-    }
+  if (hasIos && (await linkIos(projectRoot, staticFonts, logger))) {
+    linkedPlatforms.push('ios');
   }
 
   const dynamicSuffix = dynamicFonts.length
@@ -277,6 +245,12 @@ export async function linkBare(
         dynamicFonts.length === 1 ? '' : 's'
       } skipped)`
     : '';
+
+  if (!linkedPlatforms.length) {
+    logger.fail(`No platforms linked${dynamicSuffix}.`);
+    return;
+  }
+
   logger.succeed(
     `Linked fonts → ${linkedPlatforms.join(', ')}${dynamicSuffix}`
   );
