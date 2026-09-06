@@ -1,6 +1,9 @@
 package com.nanoicons
 
+import android.graphics.Color
+import com.facebook.react.bridge.ColorPropConverter
 import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.bridge.ReadableType
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -46,14 +49,32 @@ class NanoIconViewManager :
     }
   }
 
+  // Plain colors arrive pre-processed as ints; PlatformColor as a map. Resource-path
+  // maps are forwarded unresolved so the view can re-resolve them when the theme
+  // changes — resolving here would discard what that needs.
   @ReactProp(name = "colors")
   override fun setColors(view: NanoIconView, value: ReadableArray?) {
     if (value != null) {
-      val arr = IntArray(value.size())
-      for (i in 0 until value.size()) {
-        arr[i] = value.getInt(i)
+      val size = value.size()
+      val literals = IntArray(size)
+      var paths: Array<Array<String>?>? = null
+      for (i in 0 until size) {
+        if (value.getType(i) == ReadableType.Map) {
+          val map = value.getMap(i)
+          val resourcePaths = map?.getArray("resource_paths")
+          if (resourcePaths != null) {
+            if (paths == null) paths = arrayOfNulls(size)
+            paths[i] =
+              Array(resourcePaths.size()) { resourcePaths.getString(it).orEmpty() }
+          } else {
+            // {space,r,g,b,a} wide-gamut form — theme-invariant, resolve once.
+            literals[i] = ColorPropConverter.getColor(map, view.context, Color.BLACK)
+          }
+        } else {
+          literals[i] = value.getInt(i)
+        }
       }
-      view.setColors(arr)
+      view.setColors(literals, paths)
     }
   }
 
