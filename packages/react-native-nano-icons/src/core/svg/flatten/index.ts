@@ -5,14 +5,10 @@ import type { PathKitModule } from '../../types.js';
 import { createPathOps } from './pathops.js';
 import { PicoSVG } from './svg.js';
 
-export function flattenSvg(
-  svgContent: string,
-  pathkit: PathKitModule,
-  options?: { ndigits?: number }
-): string {
+export function flattenSvg(svgContent: string, pathkit: PathKitModule): string {
   const ops = createPathOps(pathkit);
   const svg = PicoSVG.fromString(svgContent, ops);
-  svg.topicosvg(options?.ndigits ?? 3);
+  svg.topicosvg();
   return svg.toString();
 }
 

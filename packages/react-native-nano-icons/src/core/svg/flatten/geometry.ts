@@ -44,7 +44,7 @@ export function ptMul(a: Pt, scalar: number): Pt {
 // the exact binary value of the double, not on a decimal approximation.
 // (Naive `Math.round(x * 10**n) / 10**n` mis-rounds e.g. 0.155 at 2 digits.)
 export function pythonRound(x: number, ndigits: number): number {
-  if (!Number.isFinite(x) || Number.isInteger(x)) {
+  if (!Number.isFinite(x) || (Number.isInteger(x) && ndigits >= 0)) {
     return x;
   }
 

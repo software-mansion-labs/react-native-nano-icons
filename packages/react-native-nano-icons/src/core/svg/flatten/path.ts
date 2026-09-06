@@ -82,12 +82,6 @@ export function cmdCoords(cmd: string): [number[], number[]] {
 
 export { ntos } from './geometry.js';
 
-export function numberOrPercentage(s: string, scale = 1): number {
-  return s.endsWith('%')
-    ? (parseFloat(s.slice(0, -1)) / 100) * scale
-    : parseFloat(s);
-}
-
 export function pathSegment(cmd: string, ...args: number[]): string {
   // put commas between coords, spaces otherwise, author readability pref
   const argsPerCmd = checkCmd(cmd, args);

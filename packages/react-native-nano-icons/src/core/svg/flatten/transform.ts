@@ -94,10 +94,6 @@ export class Affine2D {
     return [this.e, this.f];
   }
 
-  getScale(): [number, number] {
-    return [this.a, this.d];
-  }
-
   scale(sx: number, sy?: number): Affine2D {
     if (sy === undefined) {
       sy = sx;

@@ -201,3 +201,14 @@ describe('formatting', () => {
     expect(pythonRound(7, 3)).toBe(7);
   });
 });
+
+describe('pythonRound negative ndigits', () => {
+  test.each([
+    [2.0, -1, 0],
+    [25.0, -1, 20],
+    [35.0, -1, 40],
+    [1234, -2, 1200],
+  ])('round(%p, %p) === %p', (x, ndigits, want) => {
+    expect(pythonRound(x, ndigits)).toBe(want);
+  });
+});

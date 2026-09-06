@@ -4,6 +4,7 @@ import { createPathOps, type PathOps } from '../src/core/svg/flatten/pathops';
 import { parseSvgPath, buildD, asCmdSeq } from '../src/core/svg/flatten/path';
 import { Affine2D } from '../src/core/svg/flatten/transform';
 import { loadPathKit } from './helpers/geometry';
+import { flattenSvg } from '../src/core/svg/flatten/index';
 
 let ops: PathOps;
 
@@ -116,5 +117,29 @@ describe('strokeCmds', () => {
     );
     const d = buildD(stroked);
     expect(parseSvgPath(d, true).length).toBe(stroked.length);
+  });
+});
+
+describe('defs ordering', () => {
+  test('gradients are sorted by id regardless of document order', async () => {
+    const PathKit = await loadPathKit();
+    const grad = (id: string, color: string) =>
+      `<linearGradient id="${id}"><stop offset="0" stop-color="${color}"/></linearGradient>`;
+    const path = (id: string, d: string) =>
+      `<path d="${d}" fill="url(#${id})"/>`;
+    // document order is descending so a naive insert would keep it reversed
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs>' +
+      grad('ccc', 'blue') +
+      grad('bbb', 'green') +
+      grad('aaa', 'red') +
+      '</defs>' +
+      path('ccc', 'M0 0L10 0L10 10Z') +
+      path('bbb', 'M10 10L20 10L20 20Z') +
+      path('aaa', 'M0 10L5 10L5 20Z') +
+      '</svg>';
+    const out = flattenSvg(svg, PathKit);
+    const ids = [...out.matchAll(/Gradient id="(\w+)"/g)].map((m) => m[1]);
+    expect(ids).toEqual(['aaa', 'bbb', 'ccc']);
   });
 });

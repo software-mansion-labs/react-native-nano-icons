@@ -868,7 +868,7 @@ export class PicoSVG {
   private _addToDefs(defs: XEl, newEl: XEl): void {
     const newId = newEl.attrib.get('id');
     if (newId === undefined) return; // idless defs are useless
-    let insertAt = 0;
+    let insertAt = defs.children.length;
     for (let i = 0; i < defs.children.length; i++) {
       if (newId < (defs.children[i]!.attrib.get('id') ?? '')) {
         insertAt = i;

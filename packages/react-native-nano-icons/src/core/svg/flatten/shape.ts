@@ -12,7 +12,6 @@ import {
   buildD,
   explicitLines,
   expandShorthand,
-  parseSvgPath,
   pathSegment,
   roundFloatsD,
   subpaths,
@@ -486,9 +485,4 @@ export function removeEmptySubpaths(shape: Shape, ops: PathOps): void {
   shape.fields.d = subpaths(shapeStr(shape, 'd'))
     .filter((sub) => mightPaint(pathFromD(sub), ops))
     .join(' ');
-}
-
-// exploded iteration like SVGPath.__iter__
-export function iterPath(shape: Shape): SvgCommand[] {
-  return parseSvgPath(shapeStr(asPath(shape), 'd'), true);
 }

@@ -161,7 +161,17 @@ export async function runPipeline(
 
     const preprocessed = preprocessSvg(rawContent);
 
-    const flattenedSvg = await picoFromFile(filePath, preprocessed);
+    let flattenedSvg: string;
+    try {
+      flattenedSvg = await picoFromFile(filePath, preprocessed);
+    } catch (err) {
+      throw new Error(
+        `Failed to flatten "${config.fontFamily}:${file}": ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        { cause: err }
+      );
+    }
     const parsed = parseFlattenedSvg(flattenedSvg, {
       onSanitize: (original) => {
         logger?.info(
