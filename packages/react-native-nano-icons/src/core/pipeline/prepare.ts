@@ -55,6 +55,11 @@ export async function prepareSvgLayers(opts: {
       );
       logger?.info(`    Original: ${original.slice(0, 80)}…`);
     },
+    onMissingViewBox: (assumed) => {
+      logger?.warn(
+        `"${fileLabel}" has no viewBox; assuming "${assumed.join(' ')}"`
+      );
+    },
   });
 
   // Convert evenodd to nonzero winding with our containment-based

@@ -75,6 +75,7 @@ export async function buildAllFonts(
 ): Promise<BuiltFont[]> {
   const logger = options?.logger;
   const results: BuiltFont[] = [];
+  const failures: string[] = [];
   let allSkipped = true;
 
   for (let i = 0; i < iconSets.length; i++) {
@@ -125,11 +126,17 @@ export async function buildAllFonts(
 
     logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
 
-    const out = await runFontPipeline(
-      config,
-      { inputDir, outputDir, tempDir },
-      { logger, inputHash }
-    );
+    let out;
+    try {
+      out = await runFontPipeline(
+        config,
+        { inputDir, outputDir, tempDir },
+        { logger, inputHash }
+      );
+    } catch (err) {
+      failures.push(err instanceof Error ? err.message : String(err));
+      continue;
+    }
 
     results.push({
       fontFamily,
@@ -137,6 +144,10 @@ export async function buildAllFonts(
       glyphmapPath: out.glyphmapPath,
       linking,
     });
+  }
+
+  if (failures.length) {
+    throw new Error(failures.join('\n'));
   }
 
   if (allSkipped && results.length > 0) {

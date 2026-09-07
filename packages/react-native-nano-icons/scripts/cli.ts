@@ -13,6 +13,7 @@
 import path from 'node:path';
 import {
   createOraLogger,
+  type NanoLogger,
   loadNanoIconsConfig,
   loadDynamicIconSets,
   loadDynamicSetsFromAppConfig,
@@ -20,11 +21,9 @@ import {
   linkBare,
 } from '../cli/index';
 
-async function main(): Promise<void> {
-  const verbose = process.argv.includes('--verbose');
+async function main(logger: NanoLogger): Promise<void> {
   const dynamic = process.argv.includes('--dynamic');
   const appConfig = process.argv.includes('--app-config');
-  const level = verbose ? 'verbose' : 'normal';
 
   const pathIdx = process.argv.indexOf('--path');
   const projectRoot = process.cwd();
@@ -32,8 +31,6 @@ async function main(): Promise<void> {
     pathIdx !== -1 && process.argv[pathIdx + 1]
       ? path.resolve(projectRoot, process.argv[pathIdx + 1]!)
       : projectRoot;
-
-  const logger = await createOraLogger(level);
 
   if (dynamic) {
     const source = appConfig ? 'Expo app config' : '.nanoicons.json';
@@ -56,8 +53,10 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err: unknown) => {
-  const message = err instanceof Error ? err.message : String(err);
-  console.error(message);
-  process.exit(1);
-});
+createOraLogger(process.argv.includes('--verbose') ? 'verbose' : 'normal').then(
+  (logger) =>
+    main(logger).catch((err: unknown) => {
+      logger.fail(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    })
+);

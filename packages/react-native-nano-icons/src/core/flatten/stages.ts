@@ -51,6 +51,6 @@ export function flattenDocument(doc: SvgDocument, ndigits = 3): void {
 
   const violations = validateFlattened(doc);
   if (violations.length) {
-    throw new Error('Unable to flatten svg: ' + violations.join(','));
+    throw new Error(violations.join('; '));
   }
 }

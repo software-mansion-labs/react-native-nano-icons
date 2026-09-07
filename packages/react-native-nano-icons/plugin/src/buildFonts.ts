@@ -20,10 +20,11 @@ export async function buildAllFonts(
   try {
     return await coreBuildAllFonts(iconSets, projectRoot, { logger });
   } catch (err: unknown) {
+    logger.fail(err instanceof Error ? err.message : String(err));
     if (level === 'verbose') {
       throw err;
     }
-    logger.fail('Error optimizing icons. Run with EXPO_DEBUG=1 for more logs.');
+    logger.warn('Run with EXPO_DEBUG=1 for the full error.');
     return [];
   }
 }

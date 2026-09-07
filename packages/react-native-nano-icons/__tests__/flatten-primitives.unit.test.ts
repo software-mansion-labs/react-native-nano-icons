@@ -211,3 +211,11 @@ describe('pythonRound negative ndigits', () => {
     expect(pythonRound(x, ndigits)).toBe(want);
   });
 });
+
+describe('path data errors', () => {
+  test('a non-numeric argument names the command and the argument', () => {
+    expect(() => parseSvgPath('M0 0 L10 10 X 5 5 Z')).toThrow(
+      /Invalid path data "L10 10 X 5 5": argument #3 \(X\) is not a number/
+    );
+  });
+});
