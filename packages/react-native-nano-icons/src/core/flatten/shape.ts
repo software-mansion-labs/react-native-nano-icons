@@ -1,10 +1,8 @@
-// Ported from picosvg svg_types.py shape model (Apache-2.0, Copyright 2020 Google LLC)
-
-import { ntos, pythonRound } from './geometry.js';
-import { XEl, svgTag, stripNs } from './dom.js';
-import { attribDefault, attrName } from './inherit.js';
-import type { PathOps } from './pathops.js';
-import type { SvgCommand } from './path.js';
+import { ntos, pythonRound } from './geometry';
+import { XEl, svgTag, stripNs } from './dom';
+import { attribDefault, attrName } from './inherit';
+import type { PathOps } from './pathops';
+import type { SvgCommand } from './path';
 import {
   absolutePath,
   addCmdToD,
@@ -12,12 +10,12 @@ import {
   buildD,
   explicitLines,
   expandShorthand,
-  parseSvgPath,
   pathSegment,
   roundFloatsD,
   subpaths,
-} from './path.js';
-import { Affine2D } from './transform.js';
+} from './path';
+import { Affine2D } from './transform';
+import { DASHARRAY_SEPARATOR } from '../../utils/svgPatterns';
 
 type FieldType = 'str' | 'float';
 type FieldDesc = { name: string; type: FieldType; default: string | number };
@@ -77,7 +75,7 @@ const TAG_FIELDS: Record<string, FieldDesc[]> = {
   ],
 };
 
-export const SHAPE_TAGS: ReadonlySet<string> = new Set(Object.keys(TAG_FIELDS));
+const SHAPE_TAGS: ReadonlySet<string> = new Set(Object.keys(TAG_FIELDS));
 
 export function isShapeTag(tag: string): boolean {
   return SHAPE_TAGS.has(stripNs(tag));
@@ -88,7 +86,7 @@ export type Shape = {
   fields: Record<string, string | number>;
 };
 
-export function shapeFields(tag: string): FieldDesc[] {
+function shapeFields(tag: string): FieldDesc[] {
   const extra = TAG_FIELDS[tag];
   if (!extra) throw new Error(`Bad tag <${tag}>`);
   return [...COMMON_FIELDS, ...extra];
@@ -106,7 +104,7 @@ export function shapeStr(shape: Shape, name: string): string {
   return shape.fields[name] as string;
 }
 
-export function shapeNum(shape: Shape, name: string): number {
+function shapeNum(shape: Shape, name: string): number {
   return shape.fields[name] as number;
 }
 
@@ -349,7 +347,7 @@ export function strokeCommands(
   const dasharray = shapeStr(shape, 'stroke_dasharray');
   if (dasharray !== 'none') {
     dashArray = dasharray
-      .split(/[, ]/)
+      .split(DASHARRAY_SEPARATOR)
       .filter((v) => v)
       .map((v) => parseFloatStrict(v));
   }
@@ -486,9 +484,4 @@ export function removeEmptySubpaths(shape: Shape, ops: PathOps): void {
   shape.fields.d = subpaths(shapeStr(shape, 'd'))
     .filter((sub) => mightPaint(pathFromD(sub), ops))
     .join(' ');
-}
-
-// exploded iteration like SVGPath.__iter__
-export function iterPath(shape: Shape): SvgCommand[] {
-  return parseSvgPath(shapeStr(asPath(shape), 'd'), true);
 }

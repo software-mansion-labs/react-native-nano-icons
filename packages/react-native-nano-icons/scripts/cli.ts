@@ -18,7 +18,7 @@ import {
   loadDynamicSetsFromAppConfig,
   buildAllFonts,
   linkBare,
-} from '../cli/index.js';
+} from '../cli/index';
 
 async function main(): Promise<void> {
   const verbose = process.argv.includes('--verbose');

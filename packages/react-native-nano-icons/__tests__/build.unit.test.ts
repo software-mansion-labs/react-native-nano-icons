@@ -4,13 +4,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-jest.mock('../src/core/pipeline/index.js');
+jest.mock('../src/core/pipeline/index');
 
 import { buildAllFonts, type IconSetConfig } from '../cli/build';
 import { getFingerprintSync } from '../src/utils/fingerPrint';
-import { runPipeline } from '../src/core/pipeline/index';
+import { runFontPipeline } from '../src/core/pipeline/index';
 
-const mockRunPipeline = runPipeline as jest.MockedFunction<typeof runPipeline>;
+const mockRunPipeline = runFontPipeline as jest.MockedFunction<
+  typeof runFontPipeline
+>;
 
 const SAMPLE_SVG = '<svg viewBox="0 0 24 24"><path d="M0 0L24 24"/></svg>';
 const FONT_FAMILY = 'TestFont';
@@ -73,24 +75,24 @@ describe('buildAllFonts — skip/rebuild logic', () => {
     return { inputDir, outputDir, fontFamily: FONT_FAMILY };
   }
 
-  test('runPipeline is called when no output files exist', async () => {
+  test('runFontPipeline is called when no output files exist', async () => {
     await buildAllFonts([makeIconSet()], os.tmpdir());
     expect(mockRunPipeline).toHaveBeenCalledTimes(1);
   });
 
-  test('runPipeline is not called when output files exist with matching hash', async () => {
+  test('runFontPipeline is not called when output files exist with matching hash', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
     await buildAllFonts([makeIconSet()], os.tmpdir());
     expect(mockRunPipeline).not.toHaveBeenCalled();
   });
 
-  test('runPipeline is called when output files exist with non-matching hash', async () => {
+  test('runFontPipeline is called when output files exist with non-matching hash', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash_value');
     await buildAllFonts([makeIconSet()], os.tmpdir());
     expect(mockRunPipeline).toHaveBeenCalledTimes(1);
   });
 
-  test('stale TTF and glyphmap are deleted before runPipeline is called', async () => {
+  test('stale TTF and glyphmap are deleted before runFontPipeline is called', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash_value');
     const ttfPath = path.join(outputDir, `${FONT_FAMILY}.ttf`);
     const glyphmapPath = path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`);
@@ -110,13 +112,13 @@ describe('buildAllFonts — skip/rebuild logic', () => {
     expect(glyphmapExistedAtCallTime).toBe(false);
   });
 
-  test('runPipeline is called when output files exist but meta.hash is absent', async () => {
+  test('runFontPipeline is called when output files exist but meta.hash is absent', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY); // no hash argument
     await buildAllFonts([makeIconSet()], os.tmpdir());
     expect(mockRunPipeline).toHaveBeenCalledTimes(1);
   });
 
-  test('inputHash is passed to runPipeline', async () => {
+  test('inputHash is passed to runFontPipeline', async () => {
     await buildAllFonts([makeIconSet()], os.tmpdir());
     expect(mockRunPipeline).toHaveBeenCalledWith(
       expect.anything(),
@@ -164,7 +166,7 @@ describe('buildAllFonts — linking mode', () => {
     );
   });
 
-  test('linking "dynamic" is forwarded to runPipeline and reflected in BuiltFont', async () => {
+  test('linking "dynamic" is forwarded to runFontPipeline and reflected in BuiltFont', async () => {
     const [built] = await buildAllFonts([makeIconSet('dynamic')], os.tmpdir());
 
     expect(built!.linking).toBe('dynamic');

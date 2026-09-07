@@ -5,7 +5,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { runPipeline } from '../src/core/pipeline/run';
+import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoGlyphMap, NanoLogger } from '../src/core/types';
 
 // ---------------------------------------------------------------------------
@@ -60,7 +60,7 @@ async function runOnSubset(opts: {
       await fsp.copyFile(path.join(srcDir, name), path.join(inputDir, name));
     }
 
-    await runPipeline(
+    await runFontPipeline(
       { ...PIPELINE, fontFamily: opts.fontFamily },
       { inputDir, outputDir, tempDir },
       opts.onWarn ? { logger: quietLogger(opts.onWarn) } : undefined
@@ -202,4 +202,34 @@ describe('Pipeline E2E — mask rejection', () => {
   test('a warning explains the mask rejection', () => {
     expect(warnings.some((w) => /mask/i.test(w))).toBe(true);
   });
+});
+
+describe('Pipeline E2E — flatten failure reporting', () => {
+  test('an unflattenable icon fails naming the set and the file', async () => {
+    const inputDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-bad-in-'));
+    const outputDir = await fsp.mkdtemp(
+      path.join(os.tmpdir(), 'nano-bad-out-')
+    );
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-bad-tmp-'));
+
+    // a length with units is not parseable as a float by the shape reader
+    await fsp.writeFile(
+      path.join(inputDir, 'brokenIcon.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+        '<rect x="1" y="1" width="10px" height="10" fill="red"/></svg>'
+    );
+
+    try {
+      await expect(
+        runFontPipeline(
+          { ...PIPELINE, fontFamily: 'BrokenSet' },
+          { inputDir, outputDir, tempDir }
+        )
+      ).rejects.toThrow(/BrokenSet:brokenIcon\.svg/);
+    } finally {
+      await fsp.rm(inputDir, { recursive: true, force: true });
+      await fsp.rm(outputDir, { recursive: true, force: true });
+      await fsp.rm(tempDir, { recursive: true, force: true });
+    }
+  }, 120_000);
 });

@@ -9,6 +9,7 @@
   "types": "./lib/typescript/src/index.d.ts",
   "files": [
     "app.plugin.js",
+    "LICENSES.md",
     "bin",
     "src",
     "lib",

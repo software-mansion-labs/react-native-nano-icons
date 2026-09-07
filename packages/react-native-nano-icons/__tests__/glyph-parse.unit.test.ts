@@ -4,14 +4,10 @@ import { DOMParser, type Element } from '@xmldom/xmldom';
 import {
   calculateOpColor,
   parseFlattenedSvg,
-  preprocessSvg,
-  validateSvg,
   sanitizePathData,
   shouldSkipPath,
-  extractOriginalEvenoddDs,
-  restoreOriginalEvenoddDs,
-  type ParsedFlatSvg,
-} from '../src/core/svg/svg_dom';
+} from '../src/core/glyph/parse';
+import { preprocessSvg, validateSvg } from '../src/core/glyph/validate';
 import { parseColor } from '../src/utils/parse';
 
 // ---------------------------------------------------------------------------
@@ -290,52 +286,5 @@ describe('shouldSkipPath', () => {
   test('a real path with a real fill is kept', () => {
     expect(shouldSkipPath('M0 0 H1 V1 Z', '#ff0000')).toBe(false);
     expect(shouldSkipPath('M0 0 H1 V1 Z', null)).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// extractOriginalEvenoddDs / restoreOriginalEvenoddDs
-// ---------------------------------------------------------------------------
-
-describe('extract/restore original evenodd d strings', () => {
-  const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-    <path d="M0 0 H24 V24 H0 Z M6 6 H18 V18 H6 Z" fill-rule="evenodd" fill="black"/>
-    <path d="M1 1 H2 V2 H1 Z" fill="red"/>
-    <path d="M3 3 H4 V4 H3 Z" clip-rule="evenodd" fill="blue"/>
-  </svg>`;
-
-  test('extracts one d per evenodd path (fill-rule or clip-rule), in order', () => {
-    const ds = extractOriginalEvenoddDs(SVG);
-    expect(ds).toHaveLength(2);
-    expect(ds[0]).toContain('M0 0 H24');
-    expect(ds[1]).toBe('M3 3 H4 V4 H3 Z');
-  });
-
-  test('returns [] when the SVG has no evenodd rule at all', () => {
-    const plain =
-      '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0 H1 Z" fill="black"/></svg>';
-    expect(extractOriginalEvenoddDs(plain)).toEqual([]);
-  });
-
-  test('restore overwrites evenodd paths positionally, leaving others alone', () => {
-    const paths: ParsedFlatSvg['paths'] = [
-      { d: 'DAMAGED-A', fill: 'black', fillRule: 'evenodd' },
-      { d: 'keep-me', fill: 'red' },
-      { d: 'DAMAGED-B', fill: 'blue', fillRule: 'evenodd' },
-    ];
-    restoreOriginalEvenoddDs(paths, ['ORIG-A', 'ORIG-B']);
-    expect(paths[0]!.d).toBe('ORIG-A');
-    expect(paths[1]!.d).toBe('keep-me');
-    expect(paths[2]!.d).toBe('ORIG-B');
-  });
-
-  test('restore stops when originals run out (no out-of-range writes)', () => {
-    const paths: ParsedFlatSvg['paths'] = [
-      { d: 'A', fill: null, fillRule: 'evenodd' },
-      { d: 'B', fill: null, fillRule: 'evenodd' },
-    ];
-    restoreOriginalEvenoddDs(paths, ['only-one']);
-    expect(paths[0]!.d).toBe('only-one');
-    expect(paths[1]!.d).toBe('B'); // no original left
   });
 });
