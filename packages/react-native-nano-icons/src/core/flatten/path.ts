@@ -1,9 +1,6 @@
-// Ported from picosvg svg_meta.py, svg_path_iter.py and the SVGPath command
-// machinery of svg_types.py (Apache-2.0, Copyright 2020 Google LLC)
-
-import type { Pt } from './geometry.js';
-import { ntos, pt, ptAlmostEquals, ptEquals, pythonRound } from './geometry.js';
-import { arcToCubic } from './arcs.js';
+import type { Pt } from './geometry';
+import { ntos, pt, ptAlmostEquals, ptEquals, pythonRound } from './geometry';
+import { arcToCubic } from './arcs';
 
 export type SvgCommand = [cmd: string, args: number[]];
 
@@ -80,8 +77,6 @@ export function cmdCoords(cmd: string): [number[], number[]] {
   return coords;
 }
 
-export { ntos } from './geometry.js';
-
 export function pathSegment(cmd: string, ...args: number[]): string {
   // put commas between coords, spaces otherwise, author readability pref
   const argsPerCmd = checkCmd(cmd, args);
@@ -109,7 +104,7 @@ export function pathSegment(cmd: string, ...args: number[]): string {
   return cmd + combinedArgs.join(' ');
 }
 
-// ---- d-string parsing (svg_path_iter.py) ----
+// ---- d-string parsing ----
 
 const CMD_RE = /([mzlhvcsqtaMZLHVCSQTA])/;
 const SEPARATOR_RE = /[, ]+/;
@@ -209,7 +204,7 @@ export function parseSvgPath(svgPath: string, exploded = false): SvgCommand[] {
   return commandTuples;
 }
 
-// ---- SVGPath command machinery (svg_types.py) ----
+// ---- path command machinery ----
 
 export function addCmdToD(d: string, cmd: string, args: number[]): string {
   const snippet = pathSegment(cmd, ...args);

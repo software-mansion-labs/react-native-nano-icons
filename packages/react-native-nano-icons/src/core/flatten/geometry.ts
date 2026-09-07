@@ -1,5 +1,3 @@
-// Ported from picosvg geometric_types.py (Apache-2.0, Copyright 2020 Google LLC)
-
 export const DEFAULT_ALMOST_EQUAL_TOLERANCE = 1e-9;
 
 export type Pt = { x: number; y: number };
@@ -93,10 +91,6 @@ export function ntos(n: number): string {
 }
 
 export type Rect = { x: number; y: number; w: number; h: number };
-
-export function rect(x = 0, y = 0, w = 0, h = 0): Rect {
-  return { x, y, w, h };
-}
 
 export function rectEmpty(r: Rect): boolean {
   return r.w === 0 || r.h === 0;

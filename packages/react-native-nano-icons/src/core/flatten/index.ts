@@ -1,13 +1,10 @@
 import type { PathKitModule } from '../pathkit/types';
+import { SvgDocument } from './document';
 import { createPathOps } from './pathops';
-import { PicoSVG } from './svg';
+import { flattenDocument } from './stages';
 
 export function flattenSvg(svgContent: string, pathkit: PathKitModule): string {
-  const ops = createPathOps(pathkit);
-  const svg = PicoSVG.fromString(svgContent, ops);
-  svg.topicosvg();
-  return svg.toString();
+  const doc = SvgDocument.parse(svgContent, createPathOps(pathkit));
+  flattenDocument(doc);
+  return doc.serialize();
 }
-
-export { PicoSVG } from './svg';
-export { createPathOps, PathOpsError, type PathOps } from './pathops';

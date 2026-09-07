@@ -1,9 +1,6 @@
-// Ported from picosvg arc_to_cubic.py (Apache-2.0, Copyright 2020 Google LLC),
-// itself adapted from FontTools svgLib and Blink's SVGPathNormalizer.
-
-import type { Pt } from './geometry.js';
-import { pt, ptAdd, ptEquals, ptMul, ptSub } from './geometry.js';
-import { Affine2D } from './transform.js';
+import type { Pt } from './geometry';
+import { pt, ptAdd, ptEquals, ptMul, ptSub } from './geometry';
+import { Affine2D } from './transform';
 
 const TWO_PI = 2 * Math.PI;
 const PI_OVER_TWO = 0.5 * Math.PI;
