@@ -40,10 +40,10 @@ export async function createOraLogger(level: LogLevel): Promise<NanoLogger> {
       spinner.fail(chalk.red(msg));
     },
     info(msg) {
-      if (level === 'verbose') {
-        // Print below the current spinner without disrupting it
-        process.stdout.write(`\n${dimPrefix}${chalk.dim(msg)}`);
-      }
+      if (level !== 'verbose') return;
+      spinner.clear();
+      process.stdout.write(`${dimPrefix}${chalk.dim(msg)}\n`);
+      if (spinner.isSpinning && process.stdout.isTTY) spinner.render();
     },
     warn(msg) {
       spinner.warn(chalk.yellow(msg));

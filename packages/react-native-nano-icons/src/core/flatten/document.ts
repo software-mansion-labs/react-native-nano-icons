@@ -142,8 +142,11 @@ export class SvgDocument {
         (elTag === '*' || stripNs(el.tag) === elTag)
     );
     if (matches.length !== 1) {
+      const what = elTag === '*' ? 'element' : `<${elTag}>`;
       throw new Error(
-        `Expected 1 match for url(#${id}) ${elTag}, got ${matches.length}`
+        matches.length === 0
+          ? `${url} references ${what} with id "${id}", but no such element exists`
+          : `${url} matches ${matches.length} ${what} elements with id "${id}", expected exactly one`
       );
     }
     return matches[0]!;

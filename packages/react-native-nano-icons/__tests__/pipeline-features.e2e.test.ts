@@ -204,32 +204,101 @@ describe('Pipeline E2E — mask rejection', () => {
   });
 });
 
-describe('Pipeline E2E — flatten failure reporting', () => {
-  test('an unflattenable icon fails naming the set and the file', async () => {
+describe('Pipeline E2E — failure reporting', () => {
+  const SVG = (body: string) =>
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${body}</svg>`;
+
+  async function runBroken(files: Record<string, string>) {
     const inputDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-bad-in-'));
     const outputDir = await fsp.mkdtemp(
       path.join(os.tmpdir(), 'nano-bad-out-')
     );
     const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-bad-tmp-'));
-
-    // a length with units is not parseable as a float by the shape reader
-    await fsp.writeFile(
-      path.join(inputDir, 'brokenIcon.svg'),
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
-        '<rect x="1" y="1" width="10px" height="10" fill="red"/></svg>'
-    );
-
-    try {
-      await expect(
-        runFontPipeline(
-          { ...PIPELINE, fontFamily: 'BrokenSet' },
-          { inputDir, outputDir, tempDir }
-        )
-      ).rejects.toThrow(/BrokenSet:brokenIcon\.svg/);
-    } finally {
-      await fsp.rm(inputDir, { recursive: true, force: true });
-      await fsp.rm(outputDir, { recursive: true, force: true });
-      await fsp.rm(tempDir, { recursive: true, force: true });
+    for (const [name, content] of Object.entries(files)) {
+      await fsp.writeFile(path.join(inputDir, name), content);
     }
+    const failures: string[] = [];
+    const warnings: string[] = [];
+    const logger: NanoLogger = {
+      ...quietLogger((w) => warnings.push(w)),
+      fail: (m) => failures.push(m),
+    };
+    let error: Error | null = null;
+    try {
+      await runFontPipeline(
+        { ...PIPELINE, fontFamily: 'BrokenSet' },
+        { inputDir, outputDir, tempDir },
+        { logger }
+      );
+    } catch (err) {
+      error = err as Error;
+    }
+    const ttfWritten = fs.existsSync(path.join(outputDir, 'BrokenSet.ttf'));
+    await fsp.rm(inputDir, { recursive: true, force: true });
+    await fsp.rm(outputDir, { recursive: true, force: true });
+    await fsp.rm(tempDir, { recursive: true, force: true });
+    return { error, failures, warnings, ttfWritten };
+  }
+
+  test('every broken icon is reported, then the set fails listing them all', async () => {
+    const { error, failures, ttfWritten } = await runBroken({
+      'ok.svg': SVG('<rect width="10" height="10"/>'),
+      'textEl.svg': SVG(
+        '<text x="1" y="1">hi</text><rect width="4" height="4"/>'
+      ),
+      'badRef.svg': SVG(
+        '<rect width="24" height="24" clip-path="url(#nope)"/>'
+      ),
+    });
+    expect(failures).toHaveLength(2);
+    expect(failures.find((f) => f.includes('BrokenSet:textEl.svg'))).toMatch(
+      /Unsupported element <text> at \/svg\[0\]\/text\[0\]/
+    );
+    expect(failures.find((f) => f.includes('BrokenSet:badRef.svg'))).toMatch(
+      /url\(#nope\) references <clipPath> with id "nope", but no such element exists/
+    );
+    expect(error?.message).toBe(
+      '2 of 3 icons in "BrokenSet" could not be converted: badRef.svg, textEl.svg'
+    );
+    expect(ttfWritten).toBe(false);
+  }, 120_000);
+
+  test('px lengths are accepted instead of failing', async () => {
+    const { error, failures } = await runBroken({
+      'px.svg': SVG('<rect x="1" y="1" width="10px" height="10" fill="red"/>'),
+    });
+    expect(failures).toEqual([]);
+    expect(error).toBeNull();
+  }, 120_000);
+
+  test('a unit other than px names the attribute and element', async () => {
+    const { failures } = await runBroken({
+      'em.svg': SVG('<rect x="1" y="1" width="10em" height="10"/>'),
+    });
+    expect(failures[0]).toMatch(
+      /width="10em" on <rect> is not a number \(units other than px are not supported\)/
+    );
+  }, 120_000);
+
+  test('a missing viewBox warns and uses width/height', async () => {
+    const { error, warnings } = await runBroken({
+      'novb.svg':
+        '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="16"><rect width="10" height="10"/></svg>',
+    });
+    expect(error).toBeNull();
+    expect(warnings).toContain(
+      '"BrokenSet:novb.svg" has no viewBox; assuming "0 0 32 16"'
+    );
+  }, 120_000);
+
+  test('an icon that paints nothing warns', async () => {
+    const { error, warnings } = await runBroken({
+      'ok.svg': SVG('<rect width="10" height="10"/>'),
+      'blank.svg': SVG('<rect width="24" height="24" fill="none"/>'),
+    });
+    expect(error).toBeNull();
+    expect(warnings).toContain(
+      '"BrokenSet:blank.svg" produced no glyphs: nothing in it paints'
+    );
   }, 120_000);
 });

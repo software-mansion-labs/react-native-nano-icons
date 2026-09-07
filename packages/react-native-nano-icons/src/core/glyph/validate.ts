@@ -1,4 +1,6 @@
 import {
+  PX_ATTRIBUTE_VALUE,
+  PX_STYLE_VALUE,
   SVG_OPEN_TAG,
   XML_FILTER,
   XML_IMAGE,
@@ -25,8 +27,15 @@ export function validateSvg(content: string): SvgValidation {
   return { valid: true };
 }
 
+function stripPxUnits(content: string): string {
+  return content
+    .replace(PX_ATTRIBUTE_VALUE, '=$1$2$1')
+    .replace(PX_STYLE_VALUE, '$1');
+}
+
 // ensure the svg has a xmlns attribute
 export function preprocessSvg(content: string): string {
-  if (XML_XMLNS.test(content)) return content;
-  return content.replace(SVG_OPEN_TAG, `<svg xmlns="${SVG_NS}"`);
+  const withUnits = stripPxUnits(content);
+  if (XML_XMLNS.test(withUnits)) return withUnits;
+  return withUnits.replace(SVG_OPEN_TAG, `<svg xmlns="${SVG_NS}"`);
 }

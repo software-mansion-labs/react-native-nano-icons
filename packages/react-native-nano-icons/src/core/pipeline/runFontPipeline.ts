@@ -54,6 +54,7 @@ export async function runFontPipeline(
   const allGlyphs: FontGlyph[] = [];
 
   const pathkit = await loadPathKit();
+  const failed: string[] = [];
 
   for (const file of files) {
     const iconName = path.parse(file).name;
@@ -61,12 +62,20 @@ export async function runFontPipeline(
 
     logger?.info(`Processing ${file}`);
 
-    const prepared = await prepareSvgLayers({
-      filePath,
-      fileLabel: `${config.fontFamily}:${file}`,
-      pathkit,
-      logger,
-    });
+    const fileLabel = `${config.fontFamily}:${file}`;
+    let prepared;
+    try {
+      prepared = await prepareSvgLayers({
+        filePath,
+        fileLabel,
+        pathkit,
+        logger,
+      });
+    } catch (err) {
+      logger?.fail(err instanceof Error ? err.message : String(err));
+      failed.push(file);
+      continue;
+    }
     if (!prepared) continue;
 
     const { vx, vy, scale, xOff, yOff, adv } = computePlacement({
@@ -103,7 +112,15 @@ export async function runFontPipeline(
 
     if (layers.length > 0) {
       glyphMap.i[iconName] = [adv, layers];
+    } else {
+      logger?.warn(`"${fileLabel}" produced no glyphs: nothing in it paints`);
     }
+  }
+
+  if (failed.length) {
+    throw new Error(
+      `${failed.length} of ${files.length} icons in "${config.fontFamily}" could not be converted: ${failed.join(', ')}`
+    );
   }
 
   const glyphmapPath = path.join(

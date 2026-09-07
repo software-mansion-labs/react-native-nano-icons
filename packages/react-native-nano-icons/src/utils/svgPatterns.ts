@@ -21,6 +21,9 @@ export const XML_IMAGE = /<image[\s>]/i;
 export const XML_XMLNS = /xmlns\s*=/;
 /** Opening `<svg` tag. */
 export const SVG_OPEN_TAG = /<svg\b/;
+export const PX_ATTRIBUTE_VALUE = /=(["'])(\s*-?(?:\d+\.?\d*|\.\d+))px\s*\1/g;
+export const PX_STYLE_VALUE =
+  /(:\s*-?(?:\d+\.?\d*|\.\d+))px(?=\s*(?:;|["']|$))/g;
 
 // --- SVG attribute value separators ---
 /** viewBox: comma or whitespace separated. */
