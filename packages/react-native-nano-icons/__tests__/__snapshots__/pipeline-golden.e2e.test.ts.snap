@@ -103,7 +103,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
   {
     "contourCount": 1,
     "shape": {
-      "area": 223674,
+      "area": 224095,
       "bbox": [
         233,
         200,
@@ -117,11 +117,11 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
   {
     "contourCount": 1,
     "shape": {
-      "area": 167885,
+      "area": 167995,
       "bbox": [
         367,
-        207.73,
-        785.33,
+        207.56,
+        785.38,
         767,
       ],
       "contours": 1,
@@ -145,7 +145,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
   {
     "contourCount": 2,
     "shape": {
-      "area": 246118,
+      "area": 246097,
       "bbox": [
         167,
         267,
@@ -243,7 +243,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
   {
     "contourCount": 2,
     "shape": {
-      "area": 197240,
+      "area": 197298,
       "bbox": [
         100,
         100,
