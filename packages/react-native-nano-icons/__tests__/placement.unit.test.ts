@@ -1,9 +1,5 @@
 /** @jest-environment node */
 
-import path from 'node:path';
-
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
 import { computePlacement, transformPathForFont } from '../src/core/svg/layers';
 import type { PathKitModule } from '../src/core/types';
 import { loadPathKit, flattenContours, signedArea } from './helpers/geometry';

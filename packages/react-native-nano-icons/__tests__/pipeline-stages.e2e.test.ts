@@ -3,8 +3,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
 import { picoFromFile, PathKitManager } from '../src/core/pipeline/managers';
 import { mergeSameColorPaths, type ParsedPath } from '../src/core/pipeline/run';
 import {

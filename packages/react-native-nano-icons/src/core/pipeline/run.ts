@@ -110,7 +110,7 @@ export function mergeSameColorPaths(
 
 /**
  * Run the font pipeline with given config and paths.
- * Uses the singleton Pyodide/PathKit instance (initialized on first call).
+ * Uses the singleton PathKit instance (initialized on first call).
  */
 export async function runPipeline(
   config: PipelineConfig,

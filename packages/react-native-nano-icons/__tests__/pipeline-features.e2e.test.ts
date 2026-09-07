@@ -5,9 +5,6 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-// Must be set before any pipeline import so getPackageRoot() picks it up.
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
 import { runPipeline } from '../src/core/pipeline/run';
 import type { NanoGlyphMap, NanoLogger } from '../src/core/types';
 
