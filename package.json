@@ -5,6 +5,7 @@
   "workspaces": {
     "packages": [
       "packages/*",
+      "packages/*/example",
       "examples/*"
     ]
   },
@@ -24,6 +25,8 @@
     "build:benchmarks:android:release": "yarn workspace nano-icons-benchmarking android -- --mode Release",
     "start:bare": "yarn workspace bare-react-native-nano-icons-example start",
     "start:expo": "yarn workspace expo-nano-icons-example start",
+    "build:nano-icons-android": "cd packages/nano-icons-android && ./gradlew assembleDebug",
+    "build:nano-icons-ios": "cd packages/nano-icons-ios && xcodebuild -scheme NanoIcons -destination 'generic/platform=iOS Simulator' build",
     "prebuild": "yarn workspace expo-nano-icons-example expo prebuild --clean",
     "test": "yarn workspace react-native-nano-icons test",
     "ts-check": "yarn workspaces foreach --all --parallel --topological-dev run ts-check",
