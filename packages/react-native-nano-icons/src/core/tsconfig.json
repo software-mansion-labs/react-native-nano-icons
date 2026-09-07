@@ -25,6 +25,8 @@
     "noUncheckedIndexedAccess": true
   },
   "include": [
+    "./pathkit/**/*.ts",
+    "./flatten/**/*.ts",
     "./pipeline/**/*.ts",
     "./font/**/*.ts",
     "./svg/**/*.ts"

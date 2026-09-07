@@ -1,7 +1,7 @@
 /** @jest-environment node */
 
 import { computePlacement, transformPathForFont } from '../src/core/svg/layers';
-import type { PathKitModule } from '../src/core/types';
+import type { PathKitModule } from '../src/core/pathkit/types';
 import { loadPathKit, flattenContours, signedArea } from './helpers/geometry';
 
 const UPM = 1000;

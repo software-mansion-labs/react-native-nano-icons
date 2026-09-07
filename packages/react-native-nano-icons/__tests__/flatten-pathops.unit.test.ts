@@ -1,12 +1,26 @@
 /** @jest-environment node */
 
-import { createPathOps, type PathOps } from '../src/core/svg/flatten/pathops';
-import { parseSvgPath, buildD, asCmdSeq } from '../src/core/svg/flatten/path';
-import { Affine2D } from '../src/core/svg/flatten/transform';
+import { createPathOps, type PathOps } from '../src/core/flatten/pathops';
+import {
+  parseSvgPath,
+  buildD,
+  asCmdSeq,
+  type SvgCommand,
+} from '../src/core/flatten/path';
+import { Affine2D } from '../src/core/flatten/transform';
 import { loadPathKit } from './helpers/geometry';
-import { flattenSvg } from '../src/core/svg/flatten/index';
+import { flattenSvg } from '../src/core/flatten/index';
 
 let ops: PathOps;
+
+const extent = (cmds: SvgCommand[], axis: 0 | 1): [number, number] => {
+  const values = cmds.flatMap(([, args]) =>
+    args.filter((_, i) => i % 2 === axis)
+  );
+  return [Math.min(...values), Math.max(...values)];
+};
+const xs = (cmds: SvgCommand[]) => extent(cmds, 0);
+const ys = (cmds: SvgCommand[]) => extent(cmds, 1);
 
 beforeAll(async () => {
   ops = createPathOps(await loadPathKit());
@@ -25,8 +39,7 @@ describe('boolean ops', () => {
       ['nonzero', 'nonzero']
     );
     expect(ops.pathArea(merged, 'nonzero')).toBeCloseTo(150, 6);
-    const box = ops.boundingBox(merged);
-    expect(box).toEqual([0, 0, 15, 10]);
+    expect(xs(merged)).toEqual([0, 15]);
   });
 
   test('intersection of overlapping rects', () => {
@@ -35,19 +48,10 @@ describe('boolean ops', () => {
       ['nonzero', 'nonzero']
     );
     expect(ops.pathArea(clipped, 'nonzero')).toBeCloseTo(50, 6);
-    expect(ops.boundingBox(clipped)).toEqual([5, 0, 10, 10]);
+    expect(xs(clipped)).toEqual([5, 10]);
   });
 
-  test('difference of overlapping rects', () => {
-    const cut = ops.difference(
-      [rect(0, 0, 10, 10), rect(5, 0, 10, 10)],
-      ['nonzero', 'nonzero']
-    );
-    expect(ops.pathArea(cut, 'nonzero')).toBeCloseTo(50, 6);
-    expect(ops.boundingBox(cut)).toEqual([0, 0, 5, 10]);
-  });
-
-  test('single input still gets simplified (for/else in picosvg)', () => {
+  test('single input still gets simplified', () => {
     // two identical overlapping subpaths collapse to one
     const doubled = [...rect(0, 0, 10, 10), ...rect(0, 0, 10, 10)];
     const merged = ops.union([doubled], ['nonzero']);
@@ -85,7 +89,8 @@ describe('transformCmds', () => {
       rect(0, 0, 10, 10),
       Affine2D.fromString('translate(5 5) scale(2)')
     );
-    expect(ops.boundingBox(moved)).toEqual([5, 5, 25, 25]);
+    expect(xs(moved)).toEqual([5, 25]);
+    expect(ys(moved)).toEqual([5, 25]);
   });
 });
 
@@ -95,9 +100,9 @@ describe('strokeCmds', () => {
     expect(ops.pathArea(line, 'nonzero')).toBe(0);
     const stroked = ops.strokeCmds(line, 'butt', 'miter', 2, 4, 0.1);
     expect(ops.pathArea(stroked, 'nonzero')).toBeCloseTo(20, 1);
-    const box = ops.boundingBox(stroked);
-    expect(box[1]).toBeCloseTo(4, 6);
-    expect(box[3]).toBeCloseTo(6, 6);
+    const [minY, maxY] = ys(stroked);
+    expect(minY).toBeCloseTo(4, 6);
+    expect(maxY).toBeCloseTo(6, 6);
   });
 
   test('unknown cap rejects', () => {

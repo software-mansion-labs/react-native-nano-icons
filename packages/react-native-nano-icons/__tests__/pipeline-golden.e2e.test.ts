@@ -2,7 +2,8 @@
 
 import fs from 'node:fs';
 
-import type { NanoGlyphMap, PathKitModule } from '../src/core/types';
+import type { NanoGlyphMap } from '../src/core/types';
+import type { PathKitModule } from '../src/core/pathkit/types';
 import { loadPathKit, glyphFingerprint } from './helpers/geometry';
 import {
   CURATED,

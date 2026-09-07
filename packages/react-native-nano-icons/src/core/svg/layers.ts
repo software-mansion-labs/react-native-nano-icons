@@ -1,7 +1,7 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-import type { PathKitModule } from '../types.js';
+import type { PathKitModule } from '../pathkit/types';
 
 function roundInt(n: number): number {
   return Math.round(n);

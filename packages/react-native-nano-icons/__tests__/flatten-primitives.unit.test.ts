@@ -5,9 +5,9 @@
 // svg_types) on the same inputs. The TS port must reproduce them exactly.
 
 import expected from './fixtures/flatten-primitives-expected.json';
-import { ntos, pt, pythonRound } from '../src/core/svg/flatten/geometry';
-import { Affine2D, parseSvgTransform } from '../src/core/svg/flatten/transform';
-import { arcToCubic } from '../src/core/svg/flatten/arcs';
+import { ntos, pt, pythonRound } from '../src/core/flatten/geometry';
+import { Affine2D, parseSvgTransform } from '../src/core/flatten/transform';
+import { arcToCubic } from '../src/core/flatten/arcs';
 import {
   absoluteMoveto,
   absolutePath,
@@ -18,7 +18,7 @@ import {
   pathSegment,
   roundFloatsD,
   subpaths,
-} from '../src/core/svg/flatten/path';
+} from '../src/core/flatten/path';
 
 // V8's Math.sin/cos/tan may differ from CPython's libm by 1 ulp, so anything
 // downstream of trig gets a tolerance instead of exact equality.

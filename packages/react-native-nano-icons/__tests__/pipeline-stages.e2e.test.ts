@@ -3,14 +3,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { picoFromFile, PathKitManager } from '../src/core/pipeline/managers';
+import { picoFromFile } from '../src/core/pipeline/managers';
+import { loadPathKit } from '../src/core/pathkit/load';
 import { mergeSameColorPaths, type ParsedPath } from '../src/core/pipeline/run';
 import {
   preprocessSvg,
   parseFlattenedSvg,
   validateSvg,
 } from '../src/core/svg/svg_dom';
-import { convertEvenoddToWinding } from '../src/core/svg/svg_pathops';
+import { convertEvenoddToWinding } from '../src/core/pathkit/evenodd';
 
 const TESTICONS_DIR = path.resolve(
   __dirname,
@@ -62,7 +63,7 @@ async function computeStages(file: string): Promise<StageOutputs> {
     throw new Error(`validateSvg rejected ${file}: ${validation.reason}`);
   }
 
-  const PathKit = await PathKitManager.getInstance();
+  const PathKit = await loadPathKit();
 
   const preprocessed = preprocessSvg(raw);
 

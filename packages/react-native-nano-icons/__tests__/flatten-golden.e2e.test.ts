@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 import { picoFromFile } from '../src/core/pipeline/managers';
 import { parseFlattenedSvg, preprocessSvg } from '../src/core/svg/svg_dom';
-import type { PathKitModule } from '../src/core/types';
+import type { PathKitModule } from '../src/core/pathkit/types';
 import { loadPathKit, glyphFingerprint } from './helpers/geometry';
 import { CURATED } from './helpers/golden';
 

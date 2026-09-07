@@ -6,7 +6,8 @@ import {
   parseCompileTtfFromGlyphsError,
   type FontGlyph,
 } from '../font/compile.js';
-import { picoFromFile, PathKitManager } from './managers.js';
+import { picoFromFile } from './managers.js';
+import { loadPathKit } from '../pathkit/load';
 
 import {
   ensureDir,
@@ -20,7 +21,7 @@ import {
   validateSvg,
 } from '../svg/svg_dom.js';
 import { computePlacement, transformPathForFont } from '../svg/layers.js';
-import { convertEvenoddToWinding } from '../svg/svg_pathops.js';
+import { convertEvenoddToWinding } from '../pathkit/evenodd';
 import type { GlyphLayer, NanoGlyphMap } from '../types.js';
 import type { NanoLogger } from '../types.js';
 
@@ -141,7 +142,7 @@ export async function runPipeline(
   const codepointToIcon = new Map<number, string>();
   const allGlyphs: FontGlyph[] = [];
 
-  const PathKit = await PathKitManager.getInstance();
+  const PathKit = await loadPathKit();
 
   for (const file of files) {
     const iconName = path.parse(file).name;
