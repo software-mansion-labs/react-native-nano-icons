@@ -19,20 +19,6 @@ export default function App() {
             <Text style={styles.subtitle}>Standalone icon:</Text>
             <Icon name="react-logo" size={80} />
 
-            <Text style={styles.subtitle}>
-              nested &lt;svg&gt; composite (SWM logo + person-walking):
-            </Text>
-            <View style={styles.row}>
-              <View style={styles.rowItem}>
-                <Icon name="swm-walker" size={150} />
-                <Text style={styles.caption}>stacked viewports</Text>
-              </View>
-              <View style={styles.rowItem}>
-                <Icon name="swm-walker-overlay" size={150} />
-                <Text style={styles.caption}>overlapping viewports</Text>
-              </View>
-            </View>
-
             <Pressable style={styles.button}>
               <SWMIconsOutline name="ZoomIn" size={28} color={'#007AFF'} />
               <Text style={styles.buttonText}>Go to 1k icons screen</Text>

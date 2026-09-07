@@ -49,6 +49,8 @@ export const CURATED: CorpusIcon[] = [
   icon('opacity', 'material_icons/twotone/10k.svg'),
   icon('clippath', 'clippath/teest.svg'),
   icon('sanitize', 'sanatize_examples/elephant.svg'),
+  icon('nested', 'nested/swm-walker.svg'),
+  icon('nested', 'nested/swm-walker-overlay.svg'),
 ];
 
 export const REJECTED: CorpusIcon[] = [icon('mask', 'mask/Avatar.svg', true)];

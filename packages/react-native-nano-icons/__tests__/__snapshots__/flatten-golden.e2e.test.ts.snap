@@ -648,6 +648,1404 @@ exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened out
 }
 `;
 
+exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 16,
+        "bbox": [
+          84.92,
+          84.79,
+          89.69,
+          90.63,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1F252A",
+      "fillRule": null,
+      "shape": {
+        "area": 36,
+        "bbox": [
+          77.17,
+          88.12,
+          88.88,
+          93.67,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 16,
+        "bbox": [
+          114.63,
+          75.71,
+          120.56,
+          80.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1F252A",
+      "fillRule": null,
+      "shape": {
+        "area": 36,
+        "bbox": [
+          117.74,
+          76.96,
+          123.54,
+          88.56,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#092330",
+      "fillRule": null,
+      "shape": {
+        "area": 331,
+        "bbox": [
+          91.88,
+          44.18,
+          118.63,
+          80.94,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#0C2C40",
+      "fillRule": null,
+      "shape": {
+        "area": 367,
+        "bbox": [
+          84.61,
+          43.6,
+          105.47,
+          88.57,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 23,
+        "bbox": [
+          87.4,
+          10.26,
+          92.87,
+          15.73,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 10,
+        "bbox": [
+          85.93,
+          13.38,
+          90.21,
+          18.01,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1C2226",
+      "fillRule": null,
+      "shape": {
+        "area": 28,
+        "bbox": [
+          88.91,
+          9.11,
+          95.22,
+          16.3,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#F7ECE7",
+      "fillRule": null,
+      "shape": {
+        "area": 141,
+        "bbox": [
+          76.12,
+          14.13,
+          93.55,
+          31.58,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#F7ECE7",
+      "fillRule": null,
+      "shape": {
+        "area": 332,
+        "bbox": [
+          90.46,
+          19.38,
+          106.19,
+          44.85,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCF3F0",
+      "fillRule": null,
+      "shape": {
+        "area": 2,
+        "bbox": [
+          93.55,
+          18.5,
+          95.25,
+          20.93,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 31,
+        "bbox": [
+          93.59,
+          13.72,
+          99.11,
+          20.71,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#F4BE9A",
+      "fillRule": null,
+      "shape": {
+        "area": 14,
+        "bbox": [
+          93.59,
+          14.14,
+          98.93,
+          17.98,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 81,
+        "bbox": [
+          91.02,
+          5.83,
+          100.1,
+          16.82,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 81,
+        "bbox": [
+          91.02,
+          5.83,
+          100.1,
+          16.82,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1C2226",
+      "fillRule": null,
+      "shape": {
+        "area": 35,
+        "bbox": [
+          90.84,
+          5.55,
+          101.04,
+          12.98,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 7,
+        "bbox": [
+          98.7,
+          10.12,
+          101.67,
+          13.09,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#0C2C40",
+      "fillRule": null,
+      "shape": {
+        "area": 44,
+        "bbox": [
+          93.95,
+          21.21,
+          97.43,
+          41.66,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#0C2C40",
+      "fillRule": null,
+      "shape": {
+        "area": 4,
+        "bbox": [
+          94.51,
+          19.86,
+          97.43,
+          22.05,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCF3F0",
+      "fillRule": null,
+      "shape": {
+        "area": 13,
+        "bbox": [
+          96.26,
+          17.55,
+          101.17,
+          22.16,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#EADDD8",
+      "fillRule": null,
+      "shape": {
+        "area": 2,
+        "bbox": [
+          84.75,
+          16.12,
+          88.76,
+          18.68,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#AFAFAF",
+      "fillRule": null,
+      "shape": {
+        "area": 278,
+        "bbox": [
+          93.95,
+          34.9,
+          113.11,
+          53.61,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#D1D1D1",
+      "fillRule": null,
+      "shape": {
+        "area": 278,
+        "bbox": [
+          95.07,
+          35.14,
+          114.23,
+          53.86,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 30,
+        "bbox": [
+          97.08,
+          47.85,
+          103.29,
+          54.05,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 13,
+        "bbox": [
+          99.88,
+          45.06,
+          104.61,
+          50.33,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#F7ECE7",
+      "fillRule": null,
+      "shape": {
+        "area": 140,
+        "bbox": [
+          100.25,
+          20.95,
+          112.58,
+          48.78,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#EADDD8",
+      "fillRule": null,
+      "shape": {
+        "area": 2,
+        "bbox": [
+          101.32,
+          44.68,
+          105.54,
+          47.1,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#EADDD8",
+      "fillRule": null,
+      "shape": {
+        "area": 2,
+        "bbox": [
+          102.34,
+          27.63,
+          105.17,
+          32.29,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1C2226",
+      "fillRule": null,
+      "shape": {
+        "area": 26,
+        "bbox": [
+          90.56,
+          4,
+          99.91,
+          10.16,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 17380,
+        "bbox": [
+          5.43,
+          99.8,
+          194.24,
+          194.2,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": "evenodd",
+      "shape": {
+        "area": 34109,
+        "bbox": [
+          4.17,
+          98.54,
+          195.5,
+          195.46,
+        ],
+        "contours": 4,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 102,
+        "bbox": [
+          47.26,
+          118.16,
+          57.41,
+          133.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 242,
+        "bbox": [
+          60.59,
+          118.16,
+          76.19,
+          133.75,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 118,
+        "bbox": [
+          78.87,
+          110.28,
+          89.94,
+          133.42,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 109,
+        "bbox": [
+          91.53,
+          113.8,
+          102.26,
+          133.75,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 188,
+        "bbox": [
+          104.86,
+          118.49,
+          128.42,
+          133.42,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 255,
+        "bbox": [
+          130.27,
+          118.16,
+          145.27,
+          133.75,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 74,
+        "bbox": [
+          150.39,
+          118.24,
+          158.77,
+          133.42,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 175,
+        "bbox": [
+          160.95,
+          118.16,
+          175.38,
+          133.75,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 188,
+        "bbox": [
+          47.93,
+          140.63,
+          68.14,
+          155.8,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 256,
+        "bbox": [
+          71.91,
+          140.63,
+          87,
+          156.22,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 124,
+        "bbox": [
+          92.04,
+          140.63,
+          104.95,
+          155.89,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 102,
+        "bbox": [
+          109.22,
+          140.63,
+          119.37,
+          156.22,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 54,
+        "bbox": [
+          123.64,
+          140.96,
+          127.25,
+          155.89,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 242,
+        "bbox": [
+          131.02,
+          140.63,
+          146.62,
+          156.22,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 124,
+        "bbox": [
+          150.47,
+          140.63,
+          163.38,
+          155.89,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 4,
+        "bbox": [
+          167.24,
+          151.78,
+          170.51,
+          155.89,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 10,
+        "bbox": [
+          170.93,
+          151.78,
+          175.38,
+          155.89,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    200,
+    200,
+  ],
+}
+`;
+
+exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: flattened output matches its frozen fingerprint 1`] = `
+{
+  "paths": [
+    {
+      "fill": "#001A72",
+      "fillRule": null,
+      "shape": {
+        "area": 18744,
+        "bbox": [
+          1.79,
+          61.48,
+          197.87,
+          159.52,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": "evenodd",
+      "shape": {
+        "area": 36785,
+        "bbox": [
+          0.48,
+          60.17,
+          199.17,
+          160.83,
+        ],
+        "contours": 4,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 110,
+        "bbox": [
+          45.23,
+          80.55,
+          55.77,
+          96.74,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 261,
+        "bbox": [
+          59.08,
+          80.55,
+          75.27,
+          96.74,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 127,
+        "bbox": [
+          78.06,
+          72.36,
+          89.55,
+          96.39,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 117,
+        "bbox": [
+          91.21,
+          76.02,
+          102.35,
+          96.74,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 203,
+        "bbox": [
+          105.05,
+          80.9,
+          129.52,
+          96.39,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 275,
+        "bbox": [
+          131.43,
+          80.55,
+          147.02,
+          96.74,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 79,
+        "bbox": [
+          152.33,
+          80.64,
+          161.04,
+          96.39,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 188,
+        "bbox": [
+          163.3,
+          80.55,
+          178.27,
+          96.74,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 203,
+        "bbox": [
+          45.93,
+          103.88,
+          66.91,
+          119.64,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 276,
+        "bbox": [
+          70.83,
+          103.88,
+          86.5,
+          120.08,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 134,
+        "bbox": [
+          91.73,
+          103.88,
+          105.14,
+          119.73,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 110,
+        "bbox": [
+          109.58,
+          103.88,
+          120.11,
+          120.08,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 58,
+        "bbox": [
+          124.55,
+          104.23,
+          128.3,
+          119.73,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 261,
+        "bbox": [
+          132.22,
+          103.88,
+          148.41,
+          120.08,
+        ],
+        "contours": 2,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 134,
+        "bbox": [
+          152.42,
+          103.88,
+          165.82,
+          119.73,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 5,
+        "bbox": [
+          169.83,
+          115.46,
+          173.23,
+          119.73,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "white",
+      "fillRule": null,
+      "shape": {
+        "area": 11,
+        "bbox": [
+          173.66,
+          115.46,
+          178.27,
+          119.73,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 31,
+        "bbox": [
+          78.56,
+          122.9,
+          85.34,
+          131.21,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1F252A",
+      "fillRule": null,
+      "shape": {
+        "area": 74,
+        "bbox": [
+          67.54,
+          127.64,
+          84.18,
+          135.54,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 31,
+        "bbox": [
+          120.81,
+          109.98,
+          129.25,
+          117.16,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1F252A",
+      "fillRule": null,
+      "shape": {
+        "area": 74,
+        "bbox": [
+          125.23,
+          111.77,
+          133.48,
+          128.26,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#092330",
+      "fillRule": null,
+      "shape": {
+        "area": 670,
+        "bbox": [
+          88.45,
+          65.14,
+          126.49,
+          117.42,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#0C2C40",
+      "fillRule": null,
+      "shape": {
+        "area": 742,
+        "bbox": [
+          78.11,
+          64.31,
+          107.78,
+          128.27,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 48,
+        "bbox": [
+          82.08,
+          16.9,
+          89.86,
+          24.68,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 20,
+        "bbox": [
+          79.99,
+          21.34,
+          86.07,
+          27.93,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1C2226",
+      "fillRule": null,
+      "shape": {
+        "area": 56,
+        "bbox": [
+          84.23,
+          15.27,
+          93.2,
+          25.49,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#F7ECE7",
+      "fillRule": null,
+      "shape": {
+        "area": 285,
+        "bbox": [
+          66.04,
+          22.41,
+          90.83,
+          47.22,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#F7ECE7",
+      "fillRule": null,
+      "shape": {
+        "area": 671,
+        "bbox": [
+          86.43,
+          29.87,
+          108.81,
+          66.1,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCF3F0",
+      "fillRule": null,
+      "shape": {
+        "area": 5,
+        "bbox": [
+          90.82,
+          28.62,
+          93.24,
+          32.08,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 63,
+        "bbox": [
+          90.89,
+          21.82,
+          98.73,
+          31.77,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#F4BE9A",
+      "fillRule": null,
+      "shape": {
+        "area": 27,
+        "bbox": [
+          90.88,
+          22.42,
+          98.47,
+          27.88,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 165,
+        "bbox": [
+          87.23,
+          10.6,
+          100.14,
+          26.23,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 165,
+        "bbox": [
+          87.23,
+          10.6,
+          100.14,
+          26.23,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1C2226",
+      "fillRule": null,
+      "shape": {
+        "area": 71,
+        "bbox": [
+          86.98,
+          10.2,
+          101.47,
+          20.77,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 14,
+        "bbox": [
+          98.15,
+          16.7,
+          102.38,
+          20.93,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#0C2C40",
+      "fillRule": null,
+      "shape": {
+        "area": 90,
+        "bbox": [
+          91.4,
+          32.47,
+          96.35,
+          61.56,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#0C2C40",
+      "fillRule": null,
+      "shape": {
+        "area": 8,
+        "bbox": [
+          92.2,
+          30.55,
+          96.35,
+          33.67,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCF3F0",
+      "fillRule": null,
+      "shape": {
+        "area": 27,
+        "bbox": [
+          94.68,
+          27.27,
+          101.67,
+          33.83,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#EADDD8",
+      "fillRule": null,
+      "shape": {
+        "area": 3,
+        "bbox": [
+          78.31,
+          25.24,
+          84.01,
+          28.87,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#AFAFAF",
+      "fillRule": null,
+      "shape": {
+        "area": 562,
+        "bbox": [
+          91.4,
+          51.95,
+          118.65,
+          78.56,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#D1D1D1",
+      "fillRule": null,
+      "shape": {
+        "area": 563,
+        "bbox": [
+          92.99,
+          52.29,
+          120.24,
+          78.91,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 61,
+        "bbox": [
+          95.85,
+          70.36,
+          104.68,
+          79.18,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#FCC9A7",
+      "fillRule": null,
+      "shape": {
+        "area": 25,
+        "bbox": [
+          99.83,
+          66.39,
+          106.56,
+          73.89,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#F7ECE7",
+      "fillRule": null,
+      "shape": {
+        "area": 283,
+        "bbox": [
+          100.36,
+          32.11,
+          117.9,
+          71.68,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#EADDD8",
+      "fillRule": null,
+      "shape": {
+        "area": 3,
+        "bbox": [
+          101.88,
+          65.85,
+          107.88,
+          69.3,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#EADDD8",
+      "fillRule": null,
+      "shape": {
+        "area": 4,
+        "bbox": [
+          103.33,
+          41.61,
+          107.35,
+          48.23,
+        ],
+        "contours": 1,
+      },
+    },
+    {
+      "fill": "#1C2226",
+      "fillRule": null,
+      "shape": {
+        "area": 52,
+        "bbox": [
+          86.58,
+          8,
+          99.87,
+          16.76,
+        ],
+        "contours": 1,
+      },
+    },
+  ],
+  "viewBox": [
+    0,
+    0,
+    200,
+    200,
+  ],
+}
+`;
+
 exports[`flatten seam golden — flattenSvg output opacity/10k: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
