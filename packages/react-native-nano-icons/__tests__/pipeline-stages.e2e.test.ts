@@ -3,14 +3,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { picoFromFile } from '../src/core/pipeline/managers';
+import { flattenSvg } from '../src/core/flatten/index';
 import { loadPathKit } from '../src/core/pathkit/load';
-import { mergeSameColorPaths, type ParsedPath } from '../src/core/pipeline/run';
-import {
-  preprocessSvg,
-  parseFlattenedSvg,
-  validateSvg,
-} from '../src/core/svg/svg_dom';
+import { mergeSameColorPaths } from '../src/core/glyph/merge';
+import { parseFlattenedSvg, type ParsedPath } from '../src/core/glyph/parse';
+import { preprocessSvg, validateSvg } from '../src/core/glyph/validate';
 import { convertEvenoddToWinding } from '../src/core/pathkit/evenodd';
 
 const TESTICONS_DIR = path.resolve(
@@ -67,7 +64,7 @@ async function computeStages(file: string): Promise<StageOutputs> {
 
   const preprocessed = preprocessSvg(raw);
 
-  const flattened = await picoFromFile(abs, preprocessed);
+  const flattened = flattenSvg(preprocessed, PathKit);
 
   const { viewBox, paths } = parseFlattenedSvg(flattened) as {
     viewBox: number[];
@@ -104,7 +101,7 @@ describe.each(ICONS)('pipeline stages golden — %s', (file) => {
     expect(stages.preprocessed).toMatchSnapshot();
   });
 
-  test('after picoFromFile', () => {
+  test('after flattenSvg', () => {
     expect(stages.flattened).toMatchSnapshot();
   });
 

@@ -2,13 +2,14 @@
 
 import fs from 'node:fs';
 
-import { picoFromFile } from '../src/core/pipeline/managers';
-import { parseFlattenedSvg, preprocessSvg } from '../src/core/svg/svg_dom';
+import { flattenSvg } from '../src/core/flatten/index';
+import { parseFlattenedSvg } from '../src/core/glyph/parse';
+import { preprocessSvg } from '../src/core/glyph/validate';
 import type { PathKitModule } from '../src/core/pathkit/types';
 import { loadPathKit, glyphFingerprint } from './helpers/geometry';
 import { CURATED } from './helpers/golden';
 
-// freezes picoFromFile
+// freezes flattenSvg
 
 let PathKit: PathKitModule;
 
@@ -16,16 +17,16 @@ beforeAll(async () => {
   PathKit = await loadPathKit();
 }, 60_000);
 
-async function flatten(abs: string): Promise<string> {
+function flatten(abs: string): string {
   const raw = fs.readFileSync(abs, 'utf8');
-  return picoFromFile(abs, preprocessSvg(raw));
+  return flattenSvg(preprocessSvg(raw), PathKit);
 }
 
-describe('flatten seam golden — picoFromFile output', () => {
+describe('flatten seam golden — flattenSvg output', () => {
   test.each(CURATED.map((ic) => [`${ic.feature}/${ic.name}`, ic] as const))(
     '%s: flattened output matches its frozen fingerprint',
     async (_name, ic) => {
-      const out = await flatten(ic.abs);
+      const out = flatten(ic.abs);
 
       // containers must be resolved away, never passed through
       expect(/<mask[\s>]/i.test(out)).toBe(false);

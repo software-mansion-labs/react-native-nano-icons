@@ -4,11 +4,10 @@ import { DOMParser, type Element } from '@xmldom/xmldom';
 import {
   calculateOpColor,
   parseFlattenedSvg,
-  preprocessSvg,
-  validateSvg,
   sanitizePathData,
   shouldSkipPath,
-} from '../src/core/svg/svg_dom';
+} from '../src/core/glyph/parse';
+import { preprocessSvg, validateSvg } from '../src/core/glyph/validate';
 import { parseColor } from '../src/utils/parse';
 
 // ---------------------------------------------------------------------------

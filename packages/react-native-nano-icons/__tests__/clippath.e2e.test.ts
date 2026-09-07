@@ -5,7 +5,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { runPipeline } from '../src/core/pipeline/run';
+import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoGlyphMap } from '../src/core/types';
 
 // ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@ describe('Pipeline E2E — clipPath', () => {
     outputDir = path.join(os.tmpdir(), `nano-clippath-e2e-${Date.now()}`);
     tempDir = path.join(os.tmpdir(), `nano-clippath-e2e-tmp-${Date.now()}`);
 
-    await runPipeline(
+    await runFontPipeline(
       {
         fontFamily: FONT_FAMILY,
         upm: UPM,

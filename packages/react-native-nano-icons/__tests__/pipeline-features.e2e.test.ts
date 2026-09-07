@@ -5,7 +5,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { runPipeline } from '../src/core/pipeline/run';
+import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoGlyphMap, NanoLogger } from '../src/core/types';
 
 // ---------------------------------------------------------------------------
@@ -60,7 +60,7 @@ async function runOnSubset(opts: {
       await fsp.copyFile(path.join(srcDir, name), path.join(inputDir, name));
     }
 
-    await runPipeline(
+    await runFontPipeline(
       { ...PIPELINE, fontFamily: opts.fontFamily },
       { inputDir, outputDir, tempDir },
       opts.onWarn ? { logger: quietLogger(opts.onWarn) } : undefined
@@ -221,7 +221,7 @@ describe('Pipeline E2E — flatten failure reporting', () => {
 
     try {
       await expect(
-        runPipeline(
+        runFontPipeline(
           { ...PIPELINE, fontFamily: 'BrokenSet' },
           { inputDir, outputDir, tempDir }
         )

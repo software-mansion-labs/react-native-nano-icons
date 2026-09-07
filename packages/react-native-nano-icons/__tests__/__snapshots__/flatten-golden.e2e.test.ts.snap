@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`flatten seam golden — picoFromFile output broken/Air: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output broken/Air: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -55,7 +55,7 @@ exports[`flatten seam golden — picoFromFile output broken/Air: flattened outpu
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output broken/Alarm: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output broken/Alarm: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -124,7 +124,7 @@ exports[`flatten seam golden — picoFromFile output broken/Alarm: flattened out
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output clippath/teest: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output clippath/teest: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -193,7 +193,7 @@ exports[`flatten seam golden — picoFromFile output clippath/teest: flattened o
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output curved/Air: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output curved/Air: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -248,7 +248,7 @@ exports[`flatten seam golden — picoFromFile output curved/Air: flattened outpu
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output curved/Alarm: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output curved/Alarm: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -317,7 +317,7 @@ exports[`flatten seam golden — picoFromFile output curved/Alarm: flattened out
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output duotone/Alarm: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output duotone/Alarm: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -400,7 +400,7 @@ exports[`flatten seam golden — picoFromFile output duotone/Alarm: flattened ou
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output duotone/Dislike: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output duotone/Dislike: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -455,7 +455,7 @@ exports[`flatten seam golden — picoFromFile output duotone/Dislike: flattened 
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output duotone/EyeOpen: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output duotone/EyeOpen: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -510,7 +510,7 @@ exports[`flatten seam golden — picoFromFile output duotone/EyeOpen: flattened 
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output evenodd/barcode: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output evenodd/barcode: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -537,7 +537,7 @@ exports[`flatten seam golden — picoFromFile output evenodd/barcode: flattened 
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output evenodd/qrcode: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -648,7 +648,7 @@ exports[`flatten seam golden — picoFromFile output evenodd/qrcode: flattened o
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output opacity/10k: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output opacity/10k: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -717,7 +717,7 @@ exports[`flatten seam golden — picoFromFile output opacity/10k: flattened outp
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output outline/Air: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output outline/Air: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -772,7 +772,7 @@ exports[`flatten seam golden — picoFromFile output outline/Air: flattened outp
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output outline/Alarm: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output outline/Alarm: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -841,7 +841,7 @@ exports[`flatten seam golden — picoFromFile output outline/Alarm: flattened ou
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output outline/ArrowCircleDown: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output outline/ArrowCircleDown: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
@@ -896,7 +896,7 @@ exports[`flatten seam golden — picoFromFile output outline/ArrowCircleDown: fl
 }
 `;
 
-exports[`flatten seam golden — picoFromFile output sanitize/elephant: flattened output matches its frozen fingerprint 1`] = `
+exports[`flatten seam golden — flattenSvg output sanitize/elephant: flattened output matches its frozen fingerprint 1`] = `
 {
   "paths": [
     {
