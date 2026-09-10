@@ -1,8 +1,7 @@
-// lxml-like element tree used by the picosvg port (Apache-2.0 heritage,
-// Copyright 2020 Google LLC). Tags and attribute names use lxml's
-// "{namespace}local" convention so svg.py logic ports 1:1.
+// Tags and attribute names use the "{namespace}local" convention.
 
 import { DOMParser, type Element as XmldomElement } from '@xmldom/xmldom';
+import { XML_AMP, XML_GT, XML_LT, XML_QUOT } from '../../utils/svgPatterns';
 
 export const SVG_NS = 'http://www.w3.org/2000/svg';
 export const XLINK_NS = 'http://www.w3.org/1999/xlink';
@@ -88,10 +87,6 @@ export function findAll(root: XEl, pred: (el: XEl) => boolean): XEl[] {
   return out;
 }
 
-export function safeRemove(el: XEl): void {
-  el.detach();
-}
-
 // replace el with the given elements at the same position
 export function replaceEl(el: XEl, replacements: XEl[]): void {
   const parent = el.parent;
@@ -132,7 +127,7 @@ function convertElement(node: XmldomElement): XEl {
   const children = node.childNodes;
   for (let i = 0; i < children.length; i++) {
     const child = children.item(i)!;
-    // like lxml with remove_comments/remove_blank_text: elements only
+    // elements only: comments and text nodes are dropped
     if (child.nodeType === 1) {
       el.append(convertElement(child as XmldomElement));
     }
@@ -164,14 +159,14 @@ export function parseSvgDocument(content: string): XEl {
   return convertElement(root);
 }
 
-// ---- serialization (lxml-ish pretty print) ----
+// ---- serialization (pretty print) ----
 
 function escapeAttr(value: string): string {
   return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(XML_AMP, '&amp;')
+    .replace(XML_LT, '&lt;')
+    .replace(XML_GT, '&gt;')
+    .replace(XML_QUOT, '&quot;');
 }
 
 function attrDisplayName(name: string): string {

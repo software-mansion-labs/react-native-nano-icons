@@ -2,8 +2,8 @@ import {
   buildAllFonts as coreBuildAllFonts,
   createQuietLogger,
   detectExpoLogLevel,
-} from '../../cli/index.js';
-import type { IconSetConfig, BuiltFont } from './types.js';
+} from '../../cli/index';
+import type { IconSetConfig, BuiltFont } from './types';
 
 /**
  * Build TTF + glyphmap for all icon sets.

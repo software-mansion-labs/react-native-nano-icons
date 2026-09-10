@@ -4,9 +4,6 @@ module.exports = {
   testTimeout: 180000,
   // only *.test.* are suites, exclude __tests__/helpers/
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
-  moduleNameMapper: {
-    '^(\\.{1,2}/.+)\\.js$': '$1',
-  },
   modulePathIgnorePatterns: [
     '<rootDir>/example/node_modules',
     '<rootDir>/lib/',

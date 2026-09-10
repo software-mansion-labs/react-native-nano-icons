@@ -1,11 +1,8 @@
-// Ported from picosvg svg.py attribute-inheritance machinery
-// (Apache-2.0, Copyright 2020 Google LLC)
+import { ntos } from './geometry';
+import { XEl, stripNs } from './dom';
+import { Affine2D } from './transform';
 
-import { ntos } from './geometry.js';
-import { XEl, stripNs } from './dom.js';
-import { Affine2D } from './transform.js';
-
-// https://www.w3.org/TR/SVG11/paths.html - defaults per svg_meta.ATTRIB_DEFAULTS
+// https://www.w3.org/TR/SVG11/paths.html
 export const ATTRIB_DEFAULTS: Record<string, string | number> = {
   'clip-path': '',
   'clip-rule': 'nonzero',
@@ -152,7 +149,6 @@ function inheritNondefaultOverflow(
   }
 }
 
-// https://github.com/googlefonts/picosvg/issues/260
 function inheritNondefaultDisplay(
   attrib: Attrib,
   child: XEl,

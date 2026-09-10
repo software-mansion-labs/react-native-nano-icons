@@ -29,9 +29,9 @@ This project bundles or depends on the following third-party software:
 7. picosvg
    License: Apache-2.0
    Source: https://github.com/googlefonts/picosvg
-   Note: `src/core/svg/flatten/` is a TypeScript port of picosvg
-   (Copyright 2020 Google LLC). The ported files retain attribution headers
-   as required by the Apache License, Version 2.0.
+   Note: `src/core/flatten/` is a TypeScript port of picosvg
+   (Copyright 2020 Google LLC), redistributed under the Apache License,
+   Version 2.0. This entry is the attribution notice for that port.
 
 Full license texts:
 

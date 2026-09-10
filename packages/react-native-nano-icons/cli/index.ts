@@ -1,15 +1,15 @@
-export { buildAllFonts, type IconSetConfig, type BuiltFont } from './build.js';
+export { buildAllFonts, type IconSetConfig, type BuiltFont } from './build';
 export {
   createOraLogger,
   createQuietLogger,
   detectExpoLogLevel,
   type NanoLogger,
   type LogLevel,
-} from './logger.js';
+} from './logger';
 export {
   loadNanoIconsConfig,
   loadDynamicIconSets,
   type NanoIconsConfig,
-} from './config.js';
-export { loadDynamicSetsFromAppConfig } from './expoConfig.js';
-export { linkBare } from './link.js';
+} from './config';
+export { loadDynamicSetsFromAppConfig } from './expoConfig';
+export { linkBare } from './link';

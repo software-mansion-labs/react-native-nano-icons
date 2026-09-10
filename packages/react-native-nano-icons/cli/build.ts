@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs';
-import { runPipeline } from '../src/core/pipeline/index.js';
-import type { NanoLogger } from './logger.js';
-import { getFingerprintSync } from '../src/utils/fingerPrint.js';
+import { runFontPipeline } from '../src/core/pipeline/index';
+import type { NanoLogger } from './logger';
+import { getFingerprintSync } from '../src/utils/fingerPrint';
 
 export type IconSetConfig = {
   /** Path to folder of SVG files (relative to project root). */
@@ -125,7 +125,7 @@ export async function buildAllFonts(
 
     logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
 
-    const out = await runPipeline(
+    const out = await runFontPipeline(
       config,
       { inputDir, outputDir, tempDir },
       { logger, inputHash }

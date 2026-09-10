@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { forceTtfMetrics } from './metrics.js';
+import { forceTtfMetrics } from './metrics';
 import svg2ttf from 'svg2ttf';
+import { GLYPH_CODEPOINT, XML_AMP, XML_QUOT } from '../../utils/svgPatterns';
+import { SVG_NS } from '../flatten/dom';
 
 export type FontGlyph = {
   codepoint: number;
@@ -12,7 +14,7 @@ export type FontGlyph = {
 };
 
 function escapeXml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  return s.replace(XML_AMP, '&amp;').replace(XML_QUOT, '&quot;');
 }
 
 /**
@@ -35,7 +37,7 @@ function buildSvgFontXml(opts: {
 
   return `<?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="${SVG_NS}">
 <defs>
 <font id="${escapeXml(fontName)}" horiz-adv-x="${upm}">
 <font-face font-family="${escapeXml(fontName)}" units-per-em="${upm}" ascent="${ascent}" descent="${-Math.abs(descent)}"/>
@@ -51,7 +53,7 @@ export function parseCompileTtfFromGlyphsError(
   codepointToIcon: Map<number, string>
 ) {
   const msg = err instanceof Error ? err.message : String(err);
-  const cpMatch = msg.match(/glyph\s+"u([0-9a-fA-F]+)"/);
+  const cpMatch = msg.match(GLYPH_CODEPOINT);
   if (cpMatch) {
     const cp = parseInt(cpMatch[1]!, 16);
     const iconName = codepointToIcon.get(cp);

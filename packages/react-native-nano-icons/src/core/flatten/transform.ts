@@ -1,7 +1,11 @@
-// Ported from picosvg svg_transform.py (Apache-2.0, Copyright 2020 Google LLC)
+import type { Pt, Rect } from './geometry';
+import {
+  TRANSFORM_ARG_SEPARATOR,
+  TRANSFORM_FUNCTION,
+} from '../../utils/svgPatterns';
 
-import type { Pt, Rect } from './geometry.js';
-import { almostEqual, ntos, rectEmpty } from './geometry.js';
+const RADIAN_ARG_OPS = new Set(['rotate', 'skewx', 'skewy']);
+import { ntos, rectEmpty } from './geometry';
 
 // 2D affine transform, viewed as a matrix:
 //
@@ -19,7 +23,6 @@ export class Affine2D {
 
   private static readonly _identity = new Affine2D(1, 0, 0, 1, 0, 0);
   private static readonly _degenerate = new Affine2D(0, 0, 0, 0, 0, 0);
-  private static readonly _flipY = new Affine2D(1, 0, 0, -1, 0, 0);
 
   static identity(): Affine2D {
     return Affine2D._identity;
@@ -29,12 +32,50 @@ export class Affine2D {
     return Affine2D._degenerate;
   }
 
-  static flipY(): Affine2D {
-    return Affine2D._flipY;
-  }
-
   static fromString(rawTransform: string): Affine2D {
-    return parseSvgTransform(rawTransform);
+    let transform = Affine2D.identity();
+
+    const re = new RegExp(TRANSFORM_FUNCTION);
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(rawTransform)) !== null) {
+      const op = match[1]!.toLowerCase();
+      const args = match[2]!
+        .trim()
+        .split(TRANSFORM_ARG_SEPARATOR)
+        .map((p) => parseFloat(p));
+      if (RADIAN_ARG_OPS.has(op)) {
+        args[0] = (args[0]! * Math.PI) / 180;
+      }
+      switch (op) {
+        case 'matrix':
+          transform = transform.matrix(
+            args[0]!,
+            args[1]!,
+            args[2]!,
+            args[3]!,
+            args[4]!,
+            args[5]!
+          );
+          break;
+        case 'translate':
+          transform = transform.translate(args[0]!, args[1]);
+          break;
+        case 'scale':
+          transform = transform.scale(args[0]!, args[1]);
+          break;
+        case 'rotate':
+          transform = transform.rotate(args[0]!, args[1], args[2]);
+          break;
+        case 'skewx':
+          transform = transform.skewx(args[0]!);
+          break;
+        case 'skewy':
+          transform = transform.skewy(args[0]!);
+          break;
+      }
+    }
+
+    return transform;
   }
 
   values(): [number, number, number, number, number, number] {
@@ -92,10 +133,6 @@ export class Affine2D {
 
   getTranslate(): [number, number] {
     return [this.e, this.f];
-  }
-
-  getScale(): [number, number] {
-    return [this.a, this.d];
   }
 
   scale(sx: number, sy?: number): Affine2D {
@@ -170,15 +207,6 @@ export class Affine2D {
     return result;
   }
 
-  almostEquals(
-    other: Affine2D,
-    tolerance = 1e-9 // DEFAULT_ALMOST_EQUAL_TOLERANCE
-  ): boolean {
-    const v1 = this.values();
-    const v2 = other.values();
-    return v1.every((v, i) => almostEqual(v, v2[i]!, tolerance));
-  }
-
   private static readonly _ALIGN_VALUES = new Set([
     'none',
     'xminymin',
@@ -245,52 +273,4 @@ export class Affine2D {
 
     return new Affine2D(sx, 0, 0, sy, tx, ty);
   }
-}
-
-const RADIAN_ARG_OPS = new Set(['rotate', 'skewx', 'skewy']);
-
-export function parseSvgTransform(rawTransform: string): Affine2D {
-  let transform = Affine2D.identity();
-
-  const re = /(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]*)\)/gi;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(rawTransform)) !== null) {
-    const op = match[1]!.toLowerCase();
-    const args = match[2]!
-      .trim()
-      .split(/\s*[,\s]\s*/)
-      .map((p) => parseFloat(p));
-    if (RADIAN_ARG_OPS.has(op)) {
-      args[0] = (args[0]! * Math.PI) / 180;
-    }
-    switch (op) {
-      case 'matrix':
-        transform = transform.matrix(
-          args[0]!,
-          args[1]!,
-          args[2]!,
-          args[3]!,
-          args[4]!,
-          args[5]!
-        );
-        break;
-      case 'translate':
-        transform = transform.translate(args[0]!, args[1]);
-        break;
-      case 'scale':
-        transform = transform.scale(args[0]!, args[1]);
-        break;
-      case 'rotate':
-        transform = transform.rotate(args[0]!, args[1], args[2]);
-        break;
-      case 'skewx':
-        transform = transform.skewx(args[0]!);
-        break;
-      case 'skewy':
-        transform = transform.skewy(args[0]!);
-        break;
-    }
-  }
-
-  return transform;
 }
