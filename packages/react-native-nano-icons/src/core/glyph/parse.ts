@@ -98,7 +98,10 @@ const parsePath = (p: Element): ParsedPath => {
 
 export function parseFlattenedSvg(
   flattenedSvg: string,
-  options?: { onSanitize?: (original: string) => void }
+  options?: {
+    onSanitize?: (original: string) => void;
+    onMissingViewBox?: (assumed: [number, number, number, number]) => void;
+  }
 ): ParsedFlatSvg {
   const doc = new DOMParser().parseFromString(flattenedSvg, 'image/svg+xml');
   const svgEl = doc.documentElement;
@@ -106,12 +109,18 @@ export function parseFlattenedSvg(
   const viewBoxRaw = svgEl
     ?.getAttribute('viewBox')
     ?.split(WHITESPACE)
-    .map(Number) ?? [0, 0, 100, 100];
+    .map(Number);
 
-  const viewBox: [number, number, number, number] =
-    viewBoxRaw.length === 4 && viewBoxRaw.every(Number.isFinite)
-      ? [viewBoxRaw[0]!, viewBoxRaw[1]!, viewBoxRaw[2]!, viewBoxRaw[3]!]
-      : [0, 0, 100, 100];
+  let viewBox: [number, number, number, number];
+  if (viewBoxRaw?.length === 4 && viewBoxRaw.every(Number.isFinite)) {
+    viewBox = [viewBoxRaw[0]!, viewBoxRaw[1]!, viewBoxRaw[2]!, viewBoxRaw[3]!];
+  } else {
+    const width = parseFloat(svgEl?.getAttribute('width') ?? '');
+    const height = parseFloat(svgEl?.getAttribute('height') ?? '');
+    viewBox =
+      width > 0 && height > 0 ? [0, 0, width, height] : [0, 0, 100, 100];
+    options?.onMissingViewBox?.(viewBox);
+  }
 
   const pathEls = svgEl ? Array.from(svgEl.getElementsByTagName('path')) : [];
 

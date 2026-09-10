@@ -152,7 +152,9 @@ function parseArgs(cmd: string, rawArgsStr: string): number[] {
     const regex = argTypes[i % n]!;
     const m = regex.exec(arg);
     if (!m) {
-      throw new Error(`Invalid argument #${i} for '${cmd}': ${arg}`);
+      throw new Error(
+        `Invalid path data "${cmd}${rawArgsStr.slice(0, 40)}": argument #${i + 1} (${arg}) is not a number`
+      );
     }
 
     const end = m[0]!.length;

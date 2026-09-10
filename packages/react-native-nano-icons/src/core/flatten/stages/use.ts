@@ -12,6 +12,7 @@ export function expandUses(doc: SvgDocument, scopeEl: XEl): void {
     'height',
     'transform',
     xlinkHrefAttr(),
+    'href',
   ]);
 
   // capture elements by id so even if we change it they remain stable
@@ -25,14 +26,21 @@ export function expandUses(doc: SvgDocument, scopeEl: XEl): void {
     if (!useEls.length) break;
     const swaps: Array<[XEl, XEl]> = [];
     for (const useEl of useEls) {
-      const ref = useEl.attrib.get(xlinkHrefAttr()) ?? '';
+      const ref = useEl.attrib.get(xlinkHrefAttr()) ?? useEl.attrib.get('href');
+      if (ref === undefined) {
+        throw new Error('<use> has no href attribute to resolve');
+      }
       if (!ref.startsWith('#')) {
-        throw new Error(`Only use #fragment supported, reject ${ref}`);
+        throw new Error(
+          `<use> href "${ref}" is not supported: only same-document #id references are`
+        );
       }
 
       const target = elById.get(ref.slice(1));
       if (target === undefined) {
-        throw new Error(`No element has id '${ref.slice(1)}'`);
+        throw new Error(
+          `<use> references ${ref}, but no element has id "${ref.slice(1)}"`
+        );
       }
 
       const newEl = target.deepClone();

@@ -31,7 +31,7 @@ export async function prepareSvgLayers(opts: {
 
   const validation = validateSvg(rawContent);
   if (validation.valid === false) {
-    logger?.warn(`Skipping "${fileLabel}": ${validation.reason}`);
+    logger?.warn(`${fileLabel} skipped: ${validation.reason}`);
     return null;
   }
 
@@ -42,7 +42,7 @@ export async function prepareSvgLayers(opts: {
     flattenedSvg = flattenSvg(preprocessed, pathkit);
   } catch (err) {
     throw new Error(
-      `Failed to flatten "${fileLabel}": ${
+      `${fileLabel} failed to flatten: ${
         err instanceof Error ? err.message : String(err)
       }`,
       { cause: err }
@@ -51,9 +51,14 @@ export async function prepareSvgLayers(opts: {
   const parsed = parseFlattenedSvg(flattenedSvg, {
     onSanitize: (original) => {
       logger?.info(
-        `  ⚠ Sanitized path in "${fileLabel}": path was missing initial moveto (prepended M from endpoint)`
+        `  ⚠ ${fileLabel} sanitized path: path was missing initial moveto (prepended M from endpoint)`
       );
       logger?.info(`    Original: ${original.slice(0, 80)}…`);
+    },
+    onMissingViewBox: (assumed) => {
+      logger?.warn(
+        `${fileLabel} has no viewBox; assuming [${assumed.join(' ')}]`
+      );
     },
   });
 
@@ -64,7 +69,7 @@ export async function prepareSvgLayers(opts: {
   for (const p of parsed.paths) {
     if (p.fillRule === 'evenodd') {
       logger?.info(
-        `  ↻ Converting evenodd path to nonzero winding in "${fileLabel}"`
+        `  ↻ ${fileLabel} converting evenodd path to nonzero winding`
       );
       p.d = convertEvenoddToWinding(pathkit, p.d);
       delete p.fillRule;

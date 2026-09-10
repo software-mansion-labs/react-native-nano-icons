@@ -1,3 +1,4 @@
+import { stripNs } from '../dom';
 import type { SvgDocument } from '../document';
 
 const PATH_ALLOWLIST = [
@@ -21,7 +22,9 @@ export function validateFlattened(doc: SvgDocument): string[] {
     }
 
     if (!PATH_ALLOWLIST.some((pat) => pat.test(context.path))) {
-      errors.push(`BadElement: ${context.path}`);
+      errors.push(
+        `Unsupported element <${stripNs(context.element.tag)}> at ${context.path}`
+      );
       badPaths.add(context.path);
       continue;
     }
@@ -32,7 +35,7 @@ export function validateFlattened(doc: SvgDocument): string[] {
     if (elId !== undefined) {
       if (ids.has(elId)) {
         errors.push(
-          `BadElement: ${context.path} reuses id="${elId}", first seen at ${ids.get(elId)}`
+          `Duplicate id "${elId}" at ${context.path}, first seen at ${ids.get(elId)}`
         );
       }
       ids.set(elId, context.path);
@@ -40,7 +43,7 @@ export function validateFlattened(doc: SvgDocument): string[] {
   }
 
   for (const path of pathsRequired) {
-    errors.push(`MissingElement: ${path}`);
+    errors.push(`Missing element ${path}`);
   }
 
   return errors;

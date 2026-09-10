@@ -120,10 +120,12 @@ export function shapesEqual(a: Shape, b: Shape): boolean {
   return true;
 }
 
-function parseFloatStrict(raw: string): number {
+function parseFloatStrict(raw: string, tag: string, attr: string): number {
   const value = Number(raw.trim());
   if (Number.isNaN(value)) {
-    throw new Error(`could not convert string to float: '${raw}'`);
+    throw new Error(
+      `${attr}="${raw}" on <${tag}> is not a number (units other than px are not supported)`
+    );
   }
   return value;
 }
@@ -145,7 +147,9 @@ export function fromElement(
     const raw = attrs[attrName(field.name)];
     if (raw === undefined || !raw.trim()) continue;
     shape.fields[field.name] =
-      field.type === 'float' ? parseFloatStrict(raw) : raw;
+      field.type === 'float'
+        ? parseFloatStrict(raw, tag, attrName(field.name))
+        : raw;
   }
   if (tag === 'rect') {
     rectPostInit(shape);
@@ -349,7 +353,7 @@ export function strokeCommands(
     dashArray = dasharray
       .split(DASHARRAY_SEPARATOR)
       .filter((v) => v)
-      .map((v) => parseFloatStrict(v));
+      .map((v) => parseFloatStrict(v, shape.tag, 'stroke-dasharray'));
   }
   // odd number of dash values is repeated to yield an even count
   if (dashArray.length % 2 !== 0) {
@@ -409,7 +413,9 @@ export function applyStyleAttribute(shape: Shape): Shape {
     for (const [attr, rawValue] of Object.entries(rawAttrs)) {
       const field = attrTypes.get(attr)!;
       target.fields[field.name] =
-        field.type === 'float' ? parseFloatStrict(rawValue) : rawValue;
+        field.type === 'float'
+          ? parseFloatStrict(rawValue, target.tag, attr)
+          : rawValue;
     }
     target.fields.style = unparsedStyle;
   }

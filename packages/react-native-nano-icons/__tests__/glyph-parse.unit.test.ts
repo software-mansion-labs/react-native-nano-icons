@@ -244,6 +244,60 @@ describe('preprocessSvg', () => {
 // sanitizePathData
 // ---------------------------------------------------------------------------
 
+describe('preprocessSvg px units', () => {
+  test('px suffix is dropped from attribute values in double and single quotes', () => {
+    const out = preprocessSvg(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="24px" height='24px'><rect width="10px" height="-1.5px"/></svg>`
+    );
+    expect(out).toBe(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="24" height='24'><rect width="10" height="-1.5"/></svg>`
+    );
+  });
+
+  test('px suffix is dropped from style declarations', () => {
+    const out = preprocessSvg(
+      `<svg xmlns="http://www.w3.org/2000/svg"><rect style="stroke-width:2px; x: .5px"/></svg>`
+    );
+    expect(out).toContain('style="stroke-width:2; x: .5"');
+  });
+
+  test('other units and non-numeric values are left alone', () => {
+    const src = `<svg xmlns="http://www.w3.org/2000/svg" width="50%"><rect id="px" width="1em"/></svg>`;
+    expect(preprocessSvg(src)).toBe(src);
+  });
+});
+
+describe('parseFlattenedSvg viewBox fallback', () => {
+  const svg = (attrs: string) =>
+    `<svg xmlns="http://www.w3.org/2000/svg" ${attrs}><path d="M0 0L1 1Z"/></svg>`;
+
+  test('missing viewBox falls back to width/height and reports it', () => {
+    const reported: number[][] = [];
+    const parsed = parseFlattenedSvg(svg('width="32" height="16"'), {
+      onMissingViewBox: (vb) => reported.push(vb),
+    });
+    expect(parsed.viewBox).toEqual([0, 0, 32, 16]);
+    expect(reported).toEqual([[0, 0, 32, 16]]);
+  });
+
+  test('missing viewBox and size falls back to 0 0 100 100', () => {
+    const reported: number[][] = [];
+    const parsed = parseFlattenedSvg(svg(''), {
+      onMissingViewBox: (vb) => reported.push(vb),
+    });
+    expect(parsed.viewBox).toEqual([0, 0, 100, 100]);
+    expect(reported).toEqual([[0, 0, 100, 100]]);
+  });
+
+  test('present viewBox does not trigger the fallback', () => {
+    const reported: number[][] = [];
+    parseFlattenedSvg(svg('viewBox="0 0 24 24" width="99"'), {
+      onMissingViewBox: (vb) => reported.push(vb),
+    });
+    expect(reported).toEqual([]);
+  });
+});
+
 describe('sanitizePathData', () => {
   test('path already starting with M is left untouched', () => {
     const { d, sanitized } = sanitizePathData('M10 10 H20 Z');

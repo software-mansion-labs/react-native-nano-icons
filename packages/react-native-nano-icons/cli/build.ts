@@ -28,6 +28,15 @@ export type BuiltFont = {
   linking: 'static' | 'dynamic';
 };
 
+export class IconSetBuildError extends Error {
+  built: BuiltFont[];
+
+  constructor(message: string, built: BuiltFont[]) {
+    super(message);
+    this.built = built;
+  }
+}
+
 const DEFAULT_SAFE_ZONE = 1020;
 const DEFAULT_UPM = 1024;
 const DEFAULT_START_UNICODE = 0xe900;
@@ -56,7 +65,12 @@ function shouldSkipGeneration(
     glyphmap?.m?.l === 'd' ? 'dynamic' : 'static';
 
   if (storedHash && storedHash === inputHash && storedLinking === linking) {
-    logger?.info(`${fontFamily}: SVG fingerprint unchanged, skipping build.`);
+    const iconCount = Object.keys(glyphmap?.i ?? {}).length;
+    logger?.succeed(
+      `${fontFamily}.ttf is up to date [${iconCount} icon${
+        iconCount === 1 ? '' : 's'
+      }]`
+    );
     return true;
   }
 
@@ -75,6 +89,7 @@ export async function buildAllFonts(
 ): Promise<BuiltFont[]> {
   const logger = options?.logger;
   const results: BuiltFont[] = [];
+  const failures: string[] = [];
   let allSkipped = true;
 
   for (let i = 0; i < iconSets.length; i++) {
@@ -125,11 +140,18 @@ export async function buildAllFonts(
 
     logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
 
-    const out = await runFontPipeline(
-      config,
-      { inputDir, outputDir, tempDir },
-      { logger, inputHash }
-    );
+    let out;
+    try {
+      out = await runFontPipeline(
+        config,
+        { inputDir, outputDir, tempDir },
+        { logger, inputHash }
+      );
+    } catch (err) {
+      logger?.fail(err instanceof Error ? err.message : String(err));
+      failures.push(fontFamily);
+      continue;
+    }
 
     results.push({
       fontFamily,
@@ -137,6 +159,15 @@ export async function buildAllFonts(
       glyphmapPath: out.glyphmapPath,
       linking,
     });
+  }
+
+  if (failures.length) {
+    throw new IconSetBuildError(
+      `${failures.length} icon set${
+        failures.length === 1 ? '' : 's'
+      } failed to build: ${failures.join(', ')}`,
+      results
+    );
   }
 
   if (allSkipped && results.length > 0) {
