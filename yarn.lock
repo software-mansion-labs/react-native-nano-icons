@@ -5293,13 +5293,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/emscripten@npm:^1.41.4":
-  version: 1.41.5
-  resolution: "@types/emscripten@npm:1.41.5"
-  checksum: 10c0/ae816da716f896434e59df7a71b67c71ae7e85ca067a32aef1616572fc4757459515d42ade6f5b8fd8d69733a9dbd0cf23010fec5b2f41ce52c09501aa350e45
-  languageName: node
-  linkType: hard
-
 "@types/esrecurse@npm:^4.3.1":
   version: 4.3.1
   resolution: "@types/esrecurse@npm:4.3.1"
@@ -14772,16 +14765,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pyodide@npm:^0.29.3":
-  version: 0.29.3
-  resolution: "pyodide@npm:0.29.3"
-  dependencies:
-    "@types/emscripten": "npm:^1.41.4"
-    ws: "npm:^8.5.0"
-  checksum: 10c0/4c8108e9af7cd8997812507a01c3dd48789ab58973bdef3ac5a336c38837e7495146195be7fb8b0798bcc3c4f79e98877efaf0672d18e088488512eefbf1d3ca
-  languageName: node
-  linkType: hard
-
 "qrcode-terminal@npm:0.11.0":
   version: 0.11.0
   resolution: "qrcode-terminal@npm:0.11.0"
@@ -15026,7 +15009,6 @@ __metadata:
     patch-package: "npm:^8.0.0"
     pathkit-wasm: "npm:^1.0.0"
     plist: "npm:^3.0.5"
-    pyodide: "npm:^0.29.3"
     react: "npm:19.1.0"
     react-native: "npm:^0.84.0"
     react-native-builder-bob: "npm:^0.40.18"
@@ -17974,7 +17956,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.11.0, ws@npm:^8.12.1, ws@npm:^8.5.0":
+"ws@npm:^8.11.0, ws@npm:^8.12.1":
   version: 8.19.0
   resolution: "ws@npm:8.19.0"
   peerDependencies:

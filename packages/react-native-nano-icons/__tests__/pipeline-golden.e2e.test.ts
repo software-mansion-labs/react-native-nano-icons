@@ -1,9 +1,6 @@
 /** @jest-environment node */
 
 import fs from 'node:fs';
-import path from 'node:path';
-
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
 
 import type { NanoGlyphMap, PathKitModule } from '../src/core/types';
 import { loadPathKit, glyphFingerprint } from './helpers/geometry';

@@ -1,9 +1,6 @@
 /** @jest-environment node */
 
 import fs from 'node:fs';
-import path from 'node:path';
-
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
 
 import { picoFromFile } from '../src/core/pipeline/managers';
 import { parseFlattenedSvg, preprocessSvg } from '../src/core/svg/svg_dom';

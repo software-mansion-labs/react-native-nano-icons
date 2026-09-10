@@ -64,7 +64,7 @@ function shouldSkipGeneration(
 }
 
 /**
- * Build TTF + glyphmap for all icon sets using a single Pyodide/PathKit instance.
+ * Build TTF + glyphmap for all icon sets using a single PathKit instance.
  * Output is placed in a "nanoicons" folder next to each input dir (sibling to inputDir).
  * Skips generation for a set if that output folder already contains the expected .ttf and .glyphmap.json.
  */
