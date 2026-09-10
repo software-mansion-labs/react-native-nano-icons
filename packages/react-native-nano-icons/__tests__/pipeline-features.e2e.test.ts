@@ -219,9 +219,11 @@ describe('Pipeline E2E — failure reporting', () => {
     }
     const failures: string[] = [];
     const warnings: string[] = [];
+    const infos: string[] = [];
     const logger: NanoLogger = {
       ...quietLogger((w) => warnings.push(w)),
       fail: (m) => failures.push(m),
+      info: (m) => infos.push(m),
     };
     let error: Error | null = null;
     try {
@@ -237,8 +239,29 @@ describe('Pipeline E2E — failure reporting', () => {
     await fsp.rm(inputDir, { recursive: true, force: true });
     await fsp.rm(outputDir, { recursive: true, force: true });
     await fsp.rm(tempDir, { recursive: true, force: true });
-    return { error, failures, warnings, ttfWritten };
+    return { error, failures, warnings, infos, ttfWritten };
   }
+
+  test('every per-file message leads with the [Set: file] label', async () => {
+    const { failures, warnings } = await runBroken({
+      'textEl.svg': SVG('<text x="1" y="1">hi</text>'),
+      'masked.svg': SVG(
+        '<mask id="m"><rect width="24" height="12" fill="white"/></mask><rect width="24" height="24" mask="url(#m)"/>'
+      ),
+      'blank.svg': SVG('<rect width="24" height="24" fill="none"/>'),
+    });
+    expect(failures).toEqual([
+      expect.stringMatching(
+        /^\[BrokenSet: textEl\.svg\] failed to flatten: Unsupported element <text>/
+      ),
+    ]);
+    expect(warnings).toContain(
+      '[BrokenSet: masked.svg] skipped: <mask> is not supported yet'
+    );
+    expect(warnings).toContain(
+      '[BrokenSet: blank.svg] produced no glyphs: nothing in it paints'
+    );
+  }, 120_000);
 
   test('every broken icon is reported, then the set fails listing them all', async () => {
     const { error, failures, ttfWritten } = await runBroken({
@@ -251,14 +274,14 @@ describe('Pipeline E2E — failure reporting', () => {
       ),
     });
     expect(failures).toHaveLength(2);
-    expect(failures.find((f) => f.includes('BrokenSet:textEl.svg'))).toMatch(
+    expect(failures.find((f) => f.includes('[BrokenSet: textEl.svg]'))).toMatch(
       /Unsupported element <text> at \/svg\[0\]\/text\[0\]/
     );
-    expect(failures.find((f) => f.includes('BrokenSet:badRef.svg'))).toMatch(
+    expect(failures.find((f) => f.includes('[BrokenSet: badRef.svg]'))).toMatch(
       /url\(#nope\) references <clipPath> with id "nope", but no such element exists/
     );
     expect(error?.message).toBe(
-      '2 of 3 icons in "BrokenSet" could not be converted: badRef.svg, textEl.svg'
+      '2 of 3 icons in [BrokenSet] could not be converted: badRef.svg, textEl.svg'
     );
     expect(ttfWritten).toBe(false);
   }, 120_000);
@@ -287,7 +310,41 @@ describe('Pipeline E2E — failure reporting', () => {
     });
     expect(error).toBeNull();
     expect(warnings).toContain(
-      '"BrokenSet:novb.svg" has no viewBox; assuming "0 0 32 16"'
+      '[BrokenSet: novb.svg] has no viewBox; assuming [0 0 32 16]'
+    );
+  }, 120_000);
+
+  test('<use> resolves an SVG2 href like an xlink:href', async () => {
+    const { error, failures, ttfWritten } = await runBroken({
+      'use.svg': SVG(
+        '<defs><rect id="box" width="10" height="10"/></defs><use href="#box" x="2" y="2"/>'
+      ),
+    });
+    expect(failures).toEqual([]);
+    expect(error).toBeNull();
+    expect(ttfWritten).toBe(true);
+  }, 120_000);
+
+  test('<use> with no href says so instead of quoting an empty string', async () => {
+    const { failures } = await runBroken({
+      'nohref.svg': SVG('<use x="2" y="2"/>'),
+    });
+    expect(failures[0]).toMatch(/<use> has no href attribute to resolve/);
+  }, 120_000);
+
+  test('verbose per-file detail lines lead with the label too', async () => {
+    const fixture = (rel: string) =>
+      fs.readFileSync(path.join(TEST_ICONS, rel), 'utf8');
+    const { error, infos } = await runBroken({
+      'swm-walker.svg': fixture('nested/swm-walker.svg'),
+      'elephant.svg': fixture('sanatize_examples/elephant.svg'),
+    });
+    expect(error).toBeNull();
+    expect(infos).toContain(
+      '  ↻ [BrokenSet: swm-walker.svg] converting evenodd path to nonzero winding'
+    );
+    expect(infos).toContain(
+      '  ⚠ [BrokenSet: elephant.svg] sanitized path: path was missing initial moveto (prepended M from endpoint)'
     );
   }, 120_000);
 
@@ -298,7 +355,7 @@ describe('Pipeline E2E — failure reporting', () => {
     });
     expect(error).toBeNull();
     expect(warnings).toContain(
-      '"BrokenSet:blank.svg" produced no glyphs: nothing in it paints'
+      '[BrokenSet: blank.svg] produced no glyphs: nothing in it paints'
     );
   }, 120_000);
 });

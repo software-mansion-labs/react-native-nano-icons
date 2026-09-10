@@ -62,7 +62,7 @@ export async function runFontPipeline(
 
     logger?.info(`Processing ${file}`);
 
-    const fileLabel = `${config.fontFamily}:${file}`;
+    const fileLabel = `[${config.fontFamily}: ${file}]`;
     let prepared;
     try {
       prepared = await prepareSvgLayers({
@@ -113,13 +113,13 @@ export async function runFontPipeline(
     if (layers.length > 0) {
       glyphMap.i[iconName] = [adv, layers];
     } else {
-      logger?.warn(`"${fileLabel}" produced no glyphs: nothing in it paints`);
+      logger?.warn(`${fileLabel} produced no glyphs: nothing in it paints`);
     }
   }
 
   if (failed.length) {
     throw new Error(
-      `${failed.length} of ${files.length} icons in "${config.fontFamily}" could not be converted: ${failed.join(', ')}`
+      `${failed.length} of ${files.length} icons in [${config.fontFamily}] could not be converted: ${failed.join(', ')}`
     );
   }
 
