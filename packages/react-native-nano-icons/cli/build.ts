@@ -28,6 +28,15 @@ export type BuiltFont = {
   linking: 'static' | 'dynamic';
 };
 
+export class IconSetBuildError extends Error {
+  built: BuiltFont[];
+
+  constructor(message: string, built: BuiltFont[]) {
+    super(message);
+    this.built = built;
+  }
+}
+
 const DEFAULT_SAFE_ZONE = 1020;
 const DEFAULT_UPM = 1024;
 const DEFAULT_START_UNICODE = 0xe900;
@@ -56,7 +65,12 @@ function shouldSkipGeneration(
     glyphmap?.m?.l === 'd' ? 'dynamic' : 'static';
 
   if (storedHash && storedHash === inputHash && storedLinking === linking) {
-    logger?.info(`${fontFamily}: SVG fingerprint unchanged, skipping build.`);
+    const iconCount = Object.keys(glyphmap?.i ?? {}).length;
+    logger?.succeed(
+      `${fontFamily}.ttf is up to date [${iconCount} icon${
+        iconCount === 1 ? '' : 's'
+      }]`
+    );
     return true;
   }
 
@@ -134,7 +148,8 @@ export async function buildAllFonts(
         { logger, inputHash }
       );
     } catch (err) {
-      failures.push(err instanceof Error ? err.message : String(err));
+      logger?.fail(err instanceof Error ? err.message : String(err));
+      failures.push(fontFamily);
       continue;
     }
 
@@ -147,7 +162,12 @@ export async function buildAllFonts(
   }
 
   if (failures.length) {
-    throw new Error(failures.join('\n'));
+    throw new IconSetBuildError(
+      `${failures.length} icon set${
+        failures.length === 1 ? '' : 's'
+      } failed to build: ${failures.join(', ')}`,
+      results
+    );
   }
 
   if (allSkipped && results.length > 0) {

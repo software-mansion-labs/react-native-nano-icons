@@ -18,10 +18,12 @@ import {
   loadDynamicIconSets,
   loadDynamicSetsFromAppConfig,
   buildAllFonts,
+  IconSetBuildError,
   linkBare,
+  type BuiltFont,
 } from '../cli/index';
 
-async function main(logger: NanoLogger): Promise<void> {
+export async function main(logger: NanoLogger): Promise<void> {
   const dynamic = process.argv.includes('--dynamic');
   const appConfig = process.argv.includes('--app-config');
 
@@ -47,16 +49,28 @@ async function main(logger: NanoLogger): Promise<void> {
     await buildAllFonts(dynamicIconSets, projectRoot, { logger });
   } else {
     const config = loadNanoIconsConfig(configRoot);
-    const built = await buildAllFonts(config.iconSets, projectRoot, { logger });
+    let built: BuiltFont[];
+    let buildError: IconSetBuildError | undefined;
+    try {
+      built = await buildAllFonts(config.iconSets, projectRoot, { logger });
+    } catch (err) {
+      if (!(err instanceof IconSetBuildError)) throw err;
+      buildError = err;
+      built = err.built;
+    }
 
-    await linkBare(projectRoot, built, logger);
+    await linkBare(projectRoot, built, logger, config.iconSets.length);
+    if (buildError) throw buildError;
   }
 }
 
-createOraLogger(process.argv.includes('--verbose') ? 'verbose' : 'normal').then(
-  (logger) =>
+if (require.main === module) {
+  createOraLogger(
+    process.argv.includes('--verbose') ? 'verbose' : 'normal'
+  ).then((logger) =>
     main(logger).catch((err: unknown) => {
       logger.fail(err instanceof Error ? err.message : String(err));
       process.exit(1);
     })
-);
+  );
+}

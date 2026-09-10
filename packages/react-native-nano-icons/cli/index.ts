@@ -1,4 +1,9 @@
-export { buildAllFonts, type IconSetConfig, type BuiltFont } from './build';
+export {
+  buildAllFonts,
+  IconSetBuildError,
+  type IconSetConfig,
+  type BuiltFont,
+} from './build';
 export {
   createOraLogger,
   createQuietLogger,

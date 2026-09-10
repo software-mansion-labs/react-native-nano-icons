@@ -193,7 +193,8 @@ async function linkIos(
 export async function linkBare(
   projectRoot: string,
   builtFonts: BuiltFont[],
-  logger: NanoLogger
+  logger: NanoLogger,
+  totalSets = builtFonts.length
 ): Promise<void> {
   if (!builtFonts.length) return;
 
@@ -252,6 +253,6 @@ export async function linkBare(
   }
 
   logger.succeed(
-    `Linked fonts → ${linkedPlatforms.join(', ')}${dynamicSuffix}`
+    `Linked [${staticFonts.map((b) => b.fontFamily).join(', ')}] (${staticFonts.length}/${totalSets}) → ${linkedPlatforms.join(', ')}${dynamicSuffix}`
   );
 }

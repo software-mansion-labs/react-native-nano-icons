@@ -46,7 +46,7 @@ export async function createOraLogger(level: LogLevel): Promise<NanoLogger> {
       if (spinner.isSpinning && process.stdout.isTTY) spinner.render();
     },
     warn(msg) {
-      spinner.warn(chalk.yellow(msg));
+      spinner.warn(chalk.dim(msg));
     },
   };
 }
@@ -74,13 +74,13 @@ export async function createQuietLogger(level: LogLevel): Promise<NanoLogger> {
       console.log(`${dimPrefix} ${tick} ${msg}`);
     },
     fail(msg) {
-      console.error(`${dimPrefix} ${cross} ${msg}`);
+      console.error(`${dimPrefix} ${cross} ${chalk.red(msg)}`);
     },
     info(msg) {
       if (level === 'verbose') console.log(`${dimPrefix} ${info} ${msg}`);
     },
     warn(msg) {
-      console.warn(`${dimPrefix} ${warning} ${msg}`);
+      console.warn(`${dimPrefix} ${warning} ${chalk.dim(msg)}`);
     },
   };
 }
