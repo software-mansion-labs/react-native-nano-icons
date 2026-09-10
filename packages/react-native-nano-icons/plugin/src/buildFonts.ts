@@ -7,26 +7,15 @@ import type { IconSetConfig, BuiltFont } from './types';
 
 /**
  * Build TTF + glyphmap for all icon sets.
- * Shows an ora spinner per font set; catches errors and displays a friendly message
- * unless EXPO_DEBUG is set, in which case the full error is re-thrown.
+ * Reports every broken icon, then fails the prebuild so no set is silently left unlinked.
+ * EXPO_DEBUG adds the per-file processing details.
  */
 export async function buildAllFonts(
   iconSets: IconSetConfig[],
   projectRoot: string
 ): Promise<BuiltFont[]> {
-  const level = detectExpoLogLevel();
-  const logger = await createQuietLogger(level);
-
-  try {
-    return await coreBuildAllFonts(iconSets, projectRoot, { logger });
-  } catch (err: unknown) {
-    logger.fail(err instanceof Error ? err.message : String(err));
-    if (level === 'verbose') {
-      throw err;
-    }
-    logger.warn('Run with EXPO_DEBUG=1 for the full error.');
-    return [];
-  }
+  const logger = await createQuietLogger(detectExpoLogLevel());
+  return coreBuildAllFonts(iconSets, projectRoot, { logger });
 }
 
 // Single build run per process; reused across ios/android mods.
