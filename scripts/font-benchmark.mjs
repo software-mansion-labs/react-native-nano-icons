@@ -206,6 +206,13 @@ function printComparison(before, after, limits) {
   console.log(
     `${refLabel(before.label, limits.beforeSha, limits.repo)} → ${refLabel(after.label, limits.afterSha, limits.repo)}. ${after.runs} runs per set. Sizes are exact; times come from separate runners.\n`
   );
+  if (!ok) {
+    console.log(`**Failed:**\n${failures.map((f) => `- ${f}`).join('\n')}\n`);
+  }
+  console.log('<details>');
+  console.log(
+    `<summary>${ok ? 'Details' : 'Details and failing sets'}</summary>\n`
+  );
   console.log('### Size\n');
   console.log('| Set | Icons | TTF | Deflated | Points |');
   console.log('|---|---:|---:|---:|---:|');
@@ -225,9 +232,6 @@ function printComparison(before, after, limits) {
   console.log(
     `| Byte-identical rebuilds | required | ${mark(det(after))} (${before.label}: ${det(before) ? 'yes' : 'no'}) |`
   );
-  if (!ok) {
-    console.log(`\n**Failed:**\n${failures.map((f) => `- ${f}`).join('\n')}`);
-  }
   console.log('\n<details>');
   console.log(
     `<summary>Build time, median of ${after.runs} runs (not gated)</summary>\n`
@@ -235,6 +239,8 @@ function printComparison(before, after, limits) {
   console.log(`| Set | ${before.label} | ${after.label} | Δ |`);
   console.log('|---|---:|---:|---:|');
   for (const t of times) console.log(t);
+  console.log('\n</details>');
+  console.log('\n</details>');
   console.log('\n</details>');
   return ok;
 }
