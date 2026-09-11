@@ -241,7 +241,6 @@ function printComparison(before, after, limits) {
   for (const t of times) console.log(t);
   console.log('\n</details>');
   console.log('\n</details>');
-  console.log('\n</details>');
   return ok;
 }
 
