@@ -1,0 +1,11 @@
+steps:
+  - echo: Restart the Bare example (Release build, fonts embedded). Expect the home screen with the Open font grid button.
+  - launch: org.reactjs.native.example.BareReactNativeExample
+  - await: { visible: { id: open-font-grid }, timeout: 15000 }
+  - await: { idle: true }
+  - echo: On Home. Tap Open font grid. Expect the font grid screen.
+  - tap: { id: open-font-grid }
+  - await: { visible: { id: font-grid-close }, timeout: 10000 }
+  - await: { idle: true, stableFor: 800, timeout: 10000 }
+  - echo: Compare the rendered glyph grid with the reviewed baseline for this platform.
+  - snapshot: { name: font-grid, maxMismatch: 0.05 }
