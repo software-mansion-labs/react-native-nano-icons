@@ -6,12 +6,9 @@ import {
   parseCompileTtfFromGlyphsError,
   type FontGlyph,
 } from '../font/compile';
-import { shouldSkipPath } from '../glyph/parse';
-import { computePlacement, transformPathForFont } from '../glyph/placement';
-import { loadPathKit } from '../pathkit/load';
 import type { GlyphLayer, NanoGlyphMap, NanoLogger } from '../types';
 import { ensureDir, type PipelineConfig, type PipelinePaths } from './config';
-import { prepareSvgLayers } from './prepare';
+import { defaultConcurrency, prepareIcons } from './iconPool';
 
 export type PipelineResult = {
   ttfPath: string;
@@ -25,7 +22,7 @@ export type PipelineResult = {
 export async function runFontPipeline(
   config: PipelineConfig,
   paths: PipelinePaths,
-  options?: { logger?: NanoLogger; inputHash?: string }
+  options?: { logger?: NanoLogger; inputHash?: string; concurrency?: number }
 ): Promise<PipelineResult> {
   const startTime = Date.now();
   const logger = options?.logger;
@@ -53,67 +50,40 @@ export async function runFontPipeline(
   const codepointToIcon = new Map<number, string>();
   const allGlyphs: FontGlyph[] = [];
 
-  const pathkit = await loadPathKit();
   const failed: string[] = [];
 
-  for (const file of files) {
-    const iconName = path.parse(file).name;
-    const filePath = path.join(paths.inputDir, file);
-
-    logger?.info(`Processing ${file}`);
-
-    const fileLabel = `[${config.fontFamily}: ${file}]`;
-    let prepared;
-    try {
-      prepared = await prepareSvgLayers({
-        filePath,
-        fileLabel,
-        pathkit,
-        logger,
-      });
-    } catch (err) {
-      logger?.fail(err instanceof Error ? err.message : String(err));
-      failed.push(file);
-      continue;
-    }
-    if (!prepared) continue;
-
-    const { vx, vy, scale, xOff, yOff, adv } = computePlacement({
+  const results = await prepareIcons(
+    files.map((file) => ({
+      file,
+      filePath: path.join(paths.inputDir, file),
+      fontFamily: config.fontFamily,
       upm: config.upm,
       safeZone: config.safeZone,
-      viewBox: prepared.viewBox,
-    });
+    })),
+    options?.concurrency ?? defaultConcurrency()
+  );
 
-    const layers: GlyphLayer[] = [];
-
-    for (const p of prepared.paths) {
-      if (shouldSkipPath(p.d, p.fill)) continue;
-
-      const cp = currentUnicode++;
-      codepointToIcon.set(cp, iconName);
-
-      const fontD = transformPathForFont(pathkit, p.d, {
-        vx,
-        vy,
-        scale,
-        xOff,
-        yOff,
-        upm: config.upm,
-      });
-
-      allGlyphs.push({
-        codepoint: cp,
-        advanceWidth: adv,
-        d: fontD,
-      });
-
-      layers.push([cp, p.fill || 'black']);
+  for (const result of results) {
+    for (const [level, msg] of result.logs) logger?.[level](msg);
+    if (result.error !== null) {
+      logger?.fail(result.error);
+      failed.push(result.file);
+      continue;
     }
 
+    const layers: GlyphLayer[] = [];
+    for (const layer of result.layers) {
+      const cp = currentUnicode++;
+      codepointToIcon.set(cp, result.iconName);
+      allGlyphs.push({
+        codepoint: cp,
+        advanceWidth: result.adv,
+        d: layer.d,
+      });
+      layers.push([cp, layer.fill || 'black']);
+    }
     if (layers.length > 0) {
-      glyphMap.i[iconName] = [adv, layers];
-    } else {
-      logger?.warn(`${fileLabel} produced no glyphs: nothing in it paints`);
+      glyphMap.i[result.iconName] = [result.adv, layers];
     }
   }
 
