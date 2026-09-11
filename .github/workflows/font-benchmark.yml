@@ -1,0 +1,60 @@
+name: Font benchmark
+on:
+  pull_request:
+    paths:
+      - 'packages/react-native-nano-icons/**'
+      - 'scripts/font-benchmark.mjs'
+      - '.github/workflows/font-benchmark.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  benchmark:
+    if: github.repository == 'software-mansion-labs/react-native-nano-icons'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: font-benchmark-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: pr
+      - uses: actions/checkout@v4
+        with:
+          path: base
+          ref: ${{ github.event.pull_request.base.sha || 'main' }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: |
+            pr/yarn.lock
+            base/yarn.lock
+      - name: Build base
+        working-directory: base
+        run: |
+          yarn --immutable
+          yarn build-packages
+      - name: Build PR
+        working-directory: pr
+        run: |
+          yarn --immutable
+          yarn build-packages
+      - name: Benchmark base
+        run: node pr/scripts/font-benchmark.mjs --pkg base/packages/react-native-nano-icons --runs 5 --pack --label base --out base.json
+      - name: Benchmark PR
+        run: node pr/scripts/font-benchmark.mjs --pkg pr/packages/react-native-nano-icons --runs 5 --pack --label pr --out pr.json
+      - name: Compare
+        id: compare
+        run: |
+          node pr/scripts/font-benchmark.mjs --compare base.json pr.json --max-size-growth 5 --max-time-growth 25 | tee comparison.md
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+      - run: cat comparison.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        with:
+          header: font-benchmark
+          path: comparison.md
+      - run: exit ${{ steps.compare.outputs.exit }}
