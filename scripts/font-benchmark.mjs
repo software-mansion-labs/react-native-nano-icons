@@ -23,7 +23,9 @@ if (args[0] === '--compare') {
   const after = JSON.parse(fs.readFileSync(args[2], 'utf8'));
   const ok = printComparison(before, after, {
     maxSizeGrowth: Number(opt('--max-size-growth', Infinity)),
-    maxTimeGrowth: Number(opt('--max-time-growth', Infinity)),
+    beforeSha: opt('--before-sha', ''),
+    afterSha: opt('--after-sha', ''),
+    repo: opt('--repo', ''),
   });
   process.exit(ok ? 0 : 1);
 }
@@ -146,54 +148,95 @@ function growth(before, after) {
 
 function pct(before, after) {
   const d = growth(before, after);
+  if (Math.abs(d) < 0.05) return '0.0%';
   return `${d > 0 ? '+' : ''}${d.toFixed(1)}%`;
+}
+
+function arrow(before, after) {
+  return `${n(before)} → ${n(after)} (${pct(before, after)})`;
+}
+
+function refLabel(label, sha, repo) {
+  if (!sha) return `**${label}**`;
+  const short = sha.slice(0, 7);
+  return repo
+    ? `**${label}** [\`${short}\`](${repo}/commit/${sha})`
+    : `**${label}** \`${short}\``;
 }
 
 function printComparison(before, after, limits) {
   const failures = [];
-  console.log(`\n### Font pipeline: ${before.label} → ${after.label}\n`);
-  console.log(
-    '| Set | TTF before | TTF after | Δ | Deflated before | Deflated after | Δ | Points Δ | Build before ms | Build after ms | Δ |'
-  );
-  console.log('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
+  const rows = [];
+  const times = [];
   for (const b of before.sets) {
     const a = after.sets.find((s) => s.name === b.name);
     if (!a) continue;
-    console.log(
-      `| ${b.name} | ${n(b.bytes)} | ${n(a.bytes)} | ${pct(b.bytes, a.bytes)} | ${n(b.deflated)} | ${n(a.deflated)} | ${pct(b.deflated, a.deflated)} | ${pct(b.points, a.points)} | ${n(b.medianMs)} | ${n(a.medianMs)} | ${pct(b.medianMs, a.medianMs)} |`
-    );
-    if (growth(b.bytes, a.bytes) > limits.maxSizeGrowth) {
+    const grew = growth(b.bytes, a.bytes) > limits.maxSizeGrowth;
+    if (grew) {
       failures.push(
         `${b.name}: TTF grew ${pct(b.bytes, a.bytes)} (limit +${limits.maxSizeGrowth}%)`
       );
     }
-    if (growth(b.medianMs, a.medianMs) > limits.maxTimeGrowth) {
-      failures.push(
-        `${b.name}: build time grew ${pct(b.medianMs, a.medianMs)} (limit +${limits.maxTimeGrowth}%)`
-      );
-    }
-  }
-  if (before.tarball && after.tarball) {
-    console.log(
-      `\nTarball: ${n(before.tarball.bytes)} → ${n(after.tarball.bytes)} bytes (${pct(before.tarball.bytes, after.tarball.bytes)}), ${before.tarball.files} → ${after.tarball.files} files`
+    const name = grew ? `**${b.name}** ❌` : b.name;
+    rows.push(
+      `| ${name} | ${n(b.icons)} | ${arrow(b.bytes, a.bytes)} | ${arrow(b.deflated, a.deflated)} | ${pct(b.points, a.points)} |`
     );
-    if (
-      growth(before.tarball.bytes, after.tarball.bytes) > limits.maxSizeGrowth
-    ) {
+    times.push(
+      `| ${b.name} | ${n(b.medianMs)} ms | ${n(a.medianMs)} ms | ${pct(b.medianMs, a.medianMs)} |`
+    );
+  }
+  let tarballRow = '';
+  let tarballOk = true;
+  if (before.tarball && after.tarball) {
+    tarballOk =
+      growth(before.tarball.bytes, after.tarball.bytes) <= limits.maxSizeGrowth;
+    if (!tarballOk) {
       failures.push(
         `tarball grew ${pct(before.tarball.bytes, after.tarball.bytes)} (limit +${limits.maxSizeGrowth}%)`
       );
     }
+    tarballRow = `| **Tarball**${tarballOk ? '' : ' ❌'} | | ${arrow(before.tarball.bytes, after.tarball.bytes)} | | ${before.tarball.files} → ${after.tarball.files} files |`;
   }
   const det = (r) => r.sets.every((s) => s.deterministic);
-  console.log(
-    `\nByte-identical rebuilds: ${before.label} ${det(before) ? 'yes' : 'no'}, ${after.label} ${det(after) ? 'yes' : 'no'}.`
-  );
   if (!det(after)) failures.push('rebuilds are not byte-identical');
-  if (failures.length) {
+  const ok = failures.length === 0;
+  const mark = (pass) => (pass ? '✅' : '❌');
+
+  console.log(`## Font benchmark: ${ok ? '✅ pass' : '❌ fail'}\n`);
+  console.log(
+    `${refLabel(before.label, limits.beforeSha, limits.repo)} → ${refLabel(after.label, limits.afterSha, limits.repo)}. ${after.runs} runs per set. Sizes are exact; times come from separate runners.\n`
+  );
+  console.log('### Size\n');
+  console.log('| Set | Icons | TTF | Deflated | Points |');
+  console.log('|---|---:|---:|---:|---:|');
+  for (const r of rows) console.log(r);
+  if (tarballRow) console.log(tarballRow);
+  console.log('\n### Checks\n');
+  console.log('| Check | Limit | Result |');
+  console.log('|---|---|:---:|');
+  console.log(
+    `| TTF size growth | ≤ ${limits.maxSizeGrowth}% per set | ${mark(!failures.some((f) => f.includes('TTF grew')))} |`
+  );
+  if (before.tarball && after.tarball) {
+    console.log(
+      `| Tarball growth | ≤ ${limits.maxSizeGrowth}% | ${mark(tarballOk)} |`
+    );
+  }
+  console.log(
+    `| Byte-identical rebuilds | required | ${mark(det(after))} (${before.label}: ${det(before) ? 'yes' : 'no'}) |`
+  );
+  if (!ok) {
     console.log(`\n**Failed:**\n${failures.map((f) => `- ${f}`).join('\n')}`);
   }
-  return failures.length === 0;
+  console.log('\n<details>');
+  console.log(
+    `<summary>Build time, median of ${after.runs} runs (not gated)</summary>\n`
+  );
+  console.log(`| Set | ${before.label} | ${after.label} | Δ |`);
+  console.log('|---|---:|---:|---:|');
+  for (const t of times) console.log(t);
+  console.log('\n</details>');
+  return ok;
 }
 
 const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nano-font-benchmark-'));

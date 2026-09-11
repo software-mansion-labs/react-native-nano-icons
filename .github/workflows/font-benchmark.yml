@@ -59,12 +59,9 @@ jobs:
       - name: Compare
         id: compare
         run: |
-          node scripts/font-benchmark.mjs --compare base.json pr.json --max-size-growth 5 | tee comparison.md
+          node scripts/font-benchmark.mjs --compare base.json pr.json --max-size-growth 5 --before-sha "${{ github.event.pull_request.base.sha }}" --after-sha "${{ github.event.pull_request.head.sha }}" --repo "${{ github.server_url }}/${{ github.repository }}" | tee comparison.md
           echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-      - run: |
-          cat comparison.md >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> comparison.md
-          echo "Build times come from two different runners and are not gated." >> comparison.md
+      - run: cat comparison.md >> "$GITHUB_STEP_SUMMARY"
       - uses: marocchino/sticky-pull-request-comment@v2
         if: github.event_name == 'pull_request'
         continue-on-error: true
