@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const cubic2quad = require('cubic2quad') as (
   p1x: number,
   p1y: number,

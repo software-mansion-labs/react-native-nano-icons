@@ -5,7 +5,7 @@ import { forceTtfMetrics } from './metrics';
 import svg2ttf from 'svg2ttf';
 import { GLYPH_CODEPOINT, XML_AMP, XML_QUOT } from '../../utils/svgPatterns';
 import { SVG_NS } from '../flatten/dom';
-import { toQuadraticPath } from './quadratic.js';
+import { toQuadraticPath } from './quadratic';
 
 const QUADRATIC_ERROR_BOUND_EM = 1 / 512;
 
