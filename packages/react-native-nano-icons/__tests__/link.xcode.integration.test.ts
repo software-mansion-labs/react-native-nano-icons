@@ -77,7 +77,7 @@ test('real pbxproj — conventional INFOPLIST_FILE', async () => {
   expect(
     uiAppFonts(path.join(root, 'ios/BareReactNativeExample/Info.plist'))
   ).toContain('RealFont.ttf');
-  expect(logger.succeed).toHaveBeenCalledWith('Linked fonts → ios');
+  expect(logger.succeed).toHaveBeenCalledWith('Linked [RealFont] (1/1) → ios');
   const written = fs.readFileSync(
     path.join(root, 'ios/BareReactNativeExample.xcodeproj/project.pbxproj'),
     'utf8'
@@ -98,7 +98,7 @@ test('real pbxproj — custom INFOPLIST_FILE with $(SRCROOT)', async () => {
   expect(
     uiAppFonts(path.join(root, 'ios/BareReactNativeExample/Info.plist'))
   ).not.toContain('RealFont.ttf');
-  expect(logger.succeed).toHaveBeenCalledWith('Linked fonts → ios');
+  expect(logger.succeed).toHaveBeenCalledWith('Linked [RealFont] (1/1) → ios');
 });
 
 test('real pbxproj — the run script phase lands on the application target', async () => {

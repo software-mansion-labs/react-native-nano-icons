@@ -13,18 +13,19 @@
 import path from 'node:path';
 import {
   createOraLogger,
+  type NanoLogger,
   loadNanoIconsConfig,
   loadDynamicIconSets,
   loadDynamicSetsFromAppConfig,
   buildAllFonts,
+  IconSetBuildError,
   linkBare,
-} from '../cli/index.js';
+  type BuiltFont,
+} from '../cli/index';
 
-async function main(): Promise<void> {
-  const verbose = process.argv.includes('--verbose');
+export async function main(logger: NanoLogger): Promise<void> {
   const dynamic = process.argv.includes('--dynamic');
   const appConfig = process.argv.includes('--app-config');
-  const level = verbose ? 'verbose' : 'normal';
 
   const pathIdx = process.argv.indexOf('--path');
   const projectRoot = process.cwd();
@@ -32,8 +33,6 @@ async function main(): Promise<void> {
     pathIdx !== -1 && process.argv[pathIdx + 1]
       ? path.resolve(projectRoot, process.argv[pathIdx + 1]!)
       : projectRoot;
-
-  const logger = await createOraLogger(level);
 
   if (dynamic) {
     const source = appConfig ? 'Expo app config' : '.nanoicons.json';
@@ -50,14 +49,28 @@ async function main(): Promise<void> {
     await buildAllFonts(dynamicIconSets, projectRoot, { logger });
   } else {
     const config = loadNanoIconsConfig(configRoot);
-    const built = await buildAllFonts(config.iconSets, projectRoot, { logger });
+    let built: BuiltFont[];
+    let buildError: IconSetBuildError | undefined;
+    try {
+      built = await buildAllFonts(config.iconSets, projectRoot, { logger });
+    } catch (err) {
+      if (!(err instanceof IconSetBuildError)) throw err;
+      buildError = err;
+      built = err.built;
+    }
 
-    await linkBare(projectRoot, built, logger);
+    await linkBare(projectRoot, built, logger, config.iconSets.length);
+    if (buildError) throw buildError;
   }
 }
 
-main().catch((err: unknown) => {
-  const message = err instanceof Error ? err.message : String(err);
-  console.error(message);
-  process.exit(1);
-});
+if (require.main === module) {
+  createOraLogger(
+    process.argv.includes('--verbose') ? 'verbose' : 'normal'
+  ).then((logger) =>
+    main(logger).catch((err: unknown) => {
+      logger.fail(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    })
+  );
+}

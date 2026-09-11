@@ -5,10 +5,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-// Must be set before any pipeline import so getPackageRoot() picks it up.
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
-import { runPipeline } from '../src/core/pipeline/run';
+import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoGlyphMap, NanoLogger } from '../src/core/types';
 
 // ---------------------------------------------------------------------------
@@ -63,7 +60,7 @@ async function runOnSubset(opts: {
       await fsp.copyFile(path.join(srcDir, name), path.join(inputDir, name));
     }
 
-    await runPipeline(
+    await runFontPipeline(
       { ...PIPELINE, fontFamily: opts.fontFamily },
       { inputDir, outputDir, tempDir },
       opts.onWarn ? { logger: quietLogger(opts.onWarn) } : undefined
@@ -205,4 +202,160 @@ describe('Pipeline E2E — mask rejection', () => {
   test('a warning explains the mask rejection', () => {
     expect(warnings.some((w) => /mask/i.test(w))).toBe(true);
   });
+});
+
+describe('Pipeline E2E — failure reporting', () => {
+  const SVG = (body: string) =>
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${body}</svg>`;
+
+  async function runBroken(files: Record<string, string>) {
+    const inputDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-bad-in-'));
+    const outputDir = await fsp.mkdtemp(
+      path.join(os.tmpdir(), 'nano-bad-out-')
+    );
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-bad-tmp-'));
+    for (const [name, content] of Object.entries(files)) {
+      await fsp.writeFile(path.join(inputDir, name), content);
+    }
+    const failures: string[] = [];
+    const warnings: string[] = [];
+    const infos: string[] = [];
+    const logger: NanoLogger = {
+      ...quietLogger((w) => warnings.push(w)),
+      fail: (m) => failures.push(m),
+      info: (m) => infos.push(m),
+    };
+    let error: Error | null = null;
+    try {
+      await runFontPipeline(
+        { ...PIPELINE, fontFamily: 'BrokenSet' },
+        { inputDir, outputDir, tempDir },
+        { logger }
+      );
+    } catch (err) {
+      error = err as Error;
+    }
+    const ttfWritten = fs.existsSync(path.join(outputDir, 'BrokenSet.ttf'));
+    await fsp.rm(inputDir, { recursive: true, force: true });
+    await fsp.rm(outputDir, { recursive: true, force: true });
+    await fsp.rm(tempDir, { recursive: true, force: true });
+    return { error, failures, warnings, infos, ttfWritten };
+  }
+
+  test('every per-file message leads with the [Set: file] label', async () => {
+    const { failures, warnings } = await runBroken({
+      'textEl.svg': SVG('<text x="1" y="1">hi</text>'),
+      'masked.svg': SVG(
+        '<mask id="m"><rect width="24" height="12" fill="white"/></mask><rect width="24" height="24" mask="url(#m)"/>'
+      ),
+      'blank.svg': SVG('<rect width="24" height="24" fill="none"/>'),
+    });
+    expect(failures).toEqual([
+      expect.stringMatching(
+        /^\[BrokenSet: textEl\.svg\] failed to flatten: Unsupported element <text>/
+      ),
+    ]);
+    expect(warnings).toContain(
+      '[BrokenSet: masked.svg] skipped: <mask> is not supported yet'
+    );
+    expect(warnings).toContain(
+      '[BrokenSet: blank.svg] produced no glyphs: nothing in it paints'
+    );
+  }, 120_000);
+
+  test('every broken icon is reported, then the set fails listing them all', async () => {
+    const { error, failures, ttfWritten } = await runBroken({
+      'ok.svg': SVG('<rect width="10" height="10"/>'),
+      'textEl.svg': SVG(
+        '<text x="1" y="1">hi</text><rect width="4" height="4"/>'
+      ),
+      'badRef.svg': SVG(
+        '<rect width="24" height="24" clip-path="url(#nope)"/>'
+      ),
+    });
+    expect(failures).toHaveLength(2);
+    expect(failures.find((f) => f.includes('[BrokenSet: textEl.svg]'))).toMatch(
+      /Unsupported element <text> at \/svg\[0\]\/text\[0\]/
+    );
+    expect(failures.find((f) => f.includes('[BrokenSet: badRef.svg]'))).toMatch(
+      /url\(#nope\) references <clipPath> with id "nope", but no such element exists/
+    );
+    expect(error?.message).toBe(
+      '2 of 3 icons in [BrokenSet] could not be converted: badRef.svg, textEl.svg'
+    );
+    expect(ttfWritten).toBe(false);
+  }, 120_000);
+
+  test('px lengths are accepted instead of failing', async () => {
+    const { error, failures } = await runBroken({
+      'px.svg': SVG('<rect x="1" y="1" width="10px" height="10" fill="red"/>'),
+    });
+    expect(failures).toEqual([]);
+    expect(error).toBeNull();
+  }, 120_000);
+
+  test('a unit other than px names the attribute and element', async () => {
+    const { failures } = await runBroken({
+      'em.svg': SVG('<rect x="1" y="1" width="10em" height="10"/>'),
+    });
+    expect(failures[0]).toMatch(
+      /width="10em" on <rect> is not a number \(units other than px are not supported\)/
+    );
+  }, 120_000);
+
+  test('a missing viewBox warns and uses width/height', async () => {
+    const { error, warnings } = await runBroken({
+      'novb.svg':
+        '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="16"><rect width="10" height="10"/></svg>',
+    });
+    expect(error).toBeNull();
+    expect(warnings).toContain(
+      '[BrokenSet: novb.svg] has no viewBox; assuming [0 0 32 16]'
+    );
+  }, 120_000);
+
+  test('<use> resolves an SVG2 href like an xlink:href', async () => {
+    const { error, failures, ttfWritten } = await runBroken({
+      'use.svg': SVG(
+        '<defs><rect id="box" width="10" height="10"/></defs><use href="#box" x="2" y="2"/>'
+      ),
+    });
+    expect(failures).toEqual([]);
+    expect(error).toBeNull();
+    expect(ttfWritten).toBe(true);
+  }, 120_000);
+
+  test('<use> with no href says so instead of quoting an empty string', async () => {
+    const { failures } = await runBroken({
+      'nohref.svg': SVG('<use x="2" y="2"/>'),
+    });
+    expect(failures[0]).toMatch(/<use> has no href attribute to resolve/);
+  }, 120_000);
+
+  test('verbose per-file detail lines lead with the label too', async () => {
+    const fixture = (rel: string) =>
+      fs.readFileSync(path.join(TEST_ICONS, rel), 'utf8');
+    const { error, infos } = await runBroken({
+      'swm-walker.svg': fixture('nested/swm-walker.svg'),
+      'elephant.svg': fixture('sanatize_examples/elephant.svg'),
+    });
+    expect(error).toBeNull();
+    expect(infos).toContain(
+      '  ↻ [BrokenSet: swm-walker.svg] converting evenodd path to nonzero winding'
+    );
+    expect(infos).toContain(
+      '  ⚠ [BrokenSet: elephant.svg] sanitized path: path was missing initial moveto (prepended M from endpoint)'
+    );
+  }, 120_000);
+
+  test('an icon that paints nothing warns', async () => {
+    const { error, warnings } = await runBroken({
+      'ok.svg': SVG('<rect width="10" height="10"/>'),
+      'blank.svg': SVG('<rect width="24" height="24" fill="none"/>'),
+    });
+    expect(error).toBeNull();
+    expect(warnings).toContain(
+      '[BrokenSet: blank.svg] produced no glyphs: nothing in it paints'
+    );
+  }, 120_000);
 });

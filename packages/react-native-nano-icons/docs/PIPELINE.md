@@ -7,7 +7,7 @@ Complete documentation of how SVG icons are converted into a TrueType font + gly
 ## Overview
 
 ```
-SVG files → picosvg (flatten) → parse paths → evenodd conversion → same-color merge → placement → transform → SVG font XML → svg2ttf → metrics fix → .ttf + .glyphmap.json
+SVG files → flatten (PathKit-backed) → parse paths → evenodd conversion → same-color merge → placement → transform → SVG font XML → svg2ttf → metrics fix → .ttf + .glyphmap.json
 ```
 
 The pipeline converts a directory of SVG icon files into:
@@ -43,80 +43,117 @@ For each icon set:
 2. Computes SHA-256 fingerprint of all SVG inputs
 3. **Skips generation** if existing glyphmap hash matches (incremental builds)
 4. Deletes stale output files
-5. Calls `runPipeline()` with resolved config and paths
+5. Calls `runFontPipeline()` with resolved config and paths
 6. Returns `{ fontFamily, ttfPath, glyphmapPath }`
 
 ---
 
 ## Runtime Initialization
 
-### PathKitManager (singleton)
+### `loadPathKit()`
 
-**File:** `src/core/pipeline/managers.ts`
+**File:** `src/core/pathkit/load.ts`
 
-Loads **PathKit** (Skia's path geometry library, compiled to WASM):
+Loads **PathKit** (Skia's path geometry library, compiled to WASM) once and caches it:
 - Requires `pathkit-wasm/bin/pathkit.js` + `pathkit.wasm`
 - Provides: path parsing, boolean ops, simplify, transform, SVG roundtrip
 - Single instance shared across all icon sets
 
-### PyodideManager (singleton)
+### `src/core/pathkit/` — everything that talks to PathKit
 
-**File:** `src/core/pipeline/managers.ts`
+- `types.ts` — `PathKitModule` / `PathKitPath` typings and the `Cmd` / `Point` verb-level types
+- `contours.ts` — verb-level contour maths shared by the flattener and the evenodd
+  converter: contour splitting, signed area, curve sampling, ray-cast containment,
+  orientation fixing, deterministic start-point rotation
+- `evenodd.ts` — `convertEvenoddToWinding(PathKit, d)` (see 2e below)
 
-Loads **Pyodide** (CPython compiled to WASM) and bootstraps picosvg:
+### `src/core/flatten/` — the SVG flattener
 
-1. Mounts Node.js filesystem at `/app`
-2. Builds the **pathops backend** (`buildPathopsBackend(PathKit)`) — a JavaScript object that mimics the `skia-pathops` C++ Python bindings using PathKit
-3. Registers it as Python module `_pathops_js`
-4. Loads `pathops.py` shim (Python wrapper over `_pathops_js`)
-5. Installs **picosvg** from a bundled `.whl` file (offline-first, PyPI fallback)
-6. Imports `pathops` and `picosvg` into the Python runtime
+`flattenSvg(svgContent, PathKit)` turns any supported SVG into a flat
+`<svg><defs/>{<path>}*</svg>` where every path is absolute, filled, nonzero and free of
+transforms, groups, `<use>`, `<clipPath>` and strokes.
 
-The pathops shim (`src/core/shims/pathops.py`) provides: `Path`, `op()`, `FillType`, `PathVerb`, `PathOp`, etc. — just enough API surface for picosvg to work.
+- `index.ts` — `flattenSvg` entry point
+- `document.ts` — `SvgDocument`: parsed element tree, shape cache and tree sync,
+  depth/breadth-first traversal (with transform / clip / inherited-attribute context),
+  `viewBox`, `tolerance`, `url(#id)` lookup, serialization
+- `stages.ts` — `flattenDocument(doc)`: the ordered list of stages below
+- `stages/` — one file per concern, each a `(doc) => void`:
+  - `discard.ts` — non-SVG namespaces, anonymous `<symbol>`, `<title>`/`<desc>`/`<metadata>`
+  - `styles.ts` — `style=""` declarations → attributes
+  - `nested-svg.ts` — nested `<svg>` → `<g transform>` plus a viewport `<clipPath>`
+  - `use.ts` — `<use>` expansion
+  - `clip-path.ts` — `clip-path="url(#…)"` → one unioned clip shape (used by traversal)
+  - `stroke.ts` — stroke → filled outline path
+  - `defs.ts` — gradient hoisting into a single id-sorted `<defs>`, orphan removal
+  - `collapse.ts` — the main pass: inherit attributes, stroke, apply transform, intersect
+    clips, hoist gradients, remove groups
+  - `fill-rule.ts` — evenodd → nonzero via `removeOverlaps`
+  - `opacity.ts` — fold `fill-opacity` / `stroke-opacity` into `opacity`
+  - `shapes.ts` — shapes → paths, shorthand expansion, absolute coordinates, rounding,
+    empty-subpath and unpainted-shape removal
+  - `validate.ts` — structural check of the flattened tree
+- `element.ts` — element-level helpers: tag predicates, group removal, transform
+  composition, `url(#id)` and `viewBox` parsing
+- `shape.ts` — shape model (`rect`/`circle`/`ellipse`/`line`/`polygon`/`polyline`→path),
+  `mightPaint`, opacity normalization
+- `path.ts` — `d`-string parsing (incl. compact arc flags), shorthand expansion,
+  relative→absolute with subpath-start snapping, rounding
+- `arcs.ts` / `transform.ts` / `geometry.ts` — arc→cubic conversion, `Affine2D`,
+  exact half-even `round()` semantics
+- `pathops.ts` — union / intersection / removeOverlaps / stroke / transform / area over
+  PathKit, returning SVG command sequences with deterministic contour order
+- `dom.ts` / `inherit.ts` — element tree + SVG attribute inheritance
+
+Gradient normalization is intentionally skipped: the font pipeline never reads gradient
+defs, fills keep their `url(#…)` strings.
+
+### `src/core/glyph/` — flat SVG → font-ready layers
+
+- `validate.ts` — `validateSvg` (reject `<mask>`, `<filter>`, `<image>`), `preprocessSvg` (inject `xmlns`)
+- `parse.ts` — `parseFlattenedSvg`, opacity baking, moveto sanitizing, `shouldSkipPath`
+- `merge.ts` — `mergeSameColorPaths`
+- `placement.ts` — `computePlacement`, `transformPathForFont`
+
+Regexes shared by `glyph/` and `font/` live in `src/utils/svgPatterns.ts`.
 
 ---
 
-## Pipeline: `runPipeline(config, paths, options?)`
+## Pipeline: `runFontPipeline(config, paths, options?)`
 
-**File:** `src/core/pipeline/run.ts`
+**File:** `src/core/pipeline/runFontPipeline.ts` (`runPipeline` is kept as an alias on the `./pipeline` export)
 
 ### Step 1: Read SVG files
 
 Reads all `.svg` files from `inputDir`. Initializes an empty glyphmap and a `FontGlyph[]` accumulator.
 
-### Step 2: For each SVG file
+### Step 2: For each SVG file — `prepareSvgLayers()`
+
+**File:** `src/core/pipeline/prepare.ts` — steps 2a–2f; returns `{ viewBox, paths }` or `null` when the SVG is rejected.
 
 #### 2a. Validate
 
-**`validateSvg(rawContent)`** — rejects SVGs containing `<mask>` or `<filter>` (unsupported).
+**`validateSvg(rawContent)`** — rejects SVGs containing `<mask>`, `<filter>` or `<image>` (unsupported).
 
 #### 2b. Preprocess
 
 **`preprocessSvg(rawContent)`** — injects `xmlns="http://www.w3.org/2000/svg"` if missing.
 
-#### 2c. Pre-extract evenodd paths
+#### 2c. Flatten
 
-**`extractOriginalEvenoddDs(preprocessed)`**
+**`flattenSvg(preprocessed, PathKit)`**
 
-Finds all `<path>` elements with `fill-rule="evenodd"` or `clip-rule="evenodd"` and extracts their original `d` attribute strings **before picosvg processes them**.
+A failure here is re-thrown as `Failed to flatten "<set>:<file>": …` with the original error as `cause`.
 
-**Why:** Picosvg internally calls `simplify()` via our PathKit shim, which can **drop contours** from multi-subpath evenodd paths. We preserve the originals and restore them after picosvg.
-
-#### 2d. Flatten via picosvg
-
-**`picoFromFile(filePath, preprocessed)`**
-
-Runs picosvg's `SVG.fromstring(svg).topicosvg().tostring()` in the Pyodide Python runtime.
-
-Picosvg:
+The flattener:
 - Resolves `<use>` references
 - Applies `<clipPath>` via boolean intersection
 - Flattens transforms into absolute coordinates
 - Converts strokes to fills
 - Converts all shapes to `<path>` elements
-- Resolves evenodd via `remove_overlaps()` (but this is broken in our shim — see below)
+- Resolves evenodd fills via `removeOverlaps()`
 
-#### 2e. Parse flattened SVG
+#### 2d. Parse flattened SVG
 
 **`parseFlattenedSvg(flattenedSvg)`**
 
@@ -127,13 +164,7 @@ Picosvg:
   - Sanitizes paths missing initial moveto (prepends `M` from endpoint)
 - Returns `{ viewBox, paths: [{ d, fill, fillRule? }] }`
 
-#### 2f. Restore original evenodd paths
-
-**`restoreOriginalEvenoddDs(parsed.paths, originalEvenoddDs)`**
-
-Replaces picosvg's (potentially damaged) evenodd path data with the preserved originals, matched by position (Nth evenodd path gets Nth original `d` string).
-
-#### 2g. Convert evenodd to nonzero winding
+#### 2e. Convert evenodd to nonzero winding
 
 **`convertEvenoddToWinding(PathKit, d)`**
 
@@ -157,9 +188,9 @@ For each path with `fillRule === 'evenodd'`:
 
 The path is also marked **`noMerge = true`** — compound paths with holes must not be concatenated with adjacent paths (their CW hole contours would cancel adjacent CCW contours via winding).
 
-**Why the custom algorithm:** PathKit (WASM) does not expose Skia's `AsWinding()` function. Our pathops shim's `simplify(fix_winding=True)` only changes a fill-type flag without actually reversing contour directions. The containment-based algorithm properly handles: independent shapes, simple holes, and arbitrarily nested bullseye patterns.
+**Why the custom algorithm:** PathKit (WASM) does not expose Skia's `AsWinding()` function, and relabelling a path's fill type does not reverse its contours. The containment-based algorithm properly handles: independent shapes, simple holes, and arbitrarily nested bullseye patterns.
 
-#### 2h. Merge same-color paths
+#### 2f. Merge same-color paths
 
 **`mergeSameColorPaths(parsed.paths, logger)`**
 
@@ -170,7 +201,7 @@ Rules:
 - Skips paths marked `noMerge` (evenodd-converted compound paths)
 - Uses simple string concatenation (`d1 + ' ' + d2`), **not** boolean union (which can corrupt complex geometry)
 
-#### 2i. Compute placement
+#### 2g. Compute placement
 
 **`computePlacement({ upm, safeZone, viewBox })`**
 
@@ -184,7 +215,7 @@ yOff     = (upm - viewBox.height * scale) / 2           // center vertically
 
 Returns `{ vx, vy, scale, xOff, yOff, adv }` — used for path transformation.
 
-#### 2j. Transform paths and build glyphs
+#### 2h. Transform paths and build glyphs
 
 For each (merged) path that passes `shouldSkipPath()` (non-empty, non-transparent):
 
@@ -199,7 +230,7 @@ For each (merged) path that passes `shouldSkipPath()` (non-empty, non-transparen
 
 The Y-flip naturally converts SVG winding convention (outer=CCW) to TrueType convention (outer=CW).
 
-#### 2k. Record in glyphmap
+#### 2i. Record in glyphmap
 
 ```typescript
 glyphMap.i[iconName] = [advanceWidth, [[cp1, color1], [cp2, color2], ...]]
@@ -285,17 +316,11 @@ Consecutive paths with identical fill color are concatenated into a single compo
 
 **Exception:** Paths converted from evenodd (marked `noMerge`) must not be concatenated with other paths. Their CW hole contours would cancel adjacent paths' CCW contours, producing winding=0 (unfilled) in the overlap region.
 
-### Evenodd Pre-Extraction
-
-Picosvg's `simplify()` through the PathKit WASM shim can **drop contours** from multi-subpath evenodd paths (e.g., a 4-subpath 3D crate frame becomes 2 subpaths). The pipeline preserves the original `d` strings before picosvg and restores them after, ensuring all contours survive for proper winding conversion.
-
----
-
 ## Font Metrics & Inline Text Alignment
 
 ### Font Metrics Design
 
-The pipeline compiles icon fonts with **`ascent = UPM`** and **`descent = 0`** (see `run.ts:252-254`). This means:
+The pipeline compiles icon fonts with **`ascent = UPM`** and **`descent = 0`** (see `runFontPipeline.ts`). This means:
 
 - Glyphs fill the entire em square from baseline to top — no descender space
 - At any `fontSize`, the glyph's visual height equals the font size
@@ -345,8 +370,6 @@ Checks if `parent` is a `ReactTextView`. If so, reads the text layout paint's `f
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `pathkit-wasm` | ^1.0.0 | Skia path geometry (WASM) |
-| `pyodide` | ^0.29.3 | Python runtime (WASM, for picosvg) |
-| `picosvg` | 0.22.3 | SVG flattening (bundled .whl) |
 | `svg2ttf` | ^6.0.3 | SVG font → TTF conversion |
 | `fonteditor-core` | ^2.6.3 | TTF metric correction |
 | `@xmldom/xmldom` | ^0.9.10 | XML DOM parsing in Node.js |
@@ -358,26 +381,47 @@ Checks if `parent` is a `ReactTextView`. If so, reads the text layout paint's `f
 ```
 src/core/
 ├── pipeline/
-│   ├── run.ts          # Main pipeline orchestrator
-│   ├── managers.ts     # PathKit + Pyodide singleton managers
-│   ├── config.ts       # PipelineConfig, PipelinePaths types, ensureDir
-│   └── index.ts        # Re-exports
-├── svg/
-│   ├── svg_dom.ts      # SVG parsing, evenodd extraction/restoration
-│   ├── svg_pathops.ts  # PathKit backend, winding conversion, containment
-│   └── layers.ts       # Glyph placement, path transform
+│   ├── runFontPipeline.ts  # per-file loop → placement → glyphs → TTF + glyphmap
+│   ├── prepare.ts          # validate → preprocess → flatten → parse → evenodd → merge
+│   ├── config.ts           # PipelineConfig, PipelinePaths types, ensureDir
+│   └── index.ts            # public ./pipeline surface (runFontPipeline + runPipeline alias)
+├── pathkit/
+│   ├── load.ts             # loadPathKit(): cached WASM instance
+│   ├── types.ts            # PathKitModule, PathKitPath, Cmd, Point
+│   ├── contours.ts         # verb-level contour maths, containment winding
+│   └── evenodd.ts          # convertEvenoddToWinding
+├── flatten/
+│   ├── index.ts            # flattenSvg entry point
+│   ├── document.ts         # SvgDocument: tree, shape cache, traversal, lookups
+│   ├── stages.ts           # flattenDocument(): ordered stages
+│   ├── stages/             # one file per stage (discard, styles, nested-svg, use,
+│   │                       #   clip-path, stroke, defs, collapse, fill-rule, opacity,
+│   │                       #   shapes, validate)
+│   ├── element.ts          # element-level helpers
+│   ├── shape.ts            # shape model, shapes→paths, mightPaint
+│   ├── path.ts             # d-string parse/rewrite machinery
+│   ├── pathops.ts          # command-seq boolean ops over PathKit
+│   ├── arcs.ts             # arc → cubic conversion
+│   ├── transform.ts        # Affine2D
+│   ├── inherit.ts          # attribute inheritance
+│   ├── dom.ts              # element tree + serializer
+│   └── geometry.ts         # points, rects, half-even rounding
+├── glyph/
+│   ├── validate.ts         # validateSvg, preprocessSvg
+│   ├── parse.ts            # parseFlattenedSvg, sanitizePathData, shouldSkipPath
+│   ├── merge.ts            # mergeSameColorPaths
+│   └── placement.ts        # computePlacement, transformPathForFont
 ├── font/
-│   ├── compile.ts      # SVG font XML builder, TTF compilation
-│   └── metrics.ts      # TTF metric correction (fonteditor-core)
-├── shims/
-│   ├── pathops.py      # Python skia-pathops shim (delegates to PathKit)
-│   └── picosvg-*.whl   # Bundled picosvg wheel
-└── types.ts            # Shared types (PathKitModule, GlyphLayer, etc.)
+│   ├── compile.ts          # SVG font XML builder, TTF compilation
+│   └── metrics.ts          # TTF metric correction (fonteditor-core)
+└── types.ts                # glyphmap types, NanoLogger
+
+src/utils/svgPatterns.ts    # shared SVG/XML regexes
 
 cli/
-├── build.ts            # buildAllFonts orchestrator
-├── config.ts           # .nanoicons.json config loader
-├── logger.ts           # Ora-based logger
-├── link.ts             # Bare RN linking
-└── index.ts            # CLI exports
+├── build.ts                # buildAllFonts orchestrator
+├── config.ts               # .nanoicons.json config loader
+├── logger.ts               # Ora-based logger
+├── link.ts                 # Bare RN linking
+└── index.ts                # CLI exports
 ```

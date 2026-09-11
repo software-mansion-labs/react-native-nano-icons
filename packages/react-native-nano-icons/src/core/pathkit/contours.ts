@@ -1,18 +1,30 @@
-import type {
-  Cmd,
-  PathKitModule,
-  VerbMap,
-  WrappedPath,
-  Point,
-} from '../types.js';
+import type { Cmd, PathKitModule, Point, VerbMap } from './types';
 
-//** */
+export function verbMap(PathKit: PathKitModule): VerbMap {
+  return {
+    MOVE: PathKit.MOVE_VERB ?? 0,
+    LINE: PathKit.LINE_VERB ?? 1,
+    QUAD: PathKit.QUAD_VERB ?? 2,
+    CONIC: PathKit.CONIC_VERB ?? 3,
+    CUBIC: PathKit.CUBIC_VERB ?? 4,
+    CLOSE: PathKit.CLOSE_VERB ?? 5,
+  };
+}
 
-// ----- numeric helpers -----
+export function fillTypes(PathKit: PathKitModule): {
+  EVENODD: number;
+  WINDING: number;
+} {
+  return {
+    EVENODD: PathKit?.FillType?.EVENODD ?? PathKit?.FillType?.EVEN_ODD ?? 1,
+    WINDING: PathKit?.FillType?.WINDING ?? PathKit?.FillType?.NONZERO ?? 0,
+  };
+}
+
 const EPS = 1e-2;
 
 // ✅ round-half-to-even (banker's rounding) at ndigits
-function roundN(x: number, ndigits = 3): number {
+export function roundN(x: number, ndigits = 3): number {
   const m = 10 ** ndigits;
   const s = x * m;
 
@@ -40,11 +52,11 @@ function roundN(x: number, ndigits = 3): number {
   return roundedInt / m;
 }
 
-function normPt(p: Point): [number, number] {
+export function normPt(p: Point): [number, number] {
   return [Math.round(p[0] * 10000) / 10000, Math.round(p[1] * 10000) / 10000];
 }
 
-function eqPt(a: Point, b: Point): boolean {
+export function eqPt(a: Point, b: Point): boolean {
   const aa = normPt(a);
   const bb = normPt(b);
   return Math.abs(aa[0] - bb[0]) < EPS && Math.abs(aa[1] - bb[1]) < EPS;
@@ -61,7 +73,7 @@ function signedAreaPolyline(points: readonly Point[]): number {
   return a / 2;
 }
 
-function approxSignedAreaFromContourCmds(
+export function approxSignedAreaFromContourCmds(
   contourCmds: readonly Cmd[],
   VERB: VerbMap,
   steps = 24
@@ -142,7 +154,7 @@ function approxSignedAreaFromContourCmds(
   return signedAreaPolyline(pts);
 }
 
-function splitContours(cmds: readonly Cmd[], VERB: VerbMap): Cmd[][] {
+export function splitContours(cmds: readonly Cmd[], VERB: VerbMap): Cmd[][] {
   const contours: Cmd[][] = [];
   let cur: Cmd[] | null = null;
   for (const cmd of cmds) {
@@ -158,13 +170,16 @@ function splitContours(cmds: readonly Cmd[], VERB: VerbMap): Cmd[][] {
   return contours;
 }
 
-function ensureClosed(contourCmds: readonly Cmd[], VERB: VerbMap): Cmd[] {
+export function ensureClosed(
+  contourCmds: readonly Cmd[],
+  VERB: VerbMap
+): Cmd[] {
   return contourCmds.some((c) => c[0] === VERB.CLOSE)
     ? [...contourCmds]
     : [...contourCmds, [VERB.CLOSE]];
 }
 
-function explicitCloseWantedFromCmds(
+export function explicitCloseWantedFromCmds(
   contourCmds: readonly Cmd[] | undefined,
   VERB: VerbMap
 ): boolean {
@@ -207,7 +222,7 @@ type SegmentC = {
 };
 type Segment = SegmentL | SegmentQ | SegmentC;
 
-function contourToSegments(
+export function contourToSegments(
   contourCmds: readonly Cmd[],
   VERB: VerbMap
 ): { start: Point; segs: Segment[] } {
@@ -305,7 +320,7 @@ function segmentsToContourCmds(
   return out;
 }
 
-function reverseClosedContourKeepStart(
+export function reverseClosedContourKeepStart(
   contourCmds: readonly Cmd[],
   explicitCloseWanted: boolean,
   VERB: VerbMap
@@ -342,7 +357,7 @@ function reverseClosedContourKeepStart(
   return segmentsToContourCmds(start, reversed, VERB);
 }
 
-function rotateClosedContourToStart(
+export function rotateClosedContourToStart(
   contourCmds: readonly Cmd[],
   desiredStart: Point,
   explicitCloseWanted: boolean,
@@ -372,50 +387,7 @@ function rotateClosedContourToStart(
   return segmentsToContourCmds(desiredStart, rotated, VERB);
 }
 
-function cmdsToVerbPoints(
-  cmds: readonly Cmd[],
-  VERB: VerbMap
-): Array<[number, Point[]]> {
-  const out: Array<[number, Point[]]> = [];
-  for (const cmd of cmds) {
-    const v = cmd[0]!;
-    if (v === VERB.MOVE) out.push([0, [[cmd[1]!, cmd[2]!]]]);
-    else if (v === VERB.LINE) out.push([1, [[cmd[1]!, cmd[2]!]]]);
-    else if (v === VERB.QUAD)
-      out.push([
-        2,
-        [
-          [cmd[1]!, cmd[2]!],
-          [cmd[3]!, cmd[4]!],
-        ],
-      ]);
-    else if (v === VERB.CUBIC)
-      out.push([
-        3,
-        [
-          [cmd[1]!, cmd[2]!],
-          [cmd[3]!, cmd[4]!],
-          [cmd[5]!, cmd[6]!],
-        ],
-      ]);
-    else if (v === VERB.CLOSE) out.push([4, []]);
-    else throw new Error(`Unexpected verb in cmds: ${v}`);
-  }
-  return out;
-}
-
-function wrapPath(pathkitPath: WrappedPath['p']): WrappedPath {
-  return { p: pathkitPath, meta: { moves: [] } };
-}
-
-function cloneWrap(h: WrappedPath, PathKit: PathKitModule): WrappedPath {
-  const p2 = PathKit.NewPath(h.p);
-  const out = wrapPath(p2);
-  out.meta.moves = h.meta?.moves ? h.meta.moves.map((m) => [m[0], m[1]]) : [];
-  return out;
-}
-
-function mergeMoves(
+export function mergeMoves(
   aMoves: readonly Point[] | undefined,
   bMoves: readonly Point[] | undefined
 ): Point[] {
@@ -431,7 +403,7 @@ function mergeMoves(
   return out;
 }
 
-function bestStartMinYMinX(
+export function bestStartMinYMinX(
   contourCmds: readonly Cmd[],
   VERB: VerbMap
 ): Point | null {
@@ -456,27 +428,11 @@ function bestStartMinYMinX(
   }
   return best;
 }
-
-// ---------------------------------------------------------------------------
-// Containment helpers (module-level for reuse by fixPathWinding)
-// ---------------------------------------------------------------------------
-
-function buildVerbMap(PathKit: PathKitModule): VerbMap {
-  return {
-    MOVE: PathKit.MOVE_VERB ?? 0,
-    LINE: PathKit.LINE_VERB ?? 1,
-    QUAD: PathKit.QUAD_VERB ?? 2,
-    CONIC: PathKit.CONIC_VERB ?? 3,
-    CUBIC: PathKit.CUBIC_VERB ?? 4,
-    CLOSE: PathKit.CLOSE_VERB ?? 5,
-  };
-}
-
 /**
  * Convert contour commands to a polyline by sampling curves.
  * Used for ray-casting containment tests.
  */
-function contourToPolyline(
+export function contourToPolyline(
   contourCmds: readonly Cmd[],
   V: VerbMap,
   steps = 8
@@ -553,7 +509,7 @@ function contourToPolyline(
 /**
  * Ray-casting point-in-polygon test.
  */
-function pointInPolygon(px: number, py: number, poly: Point[]): boolean {
+export function pointInPolygon(px: number, py: number, poly: Point[]): boolean {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
     const [xi, yi] = poly[i]!;
@@ -568,7 +524,7 @@ function pointInPolygon(px: number, py: number, poly: Point[]): boolean {
 /**
  * Get a representative point on the contour boundary (midpoint of first segment).
  */
-function getContourSamplePoint(
+export function getContourSamplePoint(
   contourCmds: readonly Cmd[],
   V: VerbMap
 ): Point | null {
@@ -610,7 +566,7 @@ function getContourSamplePoint(
  * Apply containment-based winding fix to contour objects.
  * Even nesting depth = CCW (outer), odd = CW (hole).
  */
-function applyContainmentWinding(
+export function applyContainmentWinding(
   contourObjs: Array<{
     cmds: Cmd[];
     explicitCloseWanted: boolean;
@@ -658,383 +614,68 @@ function applyContainmentWinding(
   }
 }
 
-/**
- * Convert a path `d` string with evenodd fill semantics to an equivalent
- * path that renders identically under nonzero winding.
- *
- * Steps:
- * 1. Parse via PathKit, set fill type to EVENODD, simplify (resolve topology)
- * 2. Split into contours, compute containment depths
- * 3. Fix winding: even depth = CCW (outer), odd depth = CW (hole)
- * 4. Reconstruct d string
- */
-export function convertEvenoddToWinding(
-  PathKit: PathKitModule,
-  d: string
-): string {
-  const V = buildVerbMap(PathKit);
+export type Contour = {
+  cmds: Cmd[];
+  explicitCloseWanted: boolean;
+  absA: number;
+};
 
-  // 1. Parse and simplify with EVENODD fill type
-  const p = PathKit.FromSVGString(d);
-  if (!p) return d;
-
-  const FILL_EVENODD =
-    PathKit?.FillType?.EVENODD ?? PathKit?.FillType?.EVEN_ODD ?? 1;
-  p.setFillType(FILL_EVENODD);
-  p.simplify();
-
-  // Get the simplified SVG string and re-parse for command access
-  const simplified = p.toSVGString();
-  p.delete?.();
-
-  const p2 = PathKit.FromSVGString(simplified);
-  if (!p2) return simplified;
-
-  const cmds: Cmd[] = p2.toCmds();
-  p2.delete?.();
-
-  if (cmds.length === 0) return simplified;
-
-  // 2. Split into contours
-  const contourObjs = splitContours(cmds, V).map((c) => {
+export function orientedContours(cmds: readonly Cmd[], V: VerbMap): Contour[] {
+  const contours = splitContours(cmds, V).map((c) => {
     const explicitCloseWanted = explicitCloseWantedFromCmds(c, V);
     const cc = ensureClosed(c, V);
     const a = approxSignedAreaFromContourCmds(cc, V);
     return { cmds: cc, absA: Math.abs(a), explicitCloseWanted };
   });
-
-  contourObjs.sort((x, y) => y.absA - x.absA);
-
-  // 3. Fix winding via containment analysis
-  applyContainmentWinding(contourObjs, V);
-
-  // 4. Reconstruct d string from fixed commands
-  const allCmds = contourObjs.flatMap((x) => x.cmds);
-  const parts: string[] = [];
-  for (const cmd of allCmds) {
-    const v = cmd[0]!;
-    if (v === V.MOVE) parts.push(`M${roundN(cmd[1]!)} ${roundN(cmd[2]!)}`);
-    else if (v === V.LINE) parts.push(`L${roundN(cmd[1]!)} ${roundN(cmd[2]!)}`);
-    else if (v === V.QUAD)
-      parts.push(
-        `Q${roundN(cmd[1]!)} ${roundN(cmd[2]!)} ${roundN(cmd[3]!)} ${roundN(cmd[4]!)}`
-      );
-    else if (v === V.CUBIC)
-      parts.push(
-        `C${roundN(cmd[1]!)} ${roundN(cmd[2]!)} ${roundN(cmd[3]!)} ${roundN(cmd[4]!)} ${roundN(cmd[5]!)} ${roundN(cmd[6]!)}`
-      );
-    else if (v === V.CLOSE) parts.push('Z');
-  }
-
-  return parts.join(' ');
+  contours.sort((x, y) => y.absA - x.absA);
+  applyContainmentWinding(contours, V);
+  return contours;
 }
 
-// proxy to for picosvg to interatc with pathkit
-export function buildPathopsBackend(PathKit: PathKitModule) {
-  const VERB: VerbMap = buildVerbMap(PathKit);
+export function canonicalContourCmds(
+  cmds: readonly Cmd[],
+  recordedMoves: readonly Point[],
+  preferMinYMinXStart: boolean,
+  V: VerbMap
+): Cmd[] {
+  const moves = recordedMoves.map((m) => normPt([m[0], m[1]]));
+  const used = new Array(moves.length).fill(false);
+  const contours = orientedContours(cmds, V);
 
-  const FILL_EVENODD =
-    PathKit?.FillType?.EVENODD ?? PathKit?.FillType?.EVEN_ODD ?? 1;
-  const FILL_WINDING =
-    PathKit?.FillType?.WINDING ?? PathKit?.FillType?.NONZERO ?? 0;
+  for (const obj of contours) {
+    let cc = obj.cmds;
 
-  function cmdsViaSvgRoundtrip(h: WrappedPath): Cmd[] {
-    const svg = h.p.toSVGString();
-    const p2 = PathKit.FromSVGString(svg);
-    const cmds = p2 ? p2.toCmds() : [];
-    if (p2) p2.delete?.();
-    return cmds;
-  }
-
-  function normalizeSortRotateContours(
-    cmds: Cmd[],
-    h: WrappedPath,
-    preferStrokeCanonical = false
-  ): Cmd[] {
-    const moves = (h.meta?.moves || []).map((m) => normPt([m[0], m[1]]));
-    const used = new Array(moves.length).fill(false);
-
-    // Build contour objects, but DO NOT normalize orientation yet.
-    const contourObjs = splitContours(cmds, VERB).map((c) => {
-      const explicitCloseWanted = explicitCloseWantedFromCmds(c, VERB);
-      const cc = ensureClosed(c, VERB);
-      const a = approxSignedAreaFromContourCmds(cc, VERB); // signed
-      return { cmds: cc, absA: Math.abs(a), explicitCloseWanted };
-    });
-
-    // Big-to-small ordering gives deterministic outer→inner ordering.
-    contourObjs.sort((x, y) => y.absA - x.absA);
-
-    // Containment-based winding: compute nesting depth per contour via
-    // ray-casting point-in-polygon. Even depth = outer (CCW), odd = hole (CW).
-    applyContainmentWinding(contourObjs, VERB);
-
-    // Rotate starts deterministically:
-    // 1) If we have recorded MOVE points, try to rotate contour to a move point that lies on it.
-    // 2) Otherwise, rotate to minY/minX point (helps stroke-ish paths)
-    for (const obj of contourObjs) {
-      let cc = obj.cmds;
-
-      for (let i = 0; i < moves.length; i++) {
-        if (used[i]) continue;
-        const target = moves[i]!;
-        const { segs } = contourToSegments(cc, VERB);
-        const found = segs.some(
-          (s) => eqPt(s.start, target) || eqPt(s.end, target)
-        );
-        if (found) {
-          used[i] = true;
-          cc = rotateClosedContourToStart(
-            cc,
-            target,
-            obj.explicitCloseWanted,
-            VERB
-          );
-          break;
-        }
+    for (let i = 0; i < moves.length; i++) {
+      if (used[i]) continue;
+      const target = moves[i]!;
+      const { segs } = contourToSegments(cc, V);
+      const found = segs.some(
+        (s) => eqPt(s.start, target) || eqPt(s.end, target)
+      );
+      if (found) {
+        used[i] = true;
+        cc = rotateClosedContourToStart(cc, target, obj.explicitCloseWanted, V);
+        break;
       }
-
-      // If no move point was used, apply the deterministic start heuristic
-      if (preferStrokeCanonical) {
-        const best = bestStartMinYMinX(cc, VERB);
-        if (best) {
-          cc = rotateClosedContourToStart(
-            cc,
-            best,
-            obj.explicitCloseWanted,
-            VERB
-          );
-        }
-      }
-
-      obj.cmds = cc;
     }
 
-    return contourObjs.flatMap((x) => x.cmds);
+    if (preferMinYMinXStart) {
+      const best = bestStartMinYMinX(cc, V);
+      if (best) {
+        cc = rotateClosedContourToStart(cc, best, obj.explicitCloseWanted, V);
+      }
+    }
+
+    obj.cmds = cc;
   }
 
-  return {
-    create_path(fillTypeInt: number): WrappedPath {
-      const p = PathKit.NewPath();
-      p.setFillType(fillTypeInt === 1 ? FILL_EVENODD : FILL_WINDING);
-      return wrapPath(p);
-    },
+  return contours.flatMap((x) => x.cmds);
+}
 
-    clone_path(h: WrappedPath): WrappedPath {
-      return cloneWrap(h, PathKit);
-    },
-
-    delete_path(h: WrappedPath): void {
-      h?.p?.delete?.();
-    },
-
-    get_fill_type(h: WrappedPath): number {
-      const ft = h.p.getFillType?.();
-      return ft === FILL_EVENODD ? 1 : 0;
-    },
-
-    set_fill_type(h: WrappedPath, fillTypeInt: number): true {
-      h.p.setFillType(fillTypeInt === 1 ? FILL_EVENODD : FILL_WINDING);
-      return true;
-    },
-
-    move_to(h: WrappedPath, x: number, y: number): void {
-      h.p.moveTo(x, y);
-      h.meta.moves.push(normPt([x, y]));
-    },
-
-    line_to(h: WrappedPath, x: number, y: number): void {
-      h.p.lineTo(x, y);
-    },
-
-    quad_to(
-      h: WrappedPath,
-      x1: number,
-      y1: number,
-      x2: number,
-      y2: number
-    ): void {
-      h.p.quadTo(x1, y1, x2, y2);
-    },
-
-    cubic_to(
-      h: WrappedPath,
-      x1: number,
-      y1: number,
-      x2: number,
-      y2: number,
-      x3: number,
-      y3: number
-    ): void {
-      h.p.cubicTo(x1, y1, x2, y2, x3, y3);
-    },
-
-    close(h: WrappedPath): void {
-      h.p.close();
-    },
-
-    simplify(h: WrappedPath, fixWinding = false): boolean {
-      try {
-        // 1) simplify in place
-        h.p.simplify();
-
-        // 2) normalize representation via SVG roundtrip
-        const svg = h.p.toSVGString();
-        const p2 = PathKit.FromSVGString(svg);
-        if (p2) {
-          // replace underlying path handle
-          h.p.delete?.();
-          h.p = p2;
-        }
-
-        if (fixWinding) h.p.setFillType(FILL_WINDING);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-
-    stroke(
-      h: WrappedPath,
-      width: number,
-      capInt: number,
-      joinInt: number,
-      miterLimit: number,
-      dashArray: unknown,
-      dashOffset: number
-    ): WrappedPath {
-      const Caps = PathKit.StrokeCap ?? {};
-      const Joins = PathKit.StrokeJoin ?? {};
-
-      const cap =
-        capInt === 1
-          ? (Caps.ROUND ?? 1)
-          : capInt === 2
-            ? (Caps.SQUARE ?? 2)
-            : (Caps.BUTT ?? 0);
-
-      const join =
-        joinInt === 1
-          ? (Joins.ROUND ?? 1)
-          : joinInt === 2
-            ? (Joins.BEVEL ?? 2)
-            : (Joins.MITER ?? 0);
-
-      const work = PathKit.NewPath(h.p);
-
-      try {
-        if (
-          Array.isArray(dashArray) &&
-          dashArray.length === 2 &&
-          typeof work.dash === 'function'
-        ) {
-          work.dash(
-            Number(dashArray[0]),
-            Number(dashArray[1]),
-            dashOffset || 0
-          );
-        }
-
-        let stroked = work.stroke({
-          width,
-          cap,
-          join,
-          miter_limit: miterLimit,
-        });
-        if (!stroked || typeof stroked.toCmds !== 'function') stroked = work;
-
-        if (stroked !== work) work.delete?.();
-
-        const wrapped = wrapPath(stroked);
-        wrapped.meta.moves = [];
-        return wrapped;
-      } catch {
-        const wrapped = wrapPath(work);
-        wrapped.meta.moves = [];
-        return wrapped;
-      }
-    },
-
-    convert_conics_to_quads(_h: WrappedPath, _tol: number): void {
-      // intentionally no-op
-    },
-
-    transform(
-      h: WrappedPath,
-      a: number,
-      b: number,
-      c: number,
-      d: number,
-      e: number,
-      f: number
-    ): WrappedPath {
-      const p = PathKit.NewPath(h.p);
-      p.transform(a, c, e, b, d, f, 0, 0, 1);
-
-      const wrapped = wrapPath(p);
-      wrapped.meta.moves = (h.meta?.moves || []).map(([x, y]) =>
-        normPt([a * x + c * y + e, b * x + d * y + f])
-      );
-      return wrapped;
-    },
-
-    op(
-      aHandle: WrappedPath,
-      bHandle: WrappedPath,
-      opInt: number
-    ): WrappedPath | null {
-      try {
-        const Ops = PathKit.PathOp ?? {};
-        const op =
-          opInt === 1
-            ? (Ops.INTERSECT ?? 1)
-            : opInt === 2
-              ? (Ops.DIFFERENCE ?? 2)
-              : (Ops.UNION ?? 0);
-
-        const out = PathKit.MakeFromOp(aHandle.p, bHandle.p, op);
-        if (!out) return null;
-
-        const wrapped = wrapPath(out);
-        wrapped.meta.moves = mergeMoves(
-          aHandle.meta?.moves,
-          bHandle.meta?.moves
-        );
-        return wrapped;
-      } catch {
-        return null;
-      }
-    },
-
-    bounds(h: WrappedPath): [number, number, number, number] {
-      const r = h.p.getBounds();
-      return [r.fLeft, r.fTop, r.fRight, r.fBottom];
-    },
-
-    area(h: WrappedPath): number {
-      try {
-        const cmds = cmdsViaSvgRoundtrip(h);
-        const contours = splitContours(cmds, VERB);
-        let total = 0;
-        for (const c of contours) {
-          const cc = ensureClosed(c, VERB);
-          total += Math.abs(approxSignedAreaFromContourCmds(cc, VERB));
-        }
-        return total;
-      } catch {
-        return 0.0;
-      }
-    },
-
-    iter_segments(h: WrappedPath): Array<[number, Point[]]> {
-      const cmds = cmdsViaSvgRoundtrip(h);
-      const preferStrokeCanonical = (h.meta?.moves?.length || 0) === 0;
-      const normalized = normalizeSortRotateContours(
-        cmds,
-        h,
-        preferStrokeCanonical
-      );
-      return cmdsToVerbPoints(normalized, VERB);
-    },
-  };
+export function contoursArea(cmds: readonly Cmd[], V: VerbMap): number {
+  let total = 0;
+  for (const c of splitContours(cmds, V)) {
+    total += Math.abs(approxSignedAreaFromContourCmds(ensureClosed(c, V), V));
+  }
+  return total;
 }

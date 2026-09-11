@@ -5,10 +5,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-// Must be set before any pipeline import so getPackageRoot() picks it up.
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
-import { runPipeline } from '../src/core/pipeline/run';
+import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoGlyphMap } from '../src/core/types';
 
 // ---------------------------------------------------------------------------
@@ -38,7 +35,7 @@ describe('Pipeline E2E — outline (single-colour)', () => {
     outputDir = path.join(os.tmpdir(), `nano-e2e-${Date.now()}`);
     tempDir = path.join(os.tmpdir(), `nano-e2e-tmp-${Date.now()}`);
 
-    await runPipeline(
+    await runFontPipeline(
       {
         fontFamily: FONT_FAMILY,
         upm: UPM,
@@ -193,7 +190,7 @@ describe('Pipeline E2E — outline (single-colour)', () => {
   test('rebuilding the same input yields byte-identical output', async () => {
     const again = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-e2e-again-'));
     try {
-      const res = await runPipeline(
+      const res = await runFontPipeline(
         {
           fontFamily: FONT_FAMILY,
           upm: UPM,
@@ -237,7 +234,7 @@ describe('Pipeline E2E — inputHash embedding', () => {
     outputDir = path.join(os.tmpdir(), `nano-e2e-hash-${Date.now()}`);
     tempDir = path.join(os.tmpdir(), `nano-e2e-hash-tmp-${Date.now()}`);
 
-    await runPipeline(
+    await runFontPipeline(
       {
         fontFamily: FONT_FAMILY,
         upm: UPM,

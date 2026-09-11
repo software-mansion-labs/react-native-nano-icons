@@ -14,9 +14,9 @@ Table of contents:
     - [Pipeline stages](#pipeline-stages)
     - [Summary](#summary)
   - [5. The geometry challenge: why pathops matters](#5-the-geometry-challenge-why-pathops-matters)
-  - [6. Pyodide as proof of concept; long-term geometry strategy](#6-pyodide-as-proof-of-concept-long-term-geometry-strategy)
-    - [Current decision](#current-decision)
-    - [Future possibility](#future-possibility)
+  - [6. From Pyodide proof of concept to a pure TypeScript flattener](#6-from-pyodide-proof-of-concept-to-a-pure-typescript-flattener)
+    - [History](#history)
+    - [Current state](#current-state)
 - [⚒️🔍 Tooling analysis: existing solutions vs our pipeline](#️-tooling-analysis-existing-solutions-vs-our-pipeline)
   - [1. Fantasticon (Node CLI)](#1-fantasticon-node-cli)
     - [Strengths](#strengths)
@@ -170,7 +170,7 @@ We keep the font format simple and universal (a `glyf` + `cmap` tables is the si
 
 #### Pipeline stages
 
-1. **SVG → flattened, normalized, simplified paths (Pyodide + picosvg + PathKit via WASM)**
+1. **SVG → flattened, normalized, simplified paths (TypeScript picosvg port + PathKit via WASM)**
    - Input: arbitrary SVGs (often complex Figma exports)
    - Output: path-only geometry suitable for downstream font conversion tools
    - Responsibilities:
@@ -217,24 +217,28 @@ Mask semantics remain a hard gap. Even with PathOps, reliably resolving `<mask>`
 
 ---
 
-### 6. Pyodide as proof of concept; long-term geometry strategy
+### 6. From Pyodide proof of concept to a pure TypeScript flattener
 
-#### Current decision
+#### History
 
-We are **not** planning to rewrite picosvg to TypeScript now.
+The first releases ran picosvg unmodified inside **Pyodide** (CPython compiled
+to WASM), with a `pathops.py` shim delegating all geometry to PathKit. That
+boundary proved the pipeline while keeping picosvg's mature SVG semantics — at
+the cost of a heavy Python runtime, slow startup, and an MPL-2.0 dependency.
 
-Rationale:
+#### Current state
 
-- Geometry correctness is the hardest part of the system.
-- A rewrite increases maintenance overhead and regression risk.
-- The current Pyodide boundary is stable and keeps a mature geometry stack.
+The conditions we originally set for a rewrite were eventually met: the
+geometry layer (`buildPathopsBackend` over PathKit) already lived in
+TypeScript, and a frozen golden-snapshot suite pinned the flattener's
+observable behavior. picosvg's `topicosvg()` was then ported 1:1 to TypeScript
+(`src/core/svg/flatten/`, Apache-2.0 attribution retained) and verified against
+the Pyodide output over the entire ~12k-icon fixture corpus before Pyodide was
+removed.
 
-#### Future possibility
-
-Revisit a pure TS/JS geometry implementation if:
-
-- a mature pathops + SVG semantics layer becomes available in JS/TS, and/or
-- we can isolate a minimal subset with strong regression tests and acceptable maintenance cost.
+Intentional scope cuts relative to picosvg: gradient normalization (the font
+pipeline never reads gradient defs) and nested `<svg>` resolution (rejected
+with a clear error instead).
 
 ---
 

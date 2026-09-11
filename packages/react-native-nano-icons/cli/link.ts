@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as plist from 'plist';
 import type { PBXNativeTarget, XcodeProject } from 'xcode';
-import type { NanoLogger } from './logger.js';
-import type { BuiltFont } from './build.js';
+import type { NanoLogger } from './logger';
+import type { BuiltFont } from './build';
 
 const ANDROID_FONTS_DIR = 'android/app/src/main/assets/fonts';
 const IOS_NANOICONS_FONTS_DIR = 'nanoicons-fonts';
@@ -193,7 +193,8 @@ async function linkIos(
 export async function linkBare(
   projectRoot: string,
   builtFonts: BuiltFont[],
-  logger: NanoLogger
+  logger: NanoLogger,
+  totalSets = builtFonts.length
 ): Promise<void> {
   if (!builtFonts.length) return;
 
@@ -252,6 +253,6 @@ export async function linkBare(
   }
 
   logger.succeed(
-    `Linked fonts → ${linkedPlatforms.join(', ')}${dynamicSuffix}`
+    `Linked [${staticFonts.map((b) => b.fontFamily).join(', ')}] (${staticFonts.length}/${totalSets}) → ${linkedPlatforms.join(', ')}${dynamicSuffix}`
   );
 }

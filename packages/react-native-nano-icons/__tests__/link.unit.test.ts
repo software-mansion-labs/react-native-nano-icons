@@ -343,6 +343,21 @@ describe('linkBare - dynamic fonts are excluded from native bundling', () => {
     expect(fs.existsSync(path.join(androidFonts, 'DynFont.ttf'))).toBe(false);
   });
 
+  test('the linked line counts static, dynamic and failed sets against the total', async () => {
+    const logger = makeLogger();
+
+    await linkBare(
+      projectRoot,
+      [builtFont('StaticFont', 'static'), builtFont('DynFont', 'dynamic')],
+      logger,
+      3
+    );
+
+    expect(logger.succeed).toHaveBeenCalledWith(
+      'Linked [StaticFont] (1/3) → android, ios (1 dynamic font skipped)'
+    );
+  });
+
   test('all-dynamic set bundles nothing natively', async () => {
     const logger = makeLogger();
 
@@ -513,7 +528,20 @@ describe('linkBare - platform detection & edge cases', () => {
 
     await linkBare(projectRoot, [builtFont('AndroidOnly')], logger);
 
-    expect(logger.succeed).toHaveBeenCalledWith('Linked fonts → android');
+    expect(logger.succeed).toHaveBeenCalledWith(
+      'Linked [AndroidOnly] (1/1) → android'
+    );
+  });
+
+  test('the linked line counts against every configured set, not just the built ones', async () => {
+    addAndroid();
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('Good')], logger, 2);
+
+    expect(logger.succeed).toHaveBeenCalledWith(
+      'Linked [Good] (1/2) → android'
+    );
   });
 
   test('skips iOS when the .xcodeproj has no project.pbxproj', async () => {

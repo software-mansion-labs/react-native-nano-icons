@@ -9,7 +9,7 @@
   "types": "./lib/typescript/src/index.d.ts",
   "files": [
     "app.plugin.js",
-    "src/core/shims",
+    "LICENSES.md",
     "bin",
     "src",
     "lib",
@@ -44,7 +44,6 @@
     "ora": "^9.3.0",
     "pathkit-wasm": "^1.0.0",
     "plist": "^3.0.5",
-    "pyodide": "^0.29.3",
     "svg2ttf": "^6.0.3",
     "xcode": "^3.0.1"
   },

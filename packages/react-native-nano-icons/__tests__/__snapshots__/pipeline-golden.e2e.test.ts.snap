@@ -199,6 +199,762 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
     "unicode": 57358,
   },
   {
+    "contourCount": 1,
+    "shape": {
+      "area": 299716,
+      "bbox": [
+        107,
+        262,
+        891,
+        654,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57359,
+  },
+  {
+    "contourCount": 4,
+    "shape": {
+      "area": 587797,
+      "bbox": [
+        102,
+        257,
+        897,
+        659,
+      ],
+      "contours": 4,
+    },
+    "unicode": 57360,
+  },
+  {
+    "contourCount": 22,
+    "shape": {
+      "area": 40786,
+      "bbox": [
+        281,
+        420,
+        813,
+        611,
+      ],
+      "contours": 22,
+    },
+    "unicode": 57361,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 502,
+      "bbox": [
+        414,
+        375,
+        441,
+        408,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57362,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 1170,
+      "bbox": [
+        370.38,
+        358,
+        437,
+        389.25,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57363,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 513,
+      "bbox": [
+        583,
+        431,
+        617,
+        460,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57364,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 1199,
+      "bbox": [
+        601,
+        387,
+        634,
+        453,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57365,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 10636,
+      "bbox": [
+        454,
+        430,
+        606,
+        639,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57366,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 11893,
+      "bbox": [
+        412,
+        387,
+        531.33,
+        643,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57367,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 1084,
+      "bbox": [
+        420,
+        788,
+        459.55,
+        832.55,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57368,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 904,
+      "bbox": [
+        436.5,
+        798,
+        473,
+        839,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57369,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 15310,
+      "bbox": [
+        364.09,
+        635.69,
+        535,
+        810,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57370,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 76,
+      "bbox": [
+        463,
+        772,
+        473,
+        785.67,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57371,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 987,
+      "bbox": [
+        464,
+        773,
+        495,
+        813,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57372,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 415,
+      "bbox": [
+        464,
+        788.78,
+        494,
+        810,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57373,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 5264,
+      "bbox": [
+        448.86,
+        794.86,
+        500.14,
+        857.47,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57374,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 1138,
+      "bbox": [
+        447.4,
+        817,
+        506,
+        859,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57375,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 227,
+      "bbox": [
+        492.71,
+        816.4,
+        509.58,
+        833.58,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57376,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 1534,
+      "bbox": [
+        466,
+        654,
+        485,
+        778,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57377,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 421,
+      "bbox": [
+        479,
+        764.5,
+        507,
+        791,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57378,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 33,
+      "bbox": [
+        414,
+        785,
+        436,
+        799,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57379,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 8970,
+      "bbox": [
+        465.83,
+        585.6,
+        575,
+        692.4,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57380,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 9051,
+      "bbox": [
+        472,
+        584,
+        581,
+        691,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57381,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 1376,
+      "bbox": [
+        483.45,
+        583.45,
+        526,
+        634,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57382,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 4497,
+      "bbox": [
+        501,
+        613,
+        572,
+        772,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57383,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 101,
+      "bbox": [
+        508,
+        623,
+        531,
+        734,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57384,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 824,
+      "bbox": [
+        446.4,
+        833,
+        499.25,
+        868,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57385,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 256,
+      "bbox": [
+        440,
+        537,
+        459,
+        561,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57386,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 606,
+      "bbox": [
+        408.38,
+        525,
+        456,
+        548,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57387,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 239,
+      "bbox": [
+        559,
+        577,
+        582,
+        597,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57388,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 583,
+      "bbox": [
+        571,
+        546,
+        594.25,
+        592,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57389,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 5380,
+      "bbox": [
+        468,
+        576,
+        575,
+        723,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57390,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 5876,
+      "bbox": [
+        438,
+        546,
+        522,
+        726,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57391,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 532,
+      "bbox": [
+        444,
+        828,
+        471.57,
+        859,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57392,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 453,
+      "bbox": [
+        455.67,
+        835,
+        481,
+        863.6,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57393,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 7502,
+      "bbox": [
+        404.67,
+        720.67,
+        525,
+        843,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57394,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 36,
+      "bbox": [
+        474,
+        816,
+        481,
+        826.33,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57395,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 489,
+      "bbox": [
+        474,
+        817,
+        496.25,
+        845,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57396,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 215,
+      "bbox": [
+        474,
+        827.86,
+        496,
+        843,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57397,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 2607,
+      "bbox": [
+        463.82,
+        832.82,
+        500.18,
+        877,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57398,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 552,
+      "bbox": [
+        463.6,
+        848,
+        504,
+        878,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57399,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 111,
+      "bbox": [
+        495,
+        847.38,
+        506.63,
+        859.63,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57400,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 782,
+      "bbox": [
+        476,
+        733,
+        490,
+        821,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57401,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 204,
+      "bbox": [
+        485,
+        811,
+        505,
+        829.5,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57402,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 28,
+      "bbox": [
+        439,
+        826,
+        455,
+        836,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57403,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 4425,
+      "bbox": [
+        475.8,
+        685.5,
+        552.2,
+        760.5,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57404,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 4453,
+      "bbox": [
+        480,
+        684.5,
+        557,
+        759.5,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57405,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 661,
+      "bbox": [
+        488.44,
+        684,
+        518,
+        720,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57406,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 2208,
+      "bbox": [
+        501,
+        705,
+        550,
+        816,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57407,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 39,
+      "bbox": [
+        506,
+        712,
+        522,
+        789,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57408,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 399,
+      "bbox": [
+        462.4,
+        859,
+        499.29,
+        884,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57409,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 278334,
+      "bbox": [
+        122,
+        123,
+        877,
+        501,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57410,
+  },
+  {
+    "contourCount": 4,
+    "shape": {
+      "area": 546313,
+      "bbox": [
+        117,
+        118,
+        882,
+        506,
+      ],
+      "contours": 4,
+    },
+    "unicode": 57411,
+  },
+  {
+    "contourCount": 22,
+    "shape": {
+      "area": 37874,
+      "bbox": [
+        289,
+        275,
+        802,
+        459,
+      ],
+      "contours": 22,
+    },
+    "unicode": 57412,
+  },
+  {
     "contourCount": 4,
     "shape": {
       "area": 218198,
@@ -210,7 +966,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 4,
     },
-    "unicode": 57359,
+    "unicode": 57413,
   },
   {
     "contourCount": 5,
@@ -224,7 +980,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 5,
     },
-    "unicode": 57360,
+    "unicode": 57414,
   },
   {
     "contourCount": 4,
@@ -238,7 +994,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 4,
     },
-    "unicode": 57363,
+    "unicode": 57417,
   },
   {
     "contourCount": 2,
@@ -252,7 +1008,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 2,
     },
-    "unicode": 57364,
+    "unicode": 57418,
   },
 ]
 `;
@@ -334,6 +1090,72 @@ exports[`pipeline golden — structural summary (Tier S) curated icons produce a
         "black",
       ],
       "name": "evenodd_qrcode",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#FCC9A7",
+        "#1F252A",
+        "#FCC9A7",
+        "#1F252A",
+        "#092330",
+        "#0C2C40",
+        "#FCC9A7",
+        "#1C2226",
+        "#F7ECE7",
+        "#FCF3F0",
+        "#FCC9A7",
+        "#F4BE9A",
+        "#FCC9A7",
+        "#1C2226",
+        "#FCC9A7",
+        "#0C2C40",
+        "#FCF3F0",
+        "#EADDD8",
+        "#AFAFAF",
+        "#D1D1D1",
+        "#FCC9A7",
+        "#F7ECE7",
+        "#EADDD8",
+        "#1C2226",
+        "#001A72",
+        "white",
+        "white",
+      ],
+      "name": "nested_swm-walker",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+        "white",
+        "white",
+        "#FCC9A7",
+        "#1F252A",
+        "#FCC9A7",
+        "#1F252A",
+        "#092330",
+        "#0C2C40",
+        "#FCC9A7",
+        "#1C2226",
+        "#F7ECE7",
+        "#FCF3F0",
+        "#FCC9A7",
+        "#F4BE9A",
+        "#FCC9A7",
+        "#1C2226",
+        "#FCC9A7",
+        "#0C2C40",
+        "#FCF3F0",
+        "#EADDD8",
+        "#AFAFAF",
+        "#D1D1D1",
+        "#FCC9A7",
+        "#F7ECE7",
+        "#EADDD8",
+        "#1C2226",
+      ],
+      "name": "nested_swm-walker-overlay",
     },
     {
       "adv": 1000,
