@@ -186,15 +186,15 @@ function printComparison(before, after, limits) {
     }
     const name = grew ? `**${b.name}** ❌` : b.name;
     rows.push(
-      `| ${name} | ${n(b.icons)} | ${arrow(b.bytes, a.bytes)} | ${arrow(b.deflated, a.deflated)} |`
+      `| ${name} | ${arrow(b.bytes, a.bytes)} | ${arrow(b.deflated, a.deflated)} |`
     );
     times.push(
       `| ${b.name} | ${n(b.medianMs)} ms | ${n(a.medianMs)} ms | ${pct(b.medianMs, a.medianMs)} |`
     );
   }
-  let tarballRow = '';
   let tarballOk = true;
-  if (before.tarball && after.tarball) {
+  const hasTarball = Boolean(before.tarball && after.tarball);
+  if (hasTarball) {
     tarballOk =
       growth(before.tarball.bytes, after.tarball.bytes) <= limits.maxSizeGrowth;
     if (!tarballOk) {
@@ -202,7 +202,6 @@ function printComparison(before, after, limits) {
         `tarball grew ${pct(before.tarball.bytes, after.tarball.bytes)} (limit +${limits.maxSizeGrowth}%)`
       );
     }
-    tarballRow = `| **Tarball**${tarballOk ? '' : ' ❌'} | ${before.tarball.files} → ${after.tarball.files} files | ${arrow(before.tarball.bytes, after.tarball.bytes)} | |`;
   }
   const det = (r) => r.sets.every((s) => s.deterministic);
   if (!det(after)) failures.push('rebuilds are not byte-identical');
@@ -226,18 +225,31 @@ function printComparison(before, after, limits) {
   console.log(
     `<summary>${ok ? 'Details' : 'Details and failing sets'}</summary>\n`
   );
-  console.log('### Size\n');
-  console.log('| Set | Icons | TTF | Deflated |');
-  console.log('|---|---:|---:|---:|');
+  console.log('### Fonts\n');
+  console.log(
+    'Raw is the `.ttf` on disk. Compressed is the same file after deflate at level 9, which is roughly what an APK or IPA carries.\n'
+  );
+  console.log('| Set | Raw | Compressed |');
+  console.log('|---|---:|---:|');
   for (const r of rows) console.log(r);
-  if (tarballRow) console.log(tarballRow);
+  if (hasTarball) {
+    console.log('\n### Package\n');
+    console.log(`| | ${before.label} | ${after.label} | Δ |`);
+    console.log('|---|---:|---:|---:|');
+    console.log(
+      `| Tarball bytes${tarballOk ? '' : ' ❌'} | ${n(before.tarball.bytes)} | ${n(after.tarball.bytes)} | ${pct(before.tarball.bytes, after.tarball.bytes)} |`
+    );
+    console.log(
+      `| Files | ${before.tarball.files} | ${after.tarball.files} | |`
+    );
+  }
   console.log('\n### Checks\n');
   console.log('| Check | Limit | Result |');
   console.log('|---|---|:---:|');
   console.log(
-    `| TTF size growth | ≤ ${limits.maxSizeGrowth}% per set | ${mark(!failures.some((f) => f.includes('TTF grew')))} |`
+    `| Raw font growth | ≤ ${limits.maxSizeGrowth}% per set | ${mark(!failures.some((f) => f.includes('TTF grew')))} |`
   );
-  if (before.tarball && after.tarball) {
+  if (hasTarball) {
     console.log(
       `| Tarball growth | ≤ ${limits.maxSizeGrowth}% | ${mark(tarballOk)} |`
     );
