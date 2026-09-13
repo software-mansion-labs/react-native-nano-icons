@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -79,6 +79,7 @@ async function benchmarkSet(set, workDir) {
   const times = [];
   const hashes = new Set();
   let last;
+  let lastPath;
   for (let i = 0; i < runs; i++) {
     const outputDir = path.join(workDir, set.name, `out${i}`);
     const tempDir = path.join(workDir, set.name, `tmp${i}`);
@@ -95,6 +96,7 @@ async function benchmarkSet(set, workDir) {
     );
     times.push(Number(process.hrtime.bigint() - t0) / 1e6);
     last = fs.readFileSync(res.ttfPath);
+    lastPath = res.ttfPath;
     hashes.add(crypto.createHash('sha256').update(last).digest('hex'));
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -107,7 +109,15 @@ async function benchmarkSet(set, workDir) {
     medianMs: Math.round(median(times)),
     runMs: times.map(Math.round),
     deterministic: hashes.size === 1,
+    ...(has('--validate') ? { ots: sanitize(lastPath) } : {}),
   };
+}
+
+function sanitize(ttfPath) {
+  const r = spawnSync('ots-sanitize', [ttfPath], { encoding: 'utf8' });
+  if (r.error) throw r.error;
+  if (r.status === 0) return 'pass';
+  return (r.stderr || r.stdout).trim().split('\n')[0] || `exit ${r.status}`;
 }
 
 function packTarball(workDir) {
@@ -124,12 +134,12 @@ function printTable(result) {
     `\n### ${result.label} (node ${result.node}, ${result.runs} runs per set)\n`
   );
   console.log(
-    '| Set | Icons | TTF bytes | Deflated | Glyphs | Build median ms | Deterministic |'
+    '| Set | Icons | TTF bytes | Deflated | Glyphs | Build median ms | Deterministic | OTS |'
   );
-  console.log('|---|---:|---:|---:|---:|---:|:---:|');
+  console.log('|---|---:|---:|---:|---:|---:|:---:|:---:|');
   for (const s of result.sets) {
     console.log(
-      `| ${s.name} | ${s.icons} | ${n(s.bytes)} | ${n(s.deflated)} | ${s.glyphs} | ${n(s.medianMs)} | ${s.deterministic ? 'yes' : 'no'} |`
+      `| ${s.name} | ${s.icons} | ${n(s.bytes)} | ${n(s.deflated)} | ${s.glyphs} | ${n(s.medianMs)} | ${s.deterministic ? 'yes' : 'no'} | ${s.ots ?? '–'} |`
     );
   }
   if (result.tarball) {
@@ -196,6 +206,12 @@ function printComparison(before, after, limits) {
   }
   const det = (r) => r.sets.every((s) => s.deterministic);
   if (!det(after)) failures.push('rebuilds are not byte-identical');
+  const validated = after.sets.some((s) => s.ots !== undefined);
+  const rejected = after.sets.filter(
+    (s) => s.ots !== undefined && s.ots !== 'pass'
+  );
+  for (const s of rejected)
+    failures.push(`${s.name}: OpenType Sanitizer rejected the font: ${s.ots}`);
   const ok = failures.length === 0;
   const mark = (pass) => (pass ? '✅' : '❌');
 
@@ -229,6 +245,11 @@ function printComparison(before, after, limits) {
   console.log(
     `| Byte-identical rebuilds | required | ${mark(det(after))} (${before.label}: ${det(before) ? 'yes' : 'no'}) |`
   );
+  if (validated) {
+    console.log(
+      `| OpenType Sanitizer | every font accepted | ${mark(rejected.length === 0)} |`
+    );
+  }
   console.log('\n<details>');
   console.log(
     `<summary>Build time, median of ${after.runs} runs (not gated)</summary>\n`
