@@ -63,12 +63,12 @@ No glyph is missing or changes shape. The differences are edge antialiasing.
 
 ## Tarball
 
-`yarn pack` output after excluding `src/core` from the builder-bob module target.
+`yarn pack` output after excluding `src/core` from the builder-bob module target, dropping `src`, source maps, and test declarations from the package, and pointing the `react-native` field at `lib/module`.
 
-|               |  Before |   After |
-| ------------- | ------: | ------: |
-| Tarball bytes | 252,078 | 170,691 |
-| Unpacked      |  2.3 MB |  1.9 MB |
-| Files         |     477 |     405 |
+|                |  Before |   After |
+| -------------- | ------: | ------: |
+| Tarball bytes  | 252,078 |  93,746 |
+| Unpacked bytes | 902,489 | 333,362 |
+| Files          |     477 |     201 |
 
-Every export resolves identically from a fresh npm consumer under the `require`, `import` and `react-native` conditions, and the CLI binary runs.
+Every export resolves identically from a fresh npm consumer under the `require`, `import` and `react-native` conditions, and the CLI binary runs. A release Metro bundle of the Bare example contains the same 8 runtime modules from `lib/module` with package exports enabled (React Native 0.79+) and disabled (0.74 to 0.78, which use the `react-native` field). No pipeline or CLI module is bundled.
