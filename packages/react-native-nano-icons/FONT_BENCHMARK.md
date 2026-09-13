@@ -8,24 +8,24 @@ yarn benchmark:fonts --runs 5 --label <name> --out <name>.json
 yarn benchmark:fonts --compare before.json after.json
 ```
 
-The script compiles every set N times in sequence, without linking into a native project, and reports the median wall time, the TTF size, the size after deflate at level 9 (what an APK or IPA stores), the number of outline points, and whether every run produced byte-identical output.
+The script compiles every set N times in sequence, without linking into a native project, and reports the median wall time, the TTF size, the size after deflate at level 9 (what an APK or IPA stores), and whether every run produced byte-identical output.
 
 ## Quadratic conversion and deterministic builds
 
 Comparison of `main` (`6adf202`) with the cubic-to-quadratic conversion at a 1/512 em error bound, `post` table format 3, and fixed `head` timestamps. Apple M4 Pro, Node 25.6.0, 5 runs per set.
 
-| Set                    | Icons | TTF before | TTF after |      Δ | Deflated before | Deflated after |      Δ | Points Δ |
-| ---------------------- | ----: | ---------: | --------: | -----: | --------------: | -------------: | -----: | -------: |
-| MaterialIcons baseline | 2,191 |    356,600 |   311,500 | -12.6% |         183,791 |        164,472 | -10.5% |    -9.0% |
-| MaterialIcons outline  | 2,191 |    395,484 |   345,200 | -12.7% |         204,567 |        183,617 | -10.2% |    -9.5% |
-| MaterialIcons round    | 2,191 |    473,760 |   422,452 | -10.8% |         239,650 |        217,734 |  -9.1% |    -7.8% |
-| MaterialIcons sharp    | 2,191 |    321,236 |   277,800 | -13.5% |         170,472 |        151,480 | -11.1% |    -9.8% |
-| MaterialIcons twotone  | 2,191 |    530,712 |   460,684 | -13.2% |         265,481 |        237,391 | -10.6% |    -9.4% |
-| SWMIcons outline       |   275 |    109,312 |   107,096 |  -2.0% |          29,801 |         28,620 |  -4.0% |     0.0% |
-| SWMIcons duotone       |   275 |    120,168 |   115,604 |  -3.8% |          36,600 |         34,124 |  -6.8% |    -1.3% |
-| SWMIcons curved        |   275 |    104,728 |   102,524 |  -2.1% |          32,798 |         31,597 |  -3.7% |     0.0% |
+| Set                    | Icons | TTF before | TTF after |      Δ | Deflated before | Deflated after |      Δ |
+| ---------------------- | ----: | ---------: | --------: | -----: | --------------: | -------------: | -----: |
+| MaterialIcons baseline | 2,191 |    356,600 |   311,500 | -12.6% |         183,791 |        164,472 | -10.5% |
+| MaterialIcons outline  | 2,191 |    395,484 |   345,200 | -12.7% |         204,567 |        183,617 | -10.2% |
+| MaterialIcons round    | 2,191 |    473,760 |   422,452 | -10.8% |         239,650 |        217,734 |  -9.1% |
+| MaterialIcons sharp    | 2,191 |    321,236 |   277,800 | -13.5% |         170,472 |        151,480 | -11.1% |
+| MaterialIcons twotone  | 2,191 |    530,712 |   460,684 | -13.2% |         265,481 |        237,391 | -10.6% |
+| SWMIcons outline       |   275 |    109,312 |   107,096 |  -2.0% |          29,801 |         28,620 |  -4.0% |
+| SWMIcons duotone       |   275 |    120,168 |   115,604 |  -3.8% |          36,600 |         34,124 |  -6.8% |
+| SWMIcons curved        |   275 |    104,728 |   102,524 |  -2.1% |          32,798 |         31,597 |  -3.7% |
 
-The SWM sets are drawn mostly with straight segments and arcs that were already quadratic, so their savings come from the `post` table alone. The Material sets are cubic-heavy and lose about 9% of their outline points.
+The SWM sets are drawn mostly with straight segments and arcs that were already quadratic, so their savings come from the `post` table alone. The Material sets are cubic-heavy.
 
 ### Build time
 
@@ -48,7 +48,7 @@ Before: every rebuild differs in the `head` table timestamps. After: all eight s
 
 ### Validation
 
-All sixteen fonts pass OpenType Sanitizer 9.2.0, parse with fontTools 4.60 and fc-validate. Point counts per set match the table above.
+All sixteen fonts pass OpenType Sanitizer 9.2.0, parse with fontTools 4.60 and fc-validate.
 
 ### Rendering
 

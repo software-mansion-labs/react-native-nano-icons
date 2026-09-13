@@ -65,14 +65,11 @@ function n(x) {
 
 function fontStats(buf) {
   const data = Font.create(buf, { type: 'ttf', hinting: false }).get();
-  let points = 0;
   let glyphs = 0;
   for (const g of data.glyf) {
-    if (!g.contours?.length) continue;
-    glyphs += 1;
-    for (const c of g.contours) points += c.length;
+    if (g.contours?.length) glyphs += 1;
   }
-  return { glyphs, points };
+  return { glyphs };
 }
 
 async function benchmarkSet(set, workDir) {
@@ -127,12 +124,12 @@ function printTable(result) {
     `\n### ${result.label} (node ${result.node}, ${result.runs} runs per set)\n`
   );
   console.log(
-    '| Set | Icons | TTF bytes | Deflated | Glyphs | Points | Build median ms | Deterministic |'
+    '| Set | Icons | TTF bytes | Deflated | Glyphs | Build median ms | Deterministic |'
   );
-  console.log('|---|---:|---:|---:|---:|---:|---:|:---:|');
+  console.log('|---|---:|---:|---:|---:|---:|:---:|');
   for (const s of result.sets) {
     console.log(
-      `| ${s.name} | ${s.icons} | ${n(s.bytes)} | ${n(s.deflated)} | ${s.glyphs} | ${n(s.points)} | ${n(s.medianMs)} | ${s.deterministic ? 'yes' : 'no'} |`
+      `| ${s.name} | ${s.icons} | ${n(s.bytes)} | ${n(s.deflated)} | ${s.glyphs} | ${n(s.medianMs)} | ${s.deterministic ? 'yes' : 'no'} |`
     );
   }
   if (result.tarball) {
@@ -179,7 +176,7 @@ function printComparison(before, after, limits) {
     }
     const name = grew ? `**${b.name}** ❌` : b.name;
     rows.push(
-      `| ${name} | ${n(b.icons)} | ${arrow(b.bytes, a.bytes)} | ${arrow(b.deflated, a.deflated)} | ${pct(b.points, a.points)} |`
+      `| ${name} | ${n(b.icons)} | ${arrow(b.bytes, a.bytes)} | ${arrow(b.deflated, a.deflated)} |`
     );
     times.push(
       `| ${b.name} | ${n(b.medianMs)} ms | ${n(a.medianMs)} ms | ${pct(b.medianMs, a.medianMs)} |`
@@ -195,7 +192,7 @@ function printComparison(before, after, limits) {
         `tarball grew ${pct(before.tarball.bytes, after.tarball.bytes)} (limit +${limits.maxSizeGrowth}%)`
       );
     }
-    tarballRow = `| **Tarball**${tarballOk ? '' : ' ❌'} | | ${arrow(before.tarball.bytes, after.tarball.bytes)} | | ${before.tarball.files} → ${after.tarball.files} files |`;
+    tarballRow = `| **Tarball**${tarballOk ? '' : ' ❌'} | ${before.tarball.files} → ${after.tarball.files} files | ${arrow(before.tarball.bytes, after.tarball.bytes)} | |`;
   }
   const det = (r) => r.sets.every((s) => s.deterministic);
   if (!det(after)) failures.push('rebuilds are not byte-identical');
@@ -214,8 +211,8 @@ function printComparison(before, after, limits) {
     `<summary>${ok ? 'Details' : 'Details and failing sets'}</summary>\n`
   );
   console.log('### Size\n');
-  console.log('| Set | Icons | TTF | Deflated | Points |');
-  console.log('|---|---:|---:|---:|---:|');
+  console.log('| Set | Icons | TTF | Deflated |');
+  console.log('|---|---:|---:|---:|');
   for (const r of rows) console.log(r);
   if (tarballRow) console.log(tarballRow);
   console.log('\n### Checks\n');
