@@ -40,7 +40,11 @@ jobs:
           yarn build-packages
       - name: Install OpenType Sanitizer
         if: matrix.side == 'pr'
-        run: pip install --quiet opentype-sanitizer && ots-sanitize --version
+        run: |
+          pip install --quiet opentype-sanitizer
+          python3 -c "import os, ots; print(os.path.dirname(ots.OTS_SANITIZE))" >> "$GITHUB_PATH"
+      - run: ots-sanitize --version
+        if: matrix.side == 'pr'
       - name: Benchmark
         run: node pr/scripts/font-benchmark.mjs --pkg ${{ matrix.side }}/packages/react-native-nano-icons --runs 3 --pack ${{ matrix.side == 'pr' && '--validate' || '' }} --label ${{ matrix.side }} --out ${{ matrix.side }}.json
       - uses: actions/upload-artifact@v4
