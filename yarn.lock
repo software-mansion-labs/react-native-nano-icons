@@ -15001,6 +15001,7 @@ __metadata:
     "@xmldom/xmldom": "npm:^0.9.10"
     babel-plugin-module-resolver: "npm:^5.0.2"
     chalk: "npm:^5.6.2"
+    cubic2quad: "npm:^1.2.1"
     del-cli: "npm:^6.0.0"
     expo-module-scripts: "npm:^5.0.8"
     fonteditor-core: "npm:^2.6.3"

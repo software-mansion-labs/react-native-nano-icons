@@ -5,6 +5,9 @@ import { forceTtfMetrics } from './metrics';
 import svg2ttf from 'svg2ttf';
 import { GLYPH_CODEPOINT, XML_AMP, XML_QUOT } from '../../utils/svgPatterns';
 import { SVG_NS } from '../flatten/dom';
+import { toQuadraticPath } from './quadratic';
+
+const QUADRATIC_ERROR_BOUND_EM = 1 / 512;
 
 export type FontGlyph = {
   codepoint: number;
@@ -32,7 +35,8 @@ function buildSvgFontXml(opts: {
   const glyphLines = glyphs.map((g) => {
     const hex = g.codepoint.toString(16);
     const name = `u${hex.padStart(4, '0')}`;
-    return `<glyph glyph-name="${name}" unicode="&#x${hex};" horiz-adv-x="${g.advanceWidth}" d="${escapeXml(g.d)}"/>`;
+    const d = toQuadraticPath(g.d, upm * QUADRATIC_ERROR_BOUND_EM);
+    return `<glyph glyph-name="${name}" unicode="&#x${hex};" horiz-adv-x="${g.advanceWidth}" d="${escapeXml(d)}"/>`;
   });
 
   return `<?xml version="1.0" standalone="no"?>
@@ -91,7 +95,7 @@ export async function compileTtfFromGlyphs(opts: {
     descent,
   });
 
-  const ttfRaw = svg2ttf(svgFontString);
+  const ttfRaw = svg2ttf(svgFontString, { ts: 0 });
   const rawBuf = Buffer.from(ttfRaw.buffer);
 
   const fixedBuf = forceTtfMetrics(rawBuf, upm, ascent, descent, lineGap);
