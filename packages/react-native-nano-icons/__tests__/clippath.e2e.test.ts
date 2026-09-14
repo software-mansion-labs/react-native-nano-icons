@@ -5,10 +5,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-// Must be set before any pipeline import so getPackageRoot() picks it up.
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
-import { runFontPipeline } from '../src/core/pipeline/runFontPipeline';
+import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoGlyphMap } from '../src/core/types';
 
 // ---------------------------------------------------------------------------

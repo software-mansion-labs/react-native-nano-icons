@@ -1,23 +1,17 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-import { PathKitManager } from './managers.js';
-import { ensureDir, ensureEmptyDir } from './config.js';
-import { prepareSvgLayers } from './prepare.js';
-import { shouldSkipPath } from '../svg/svg_dom.js';
-import { resolveSymbolLayers, contentBounds } from '../svg/svg_pathops.js';
-import { buildSymbolTemplate } from '../symbols/template.js';
-import { buildColoredSymbolSvg } from '../symbols/coloredSymbol.js';
-import { buildVectorDrawableXml } from '../symbols/vectorDrawable.js';
-import {
-  symbolsetContentsJson,
-  imagesetContentsJson,
-} from '../symbols/contents.js';
-import {
-  toDrawableResourceName,
-  manifestBaseName,
-} from '../../utils/naming.js';
-import type { NanoLogger } from '../types.js';
+import { loadPathKit } from '../pathkit/load';
+import { ensureDir, ensureEmptyDir } from './config';
+import { prepareSvgLayers } from './prepare';
+import { shouldSkipPath } from '../glyph/parse';
+import { resolveSymbolLayers, contentBounds } from '../symbols/layers';
+import { buildSymbolTemplate } from '../symbols/template';
+import { buildColoredSymbolSvg } from '../symbols/coloredSymbol';
+import { buildVectorDrawableXml } from '../symbols/vectorDrawable';
+import { symbolsetContentsJson, imagesetContentsJson } from '../symbols/contents';
+import { toDrawableResourceName, manifestBaseName } from '../../utils/naming';
+import type { NanoLogger } from '../types';
 
 export type SymbolsPipelineConfig = {
   /** Set name (used for output filenames and the manifest export name). */
@@ -130,7 +124,7 @@ export async function runSymbolPipeline(
   const drawableFiles: string[] = [];
   const resourceNameToFile = new Map<string, string>();
 
-  const PathKit = await PathKitManager.getInstance();
+  const PathKit = await loadPathKit();
 
   for (const file of files) {
     const iconName = path.parse(file).name;
@@ -141,7 +135,7 @@ export async function runSymbolPipeline(
     const prepared = await prepareSvgLayers({
       filePath,
       fileLabel: `${config.name}:${file}`,
-      PathKit,
+      pathkit: PathKit,
       logger,
     });
     if (!prepared) continue;

@@ -1,4 +1,17 @@
 {
   "extends": "./tsconfig",
-  "exclude": ["lib", "cli", "plugin", "scripts", "src/core/pipeline", "src/core/font", "src/core/svg"]
+  "exclude": [
+    "lib",
+    "cli",
+    "plugin",
+    "scripts",
+    "src/core/pipeline",
+    "src/core/font",
+    "src/core/svg",
+    "__tests__"
+  ],
+  "compilerOptions": {
+    "declarationMap": false,
+    "types": ["node"]
+  }
 }

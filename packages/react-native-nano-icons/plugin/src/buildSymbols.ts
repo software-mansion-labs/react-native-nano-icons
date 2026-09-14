@@ -2,8 +2,8 @@ import {
   buildAllSymbols as coreBuildAllSymbols,
   createQuietLogger,
   detectExpoLogLevel,
-} from '../../cli/index.js';
-import type { SymbolSetConfig, BuiltSymbolSet } from './types.js';
+} from '../../cli/index';
+import type { SymbolSetConfig, BuiltSymbolSet } from './types';
 
 // Build all symbol sets. Shows a friendly message on error unless EXPO_DEBUG is set.
 export async function buildAllSymbols(

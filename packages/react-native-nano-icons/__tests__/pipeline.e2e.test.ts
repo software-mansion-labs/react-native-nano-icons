@@ -5,10 +5,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-// Must be set before any pipeline import so getPackageRoot() picks it up.
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
-import { runFontPipeline } from '../src/core/pipeline/runFontPipeline';
+import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoGlyphMap } from '../src/core/types';
 
 // ---------------------------------------------------------------------------
@@ -182,6 +179,35 @@ describe('Pipeline E2E — outline (single-colour)', () => {
     expect(data['OS/2']!.fsSelection & (1 << 7)).toBeTruthy();
   });
 
+  test('post table carries no glyph names', () => {
+    const { Font } =
+      require('fonteditor-core') as typeof import('fonteditor-core');
+    const buf = fs.readFileSync(ttfPath);
+    const data = Font.create(buf, { type: 'ttf' }).get();
+    expect(data.post!.format).toBe(3);
+  });
+
+  test('rebuilding the same input yields byte-identical output', async () => {
+    const again = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-e2e-again-'));
+    try {
+      const res = await runFontPipeline(
+        {
+          fontFamily: FONT_FAMILY,
+          upm: UPM,
+          safeZone: SAFE_ZONE,
+          startUnicode: START_UNICODE,
+          linking: 'static',
+        },
+        { inputDir: INPUT_DIR, outputDir: again, tempDir: again }
+      );
+      expect(
+        fs.readFileSync(res.ttfPath).equals(fs.readFileSync(ttfPath))
+      ).toBe(true);
+    } finally {
+      await fsp.rm(again, { recursive: true, force: true });
+    }
+  });
+
   test('hhea ascent equals UPM and descent equals 0', () => {
     const { Font } =
       require('fonteditor-core') as typeof import('fonteditor-core');
@@ -231,7 +257,7 @@ describe('Pipeline E2E — inputHash embedding', () => {
     }
   });
 
-  test('glyphmap m.h equals the inputHash passed to runFontPipeline', () => {
+  test('glyphmap m.h equals the inputHash passed to runPipeline', () => {
     expect(glyphmap.m.h).toBe(INPUT_HASH);
   });
 });

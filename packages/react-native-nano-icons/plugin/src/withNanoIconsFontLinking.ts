@@ -7,8 +7,8 @@ import {
 import type { InfoPlist } from '@expo/config-plugins';
 import fs from 'fs/promises';
 import path from 'path';
-import { getOrBuildFonts } from './buildFonts.js';
-import type { IconSetConfig } from './types.js';
+import { getOrBuildFonts } from './buildFonts';
+import type { IconSetConfig } from './types';
 
 const ANDROID_ASSETS_FONTS_DIR = 'app/src/main/assets/fonts';
 const IOS_FONTS_GROUP = 'Resources';

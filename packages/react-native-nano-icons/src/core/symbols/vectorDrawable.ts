@@ -1,6 +1,6 @@
-import { parseColor } from '../../utils/parse.js';
-import type { SymbolTemplateLayer } from './template.js';
-import type { ColoredSymbolLayer } from './coloredSymbol.js';
+import { parseColor } from '../../utils/parse';
+import type { SymbolTemplateLayer } from './template';
+import type { ColoredSymbolLayer } from './coloredSymbol';
 
 /**
  * Android VectorDrawable emitter — the tab-bar counterpart to iOS

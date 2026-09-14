@@ -1,75 +1,12 @@
 import fsp from 'node:fs/promises';
 
-import { picoFromFile } from './managers.js';
-import {
-  parseFlattenedSvg,
-  preprocessSvg,
-  validateSvg,
-  extractOriginalEvenoddDs,
-  restoreOriginalEvenoddDs,
-} from '../svg/svg_dom.js';
-import { convertEvenoddToWinding } from '../svg/svg_pathops.js';
-import type { NanoLogger, PathKitModule } from '../types.js';
-
-export type ParsedPath = {
-  d: string;
-  fill: string | null;
-  fillRule?: 'evenodd';
-  noMerge?: boolean;
-};
-
-// Concatenate `d` strings into one compound path. Under nonzero winding this
-// renders identically to drawing them separately in the same color.
-function concatPathDs(ds: string[]): string | null {
-  if (ds.length === 0) return null;
-  if (ds.length === 1) return ds[0]!;
-  return ds.join(' ');
-}
-
-// Merge runs of adjacent same-fill paths into compound paths, preserving z-order.
-export function mergeSameColorPaths(
-  paths: ParsedPath[],
-  logger?: NanoLogger
-): ParsedPath[] {
-  if (paths.length <= 1) return paths;
-
-  const result: ParsedPath[] = [];
-  let i = 0;
-
-  while (i < paths.length) {
-    const fill = paths[i]!.fill;
-
-    // Find a mergeable run of same fill. evenodd-converted paths are noMerge:
-    // their CW hole contours would cancel adjacent CCW contours.
-    let j = i + 1;
-    if (!paths[i]!.noMerge) {
-      while (
-        j < paths.length &&
-        paths[j]!.fill === fill &&
-        !paths[j]!.noMerge
-      ) {
-        j++;
-      }
-    }
-
-    if (j - i === 1) {
-      result.push(paths[i]!);
-    } else {
-      const group = paths.slice(i, j);
-      const merged = concatPathDs(group.map((p) => p.d));
-      if (merged) {
-        logger?.info(
-          `    ⊕ Merged ${group.length} same-color paths (fill=${fill})`
-        );
-        result.push({ d: merged, fill });
-      } else {
-        result.push(...group);
-      }
-    }
-    i = j;
-  }
-  return result;
-}
+import { flattenSvg } from '../flatten/index';
+import { mergeSameColorPaths } from '../glyph/merge';
+import { parseFlattenedSvg, type ParsedPath } from '../glyph/parse';
+import { preprocessSvg, validateSvg } from '../glyph/validate';
+import { convertEvenoddToWinding } from '../pathkit/evenodd';
+import type { PathKitModule } from '../pathkit/types';
+import type { NanoLogger } from '../types';
 
 export type PreparedSvg = {
   viewBox: [number, number, number, number];
@@ -78,55 +15,65 @@ export type PreparedSvg = {
 };
 
 /**
- * Shared per-file SVG prep: validate → preprocess → picosvg flatten → parse →
- * evenodd restore/convert → same-color merge. Returns null for unsupported SVGs.
+ * Shared per-file SVG prep: validate → preprocess → flatten → parse →
+ * evenodd convert → same-color merge. Returns null for unsupported SVGs.
  */
 export async function prepareSvgLayers(opts: {
   filePath: string;
   /** Label used in log messages, e.g. `"MyIcons:heart.svg"`. */
   fileLabel: string;
-  PathKit: PathKitModule;
+  pathkit: PathKitModule;
   logger?: NanoLogger;
 }): Promise<PreparedSvg | null> {
-  const { filePath, fileLabel, PathKit, logger } = opts;
+  const { filePath, fileLabel, pathkit, logger } = opts;
 
   const rawContent = await fsp.readFile(filePath, 'utf-8');
 
   const validation = validateSvg(rawContent);
   if (validation.valid === false) {
-    logger?.warn(`Skipping "${fileLabel}": ${validation.reason}`);
+    logger?.warn(`${fileLabel} skipped: ${validation.reason}`);
     return null;
   }
 
   const preprocessed = preprocessSvg(rawContent);
 
-  // Save evenodd `d` strings before picosvg: its simplify can drop contours from
-  // multi-subpath evenodd paths, so we restore them after.
-  const originalEvenoddDs = extractOriginalEvenoddDs(preprocessed);
-
-  const flattenedSvg = await picoFromFile(filePath, preprocessed);
+  let flattenedSvg: string;
+  try {
+    flattenedSvg = flattenSvg(preprocessed, pathkit);
+  } catch (err) {
+    throw new Error(
+      `${fileLabel} failed to flatten: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+      { cause: err }
+    );
+  }
   const parsed = parseFlattenedSvg(flattenedSvg, {
     onSanitize: (original) => {
       logger?.info(
-        `  ⚠ Sanitized path in "${fileLabel}": path was missing initial moveto (prepended M from endpoint)`
+        `  ⚠ ${fileLabel} sanitized path: path was missing initial moveto (prepended M from endpoint)`
       );
       logger?.info(`    Original: ${original.slice(0, 80)}…`);
     },
+    onMissingViewBox: (assumed) => {
+      logger?.warn(
+        `${fileLabel} has no viewBox; assuming [${assumed.join(' ')}]`
+      );
+    },
   });
 
-  // Restore evenodd data, convert to nonzero winding, and mark noMerge so
-  // hole contours don't cancel adjacent paths.
-  if (originalEvenoddDs.length > 0) {
-    restoreOriginalEvenoddDs(parsed.paths, originalEvenoddDs);
-  }
+  // Convert evenodd to nonzero winding with our containment-based
+  // algorithm. Mark as noMerge — compound paths with holes must stay
+  // separate so their CW hole contours don't cancel adjacent paths' CCW
+  // contours.
   for (const p of parsed.paths) {
     if (p.fillRule === 'evenodd') {
       logger?.info(
-        `  ↻ Converting evenodd path to nonzero winding in "${fileLabel}"`
+        `  ↻ ${fileLabel} converting evenodd path to nonzero winding`
       );
-      p.d = convertEvenoddToWinding(PathKit, p.d);
+      p.d = convertEvenoddToWinding(pathkit, p.d);
       delete p.fillRule;
-      (p as ParsedPath).noMerge = true;
+      p.noMerge = true;
     }
   }
 

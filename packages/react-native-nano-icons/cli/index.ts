@@ -1,26 +1,31 @@
-export { buildAllFonts, type IconSetConfig, type BuiltFont } from './build.js';
+export {
+  buildAllFonts,
+  IconSetBuildError,
+  type IconSetConfig,
+  type BuiltFont,
+} from './build';
 export {
   buildAllSymbols,
   type SymbolSetConfig,
   type BuiltSymbolSet,
-} from './buildSymbols.js';
+} from './buildSymbols';
 export {
   createOraLogger,
   createQuietLogger,
   detectExpoLogLevel,
   type NanoLogger,
   type LogLevel,
-} from './logger.js';
+} from './logger';
 export {
   loadNanoIconsConfig,
   loadDynamicIconSets,
   type NanoIconsConfig,
-} from './config.js';
-export { loadDynamicSetsFromAppConfig } from './expoConfig.js';
+} from './config';
+export { loadDynamicSetsFromAppConfig } from './expoConfig';
 export {
   linkBare,
   linkBareSymbols,
   copySymbolsetsIntoCatalog,
   linkBareAndroidDrawables,
   copyDrawablesIntoResDir,
-} from './link.js';
+} from './link';

@@ -1,0 +1,78 @@
+name: Font benchmark
+on:
+  pull_request:
+    paths:
+      - 'packages/react-native-nano-icons/**'
+      - 'scripts/font-benchmark.mjs'
+      - '.github/workflows/font-benchmark.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: write
+concurrency:
+  group: font-benchmark-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  measure:
+    if: github.repository == 'software-mansion-labs/react-native-nano-icons'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        side: [base, pr]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: pr
+      - uses: actions/checkout@v4
+        if: matrix.side == 'base'
+        with:
+          path: base
+          ref: ${{ github.event.pull_request.base.sha || 'main' }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: ${{ matrix.side }}/yarn.lock
+      - name: Build
+        working-directory: ${{ matrix.side }}
+        run: |
+          yarn --immutable
+          yarn build-packages
+      - name: Install OpenType Sanitizer
+        if: matrix.side == 'pr'
+        run: |
+          pip install --quiet opentype-sanitizer
+          python3 -c "import os, ots; print(os.path.dirname(ots.OTS_SANITIZE))" >> "$GITHUB_PATH"
+      - run: ots-sanitize --version
+        if: matrix.side == 'pr'
+      - name: Benchmark
+        run: node pr/scripts/font-benchmark.mjs --pkg ${{ matrix.side }}/packages/react-native-nano-icons --runs 3 --pack ${{ matrix.side == 'pr' && '--validate' || '' }} --label ${{ matrix.side }} --out ${{ matrix.side }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: font-benchmark-${{ matrix.side }}
+          path: ${{ matrix.side }}.json
+  compare:
+    needs: measure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/font-benchmark.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: font-benchmark-*
+          merge-multiple: true
+      - name: Compare
+        id: compare
+        run: |
+          node scripts/font-benchmark.mjs --compare base.json pr.json --max-size-growth 5 --before-sha "${{ github.event.pull_request.base.sha }}" --after-sha "${{ github.event.pull_request.head.sha }}" --repo "${{ github.server_url }}/${{ github.repository }}" | tee comparison.md
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+      - run: cat comparison.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        with:
+          header: font-benchmark
+          path: comparison.md
+      - run: exit ${{ steps.compare.outputs.exit }}

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { IconSetConfig } from './build.js';
-import type { SymbolSetConfig } from './buildSymbols.js';
+import type { IconSetConfig } from './build';
+import type { SymbolSetConfig } from './buildSymbols';
 
 export type NanoIconsConfig = {
   iconSets?: IconSetConfig[];

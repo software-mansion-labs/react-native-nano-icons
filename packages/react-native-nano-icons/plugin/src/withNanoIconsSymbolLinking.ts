@@ -1,9 +1,9 @@
 import { withDangerousMod } from '@expo/config-plugins';
 import fs from 'fs';
 import path from 'path';
-import { copySymbolsetsIntoCatalog } from '../../cli/index.js';
-import { getOrBuildSymbols } from './buildSymbols.js';
-import type { SymbolSetConfig } from './types.js';
+import { copySymbolsetsIntoCatalog } from '../../cli/index';
+import { getOrBuildSymbols } from './buildSymbols';
+import type { SymbolSetConfig } from './types';
 
 /**
  * Write generated assets into the app's existing ios/<projectName>/Images.xcassets.

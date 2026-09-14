@@ -103,7 +103,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
   {
     "contourCount": 1,
     "shape": {
-      "area": 223674,
+      "area": 224095,
       "bbox": [
         233,
         200,
@@ -117,11 +117,11 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
   {
     "contourCount": 1,
     "shape": {
-      "area": 167885,
+      "area": 167995,
       "bbox": [
         367,
-        207.73,
-        785.33,
+        207.56,
+        785.38,
         767,
       ],
       "contours": 1,
@@ -145,7 +145,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
   {
     "contourCount": 2,
     "shape": {
-      "area": 246118,
+      "area": 246097,
       "bbox": [
         167,
         267,
@@ -199,6 +199,762 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
     "unicode": 57358,
   },
   {
+    "contourCount": 1,
+    "shape": {
+      "area": 299716,
+      "bbox": [
+        107,
+        262,
+        891,
+        654,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57359,
+  },
+  {
+    "contourCount": 4,
+    "shape": {
+      "area": 587797,
+      "bbox": [
+        102,
+        257,
+        897,
+        659,
+      ],
+      "contours": 4,
+    },
+    "unicode": 57360,
+  },
+  {
+    "contourCount": 22,
+    "shape": {
+      "area": 41213,
+      "bbox": [
+        281,
+        420,
+        813,
+        611,
+      ],
+      "contours": 22,
+    },
+    "unicode": 57361,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 502,
+      "bbox": [
+        414,
+        375,
+        441,
+        408,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57362,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 1175,
+      "bbox": [
+        369.54,
+        357.8,
+        437,
+        389.25,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57363,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 513,
+      "bbox": [
+        583,
+        431,
+        617,
+        460,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57364,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 1202,
+      "bbox": [
+        601,
+        386.72,
+        634.2,
+        453,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57365,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 10636,
+      "bbox": [
+        454,
+        430,
+        606,
+        639,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57366,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 11890,
+      "bbox": [
+        412,
+        387,
+        531.1,
+        643,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57367,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 1137,
+      "bbox": [
+        420,
+        788,
+        460.5,
+        833.5,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57368,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 908,
+      "bbox": [
+        436.5,
+        797.5,
+        473,
+        839.5,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57369,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 15476,
+      "bbox": [
+        362.83,
+        634.69,
+        535,
+        810,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57370,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 77,
+      "bbox": [
+        463,
+        771.2,
+        473,
+        786,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57371,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 1003,
+      "bbox": [
+        464,
+        772.86,
+        495.06,
+        813,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57372,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 425,
+      "bbox": [
+        464,
+        788.29,
+        494,
+        810,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57373,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 5452,
+      "bbox": [
+        448.84,
+        794.84,
+        500.33,
+        857.33,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57374,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 1137,
+      "bbox": [
+        447.82,
+        817,
+        506,
+        859,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57375,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 236,
+      "bbox": [
+        492.9,
+        815.9,
+        509.53,
+        833.1,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57376,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 1534,
+      "bbox": [
+        466,
+        654,
+        485,
+        778,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57377,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 422,
+      "bbox": [
+        478.5,
+        764.5,
+        507,
+        791,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57378,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 33,
+      "bbox": [
+        414,
+        785,
+        436,
+        799,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57379,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 8969,
+      "bbox": [
+        465.83,
+        585.86,
+        575,
+        692.44,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57380,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 9062,
+      "bbox": [
+        472,
+        583.86,
+        581,
+        691.14,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57381,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 1452,
+      "bbox": [
+        482.25,
+        582.25,
+        526,
+        634,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57382,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 4488,
+      "bbox": [
+        501,
+        613,
+        572,
+        772,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57383,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 101,
+      "bbox": [
+        508,
+        623,
+        531,
+        734,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57384,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 831,
+      "bbox": [
+        445.09,
+        833,
+        499.16,
+        868,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57385,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 256,
+      "bbox": [
+        440,
+        537,
+        459,
+        561,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57386,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 606,
+      "bbox": [
+        408.2,
+        525,
+        456,
+        548,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57387,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 239,
+      "bbox": [
+        559,
+        577,
+        582,
+        597,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57388,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 585,
+      "bbox": [
+        571,
+        545.2,
+        594.25,
+        592,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57389,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 5380,
+      "bbox": [
+        468,
+        576,
+        575,
+        723,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57390,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 5877,
+      "bbox": [
+        438,
+        546,
+        522.13,
+        726,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57391,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 543,
+      "bbox": [
+        444,
+        828,
+        472.13,
+        859.27,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57392,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 459,
+      "bbox": [
+        455.67,
+        834,
+        481,
+        864,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57393,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 7509,
+      "bbox": [
+        403.6,
+        720.88,
+        525,
+        843,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57394,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 36,
+      "bbox": [
+        474,
+        816,
+        481,
+        826.33,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57395,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 494,
+      "bbox": [
+        474,
+        817,
+        496.09,
+        845,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57396,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 218,
+      "bbox": [
+        474,
+        827.92,
+        496,
+        843,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57397,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 2711,
+      "bbox": [
+        463.8,
+        832.8,
+        500.22,
+        877.05,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57398,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 555,
+      "bbox": [
+        463.56,
+        848,
+        504,
+        878,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57399,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 118,
+      "bbox": [
+        494.86,
+        847.46,
+        506.54,
+        859.54,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57400,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 782,
+      "bbox": [
+        476,
+        733,
+        490,
+        821,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57401,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 204,
+      "bbox": [
+        485,
+        811,
+        505,
+        829.5,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57402,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 28,
+      "bbox": [
+        439,
+        826,
+        455,
+        836,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57403,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 4424,
+      "bbox": [
+        475.8,
+        685.8,
+        552.2,
+        760.2,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57404,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 4453,
+      "bbox": [
+        480,
+        684.8,
+        557,
+        759.2,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57405,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 699,
+      "bbox": [
+        487.49,
+        683.24,
+        518,
+        720,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57406,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 2212,
+      "bbox": [
+        501,
+        705,
+        550,
+        816,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57407,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 39,
+      "bbox": [
+        506,
+        712,
+        522,
+        789,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57408,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 402,
+      "bbox": [
+        461.75,
+        859,
+        499.22,
+        884,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57409,
+  },
+  {
+    "contourCount": 1,
+    "shape": {
+      "area": 278334,
+      "bbox": [
+        122,
+        123,
+        877,
+        501,
+      ],
+      "contours": 1,
+    },
+    "unicode": 57410,
+  },
+  {
+    "contourCount": 4,
+    "shape": {
+      "area": 546313,
+      "bbox": [
+        117,
+        118,
+        882,
+        506,
+      ],
+      "contours": 4,
+    },
+    "unicode": 57411,
+  },
+  {
+    "contourCount": 22,
+    "shape": {
+      "area": 38311,
+      "bbox": [
+        289,
+        275,
+        802,
+        459,
+      ],
+      "contours": 22,
+    },
+    "unicode": 57412,
+  },
+  {
     "contourCount": 4,
     "shape": {
       "area": 218198,
@@ -210,7 +966,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 4,
     },
-    "unicode": 57359,
+    "unicode": 57413,
   },
   {
     "contourCount": 5,
@@ -224,7 +980,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 5,
     },
-    "unicode": 57360,
+    "unicode": 57414,
   },
   {
     "contourCount": 4,
@@ -238,12 +994,12 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 4,
     },
-    "unicode": 57363,
+    "unicode": 57417,
   },
   {
     "contourCount": 2,
     "shape": {
-      "area": 197240,
+      "area": 197298,
       "bbox": [
         100,
         100,
@@ -252,7 +1008,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 2,
     },
-    "unicode": 57364,
+    "unicode": 57418,
   },
 ]
 `;
@@ -334,6 +1090,72 @@ exports[`pipeline golden — structural summary (Tier S) curated icons produce a
         "black",
       ],
       "name": "evenodd_qrcode",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#FCC9A7",
+        "#1F252A",
+        "#FCC9A7",
+        "#1F252A",
+        "#092330",
+        "#0C2C40",
+        "#FCC9A7",
+        "#1C2226",
+        "#F7ECE7",
+        "#FCF3F0",
+        "#FCC9A7",
+        "#F4BE9A",
+        "#FCC9A7",
+        "#1C2226",
+        "#FCC9A7",
+        "#0C2C40",
+        "#FCF3F0",
+        "#EADDD8",
+        "#AFAFAF",
+        "#D1D1D1",
+        "#FCC9A7",
+        "#F7ECE7",
+        "#EADDD8",
+        "#1C2226",
+        "#001A72",
+        "white",
+        "white",
+      ],
+      "name": "nested_swm-walker",
+    },
+    {
+      "adv": 1000,
+      "layerColors": [
+        "#001A72",
+        "white",
+        "white",
+        "#FCC9A7",
+        "#1F252A",
+        "#FCC9A7",
+        "#1F252A",
+        "#092330",
+        "#0C2C40",
+        "#FCC9A7",
+        "#1C2226",
+        "#F7ECE7",
+        "#FCF3F0",
+        "#FCC9A7",
+        "#F4BE9A",
+        "#FCC9A7",
+        "#1C2226",
+        "#FCC9A7",
+        "#0C2C40",
+        "#FCF3F0",
+        "#EADDD8",
+        "#AFAFAF",
+        "#D1D1D1",
+        "#FCC9A7",
+        "#F7ECE7",
+        "#EADDD8",
+        "#1C2226",
+      ],
+      "name": "nested_swm-walker-overlay",
     },
     {
       "adv": 1000,

@@ -1,4 +1,4 @@
-import { parseColor } from '../../utils/parse.js';
+import { parseColor } from '../../utils/parse';
 
 // Colored symbol emitter: original fills + z-order, shipped as an `.imageset`.
 export type ColoredSymbolLayer = {

@@ -7,7 +7,7 @@ Complete documentation of how SVG icons are converted into Apple **custom SF Sym
 ## Overview
 
 ```
-SVG files → picosvg (flatten) → parse paths → evenodd conversion → same-color merge
+SVG files → flatten (PathKit-backed) → parse paths → evenodd conversion → same-color merge
           → [DIVERGENCE FROM FONT PIPELINE]
           → cap-band placement → symbol template SVG (3 variable sources + annotations)
           → <prefix>.<icon>.symbolset (template + Contents.json)
@@ -38,7 +38,7 @@ Native bottom-tab libraries (react-native-screens `Tabs`, expo-router `NativeTab
 
 | Area | Change |
 |---|---|
-| `src/core/pipeline/prepare.ts` | **New.** Shared per-file SVG stages (validate → picosvg → parse → evenodd → merge) extracted from `runFontPipeline.ts` so both pipelines reuse identical preprocessing. `runFontPipeline.ts` behavior is unchanged. |
+| `src/core/pipeline/prepare.ts` | Shared per-file SVG stages (validate → flatten → parse → evenodd → merge). Both pipelines reuse identical preprocessing. |
 | `src/core/symbols/template.ts` | **New.** SF Symbol template emitter: skeleton geometry, cap-band placement math, variant groups, margin guides, rendering-mode annotations. |
 | `src/core/symbols/contents.ts` | **New.** `Contents.json` emitters (symbolset + catalog root). |
 | `src/core/pipeline/runSymbolPipeline.ts` | **New.** Symbol pipeline orchestrator: per-icon symbolset emission, typed manifest, symbolmap. |
@@ -51,7 +51,7 @@ Native bottom-tab libraries (react-native-screens `Tabs`, expo-router `NativeTab
 | `__tests__/symbols.e2e.test.ts` | **New.** Generation, annotations, manifest, fingerprint skip, catalog copy + stale cleanup, and a real `xcrun actool` compile gate (macOS-only, auto-skipped elsewhere). |
 | `__tests__/link.unit.test.ts` | Added `linkBareSymbols` coverage (Images.xcassets path + pbxproj fallback). |
 
-**No new dependencies were added.** The symbol pipeline reuses the existing toolchain end to end: Pyodide/picosvg for flattening, PathKit for geometry, `jsdom` for parsing, the `xcode` package (already used for font linking) for the pbxproj fallback. Template emission is pure string assembly. Compilation/validation is done by Xcode's own `actool` at app build time.
+**No new dependencies were added.** The symbol pipeline reuses the existing toolchain end to end: the TypeScript flattener for flattening, PathKit for geometry, `@xmldom/xmldom` for parsing, the `xcode` package (already used for font linking) for the pbxproj fallback. Template emission is pure string assembly. Compilation/validation is done by Xcode's own `actool` at app build time.
 
 ---
 
@@ -117,17 +117,16 @@ iOS tab bars prefer a filled variant for the selected state, looked up by the `n
 
 ### Stage 1 — Shared SVG preparation (identical to the font pipeline)
 
-**`prepareSvgLayers({ filePath, fileLabel, PathKit, logger })`** — **File:** `src/core/pipeline/prepare.ts`
+**`prepareSvgLayers({ filePath, fileLabel, pathkit, logger })`** — **File:** `src/core/pipeline/prepare.ts`
 
 This is the font pipeline's steps 2a–2h, extracted verbatim (see [PIPELINE.md](PIPELINE.md) for full detail):
 
 1. **Validate** — reject `<mask>` / `<filter>`
 2. **Preprocess** — ensure `xmlns`
-3. **Pre-extract evenodd `d` strings** (picosvg's simplify can drop contours)
-4. **Flatten via picosvg** (Pyodide) — resolves `<use>`/`<clipPath>`/transforms, **converts strokes to fills**, everything becomes `<path>`
-5. **Parse** — viewBox + per-path `{ d, fill, fillRule? }`, opacity baked into `rgba()` fills
-6. **Restore evenodd originals**, then **convert to nonzero winding** (containment-based algorithm; converted paths marked `noMerge`)
-7. **Merge consecutive same-color paths** into compound layers (z-order preserved)
+3. **Flatten** (`src/core/flatten/`) — resolves `<use>`/`<clipPath>`/transforms, **converts strokes to fills**, everything becomes `<path>`
+4. **Parse** — viewBox + per-path `{ d, fill, fillRule? }`, opacity baked into `rgba()` fills
+5. **Convert evenodd to nonzero winding** (containment-based algorithm; converted paths marked `noMerge`)
+6. **Merge consecutive same-color paths** into compound layers (z-order preserved)
 
 Returns `{ viewBox, paths }` — z-ordered, same-color-merged, nonzero-winding **layers**.
 
@@ -200,7 +199,7 @@ A *variable* template requires exactly the `Ultralight-S`, `Regular-S`, `Black-S
 
 ### Layer resolution: erase baking + occlusion knockout
 
-**File:** `src/core/svg/svg_pathops.ts` → `resolveSymbolLayers()`
+**File:** `src/core/symbols/layers.ts` → `resolveSymbolLayers()`
 
 Symbol layers **blend** (paint-over), and monochrome rendering — what tab bars use — draws the **union** of all layers in one color. Stacked SVG art breaks under this model: a solid plate with light details painted on top becomes a featureless blob. Two geometric transforms fix it before template emission:
 
@@ -376,7 +375,7 @@ Compile a catalog for `--platform macosx` into a minimal `.app` shell with a `sw
 
 ## Performance
 
-- **Generation**: shares the already-initialized Pyodide/PathKit singletons with the font pipeline; the symbol-specific work is string assembly — negligible. Incremental fingerprint skip avoids rebuilds entirely.
+- **Generation**: shares the already-initialized PathKit instance with the font pipeline; the symbol-specific work is string assembly — negligible. Incremental fingerprint skip avoids rebuilds entirely.
 - **App build**: `actool` cost scales linearly on iOS (~3 s per 16 symbols on older measurements); tab icon sets are typically < 20 symbols. (Caution if ever shipping hundreds of symbols to **Mac Catalyst**, where actool has shown super-linear scaling.)
 - **Disk**: compiled symbols are vector path data — ~0.8–1 kB per symbol in `Assets.car`.
 - **Runtime**: rendering is fully owned by UIKit's symbol machinery (the same path as Apple's own symbols); name lookup is a hashed catalog lookup. Nothing from this library executes at runtime.

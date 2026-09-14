@@ -12,6 +12,7 @@
     "postinstall": "husky install",
     "build": "yarn build-packages",
     "build-packages": "yarn workspace react-native-nano-icons build",
+    "benchmark:fonts": "node scripts/font-benchmark.mjs",
     "build:expo:ios": "yarn workspace expo-nano-icons-example ios",
     "build:expo:android": "yarn workspace expo-nano-icons-example android",
     "build:bare:ios": "yarn workspace bare-react-native-nano-icons-example ios",

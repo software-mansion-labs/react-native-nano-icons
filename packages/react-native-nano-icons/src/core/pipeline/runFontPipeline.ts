@@ -5,30 +5,24 @@ import {
   compileTtfFromGlyphs,
   parseCompileTtfFromGlyphsError,
   type FontGlyph,
-} from '../font/compile.js';
-import { PathKitManager } from './managers.js';
-
-import {
-  ensureDir,
-  type PipelineConfig,
-  type PipelinePaths,
-} from './config.js';
-import { shouldSkipPath } from '../svg/svg_dom.js';
-import { computePlacement, transformPathForFont } from '../svg/layers.js';
-import { prepareSvgLayers } from './prepare.js';
-import type { GlyphLayer, NanoGlyphMap } from '../types.js';
-import type { NanoLogger } from '../types.js';
+} from '../font/compile';
+import type { GlyphLayer, NanoGlyphMap, NanoLogger } from '../types';
+import { ensureDir, type PipelineConfig, type PipelinePaths } from './config';
+import { defaultConcurrency, prepareIcons } from './iconPool';
 
 export type PipelineResult = {
   ttfPath: string;
   glyphmapPath: string;
 };
 
-// Run the font pipeline (uses the singleton Pyodide/PathKit instance).
+/**
+ * Run the font pipeline with given config and paths.
+ * Uses the cached PathKit instance (initialized on first call).
+ */
 export async function runFontPipeline(
   config: PipelineConfig,
   paths: PipelinePaths,
-  options?: { logger?: NanoLogger; inputHash?: string }
+  options?: { logger?: NanoLogger; inputHash?: string; concurrency?: number }
 ): Promise<PipelineResult> {
   const startTime = Date.now();
   const logger = options?.logger;
@@ -56,59 +50,47 @@ export async function runFontPipeline(
   const codepointToIcon = new Map<number, string>();
   const allGlyphs: FontGlyph[] = [];
 
-  const PathKit = await PathKitManager.getInstance();
+  const failed: string[] = [];
 
-  for (const file of files) {
-    const iconName = path.parse(file).name;
-    const filePath = path.join(paths.inputDir, file);
-
-    logger?.info(`Processing ${file}`);
-
-    const prepared = await prepareSvgLayers({
-      filePath,
-      fileLabel: `${config.fontFamily}:${file}`,
-      PathKit,
-      logger,
-    });
-    if (!prepared) continue;
-
-    const mergedPaths = prepared.paths;
-
-    const { vx, vy, scale, xOff, yOff, adv } = computePlacement({
+  const results = await prepareIcons(
+    files.map((file) => ({
+      file,
+      filePath: path.join(paths.inputDir, file),
+      fontFamily: config.fontFamily,
       upm: config.upm,
       safeZone: config.safeZone,
-      viewBox: prepared.viewBox,
-    });
+    })),
+    options?.concurrency ?? defaultConcurrency()
+  );
+
+  for (const result of results) {
+    for (const [level, msg] of result.logs) logger?.[level](msg);
+    if (result.error !== null) {
+      logger?.fail(result.error);
+      failed.push(result.file);
+      continue;
+    }
 
     const layers: GlyphLayer[] = [];
-
-    for (const p of mergedPaths) {
-      if (shouldSkipPath(p.d, p.fill)) continue;
-
+    for (const layer of result.layers) {
       const cp = currentUnicode++;
-      codepointToIcon.set(cp, iconName);
-
-      const fontD = transformPathForFont(PathKit, p.d, {
-        vx,
-        vy,
-        scale,
-        xOff,
-        yOff,
-        upm: config.upm,
-      });
-
+      codepointToIcon.set(cp, result.iconName);
       allGlyphs.push({
         codepoint: cp,
-        advanceWidth: adv,
-        d: fontD,
+        advanceWidth: result.adv,
+        d: layer.d,
       });
-
-      layers.push([cp, p.fill || 'black']);
+      layers.push([cp, layer.fill || 'black']);
     }
-
     if (layers.length > 0) {
-      glyphMap.i[iconName] = [adv, layers];
+      glyphMap.i[result.iconName] = [result.adv, layers];
     }
+  }
+
+  if (failed.length) {
+    throw new Error(
+      `${failed.length} of ${files.length} icons in [${config.fontFamily}] could not be converted: ${failed.join(', ')}`
+    );
   }
 
   const glyphmapPath = path.join(

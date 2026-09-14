@@ -4,9 +4,9 @@ import {
   runSymbolPipeline,
   type SymbolsPipelineResult,
   type NanoSymbolMap,
-} from '../src/core/pipeline/runSymbolPipeline.js';
-import type { NanoLogger } from './logger.js';
-import { getFingerprintSync } from '../src/utils/fingerPrint.js';
+} from '../src/core/pipeline/runSymbolPipeline';
+import type { NanoLogger } from './logger';
+import { getFingerprintSync } from '../src/utils/fingerPrint';
 
 export type SymbolSetConfig = {
   /** Folder of SVG files (relative to project root). */

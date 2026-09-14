@@ -1,4 +1,4 @@
-import type { IconSetConfig } from './build.js';
+import type { IconSetConfig } from './build';
 
 type ExpoGetConfig = (
   projectRoot: string,

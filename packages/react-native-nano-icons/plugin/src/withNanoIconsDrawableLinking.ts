@@ -1,8 +1,8 @@
 import { withDangerousMod } from '@expo/config-plugins';
 import path from 'path';
-import { copyDrawablesIntoResDir } from '../../cli/index.js';
-import { getOrBuildSymbols } from './buildSymbols.js';
-import type { SymbolSetConfig } from './types.js';
+import { copyDrawablesIntoResDir } from '../../cli/index';
+import { getOrBuildSymbols } from './buildSymbols';
+import type { SymbolSetConfig } from './types';
 
 const ANDROID_DRAWABLES_DIR = 'app/src/main/res/drawable';
 

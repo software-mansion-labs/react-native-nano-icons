@@ -1,4 +1,4 @@
-import type { NanoLogger } from '../types.js';
+import type { NanoLogger } from '../types';
 
 /**
  * Custom SF Symbol template (v3.0) emitter. Geometry (validated against Xcode 26
