@@ -1,8 +1,8 @@
 diff --git a/lib/module/views/BottomTabBar.js b/lib/module/views/BottomTabBar.js
-index 5e8202bf9c6610b4f6361987c4da5dcd068fbe10..72d9139c521c0d5658e84ef6569b63c4e3cc92f3 100644
+index f826295b9ada304ac7bd39082eb3bdb11ed7f5d9..46cf84a81a7cf6329173e76f568c00a6be06cdf1 100644
 --- a/lib/module/views/BottomTabBar.js
 +++ b/lib/module/views/BottomTabBar.js
-@@ -332,6 +332,7 @@ export function BottomTabBar({
+@@ -334,6 +334,7 @@ export function BottomTabBar({
              label: label,
              labelVisibilityMode: tabBarLabelVisibilityMode,
              labelStyle: options.tabBarLabelStyle,
@@ -11,7 +11,7 @@ index 5e8202bf9c6610b4f6361987c4da5dcd068fbe10..72d9139c521c0d5658e84ef6569b63c4
              style: [sidebar ? {
                marginVertical: hasHorizontalLabels ? tabBarVariant === 'material' ? 0 : 1 : spacing / 2
 diff --git a/lib/module/views/BottomTabItem.js b/lib/module/views/BottomTabItem.js
-index bd0a20b26c83bdf2bdafef05ac89c50a8e6a4207..60577c874249fb67f3b2ef5fe0192bc144dbb576 100644
+index 225702141e9589c607d9bcdc49d4e71da23e3524..64357c9494af649304dfaafd4f70eebd8a322cd5 100644
 --- a/lib/module/views/BottomTabItem.js
 +++ b/lib/module/views/BottomTabItem.js
 @@ -40,6 +40,7 @@ export function BottomTabItem({
@@ -31,7 +31,7 @@ index bd0a20b26c83bdf2bdafef05ac89c50a8e6a4207..60577c874249fb67f3b2ef5fe0192bc1
        badgeStyle: badgeStyle,
        activeOpacity: activeOpacity,
 diff --git a/lib/module/views/BottomTabViewNativeImpl.js b/lib/module/views/BottomTabViewNativeImpl.js
-index a1536bfad924ce09c75c07356d903743f5301fbc..8827d3f1c442226aad3c775a29aedd44610a270a 100644
+index bc22c0002a1839f87da723eb8362fb8a14def0df..e7cc3e6b8ea509856e0502f5cbbe9bca9a794404 100644
 --- a/lib/module/views/BottomTabViewNativeImpl.js
 +++ b/lib/module/views/BottomTabViewNativeImpl.js
 @@ -315,6 +315,7 @@ export function BottomTabViewNative({
@@ -42,7 +42,7 @@ index a1536bfad924ce09c75c07356d903743f5301fbc..8827d3f1c442226aad3c775a29aedd44
            tabBarBadge,
            tabBarSystemItem,
            tabBarBlurEffect = dark ? 'systemMaterialDark' : 'systemMaterial',
-@@ -404,6 +405,7 @@ export function BottomTabViewNative({
+@@ -407,6 +408,7 @@ export function BottomTabViewNative({
            android: {
              icon: icon?.android ?? icon?.shared,
              selectedIcon: selectedIcon?.android ?? selectedIcon?.shared,
@@ -50,7 +50,7 @@ index a1536bfad924ce09c75c07356d903743f5301fbc..8827d3f1c442226aad3c775a29aedd44
              standardAppearance: {
                tabBarBackgroundColor: tabBarBackgroundColor ?? backgroundColor,
                tabBarItemRippleColor: currentOptions?.tabBarRippleColor,
-@@ -412,6 +414,8 @@ export function BottomTabViewNative({
+@@ -415,6 +417,8 @@ export function BottomTabViewNative({
                selected: selectedTabItemAppearance,
                tabBarItemActiveIndicatorColor: activeIndicatorColor,
                tabBarItemActiveIndicatorEnabled: currentOptions?.tabBarActiveIndicatorEnabled,
@@ -59,7 +59,7 @@ index a1536bfad924ce09c75c07356d903743f5301fbc..8827d3f1c442226aad3c775a29aedd44
                tabBarItemTitleFontFamily: fontFamily,
                tabBarItemTitleFontWeight: fontWeight,
                tabBarItemTitleSmallLabelFontSize: fontSize,
-@@ -538,20 +542,28 @@ function getPlatformIcon(icon) {
+@@ -541,20 +545,28 @@ function getPlatformIcon(icon) {
          shared: undefined
        };
      case 'image':
@@ -103,10 +103,10 @@ index a1536bfad924ce09c75c07356d903743f5301fbc..8827d3f1c442226aad3c775a29aedd44
        {
          const _exhaustiveCheck = icon;
 diff --git a/lib/module/views/TabBarIcon.js b/lib/module/views/TabBarIcon.js
-index 778d9c2e1f2aa291fcc1a4ca6b5ff6d25758bb31..8e066a89df2638fc6cfce8e1e7ec4456eece69e8 100644
+index 53c24dd5bf69aa21da76b04990229e002b6be798..2d217d8ae01ae4cbb59294d6371ae738cb4ba069 100644
 --- a/lib/module/views/TabBarIcon.js
 +++ b/lib/module/views/TabBarIcon.js
-@@ -21,6 +21,7 @@ export function TabBarIcon({
+@@ -20,6 +20,7 @@ export function TabBarIcon({
    route: _,
    variant,
    size,
@@ -114,7 +114,7 @@ index 778d9c2e1f2aa291fcc1a4ca6b5ff6d25758bb31..8e066a89df2638fc6cfce8e1e7ec4456
    badge,
    badgeStyle,
    activeOpacity,
-@@ -31,12 +32,19 @@ export function TabBarIcon({
+@@ -30,12 +31,19 @@ export function TabBarIcon({
    allowFontScaling,
    style
  }) {
@@ -136,19 +136,8 @@ index 778d9c2e1f2aa291fcc1a4ca6b5ff6d25758bb31..8e066a89df2638fc6cfce8e1e7ec4456
      children: [/*#__PURE__*/_jsx(View, {
        style: [styles.icon, {
          opacity: activeOpacity,
-@@ -87,8 +95,9 @@ function renderIcon({
-       case 'image':
-         return /*#__PURE__*/_jsx(Image, {
-           source: iconValue.source,
-+          resizeMode: "contain",
-           style: {
--            width: size,
-+            width: size * (iconValue.aspectRatio ?? 1),
-             height: size,
-             tintColor: iconValue.tinted === false ? undefined : color
-           }
 diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
-index 2450bdff4008492b388457cf3b4cba6fcce6468b..0952fde243e81dd0762b96071a10e31fed5a44d4 100644
+index 5d4d79d01d7c9434d7097c8195bac3625e6fbc42..0a99e201a791bd2a4cc4f7a54732db2c6cbec6c7 100644
 --- a/lib/typescript/src/types.d.ts
 +++ b/lib/typescript/src/types.d.ts
 @@ -111,7 +111,7 @@ type BottomTabCustomOptions = {

@@ -1,0 +1,26 @@
+diff --git a/lib/typescript/src/native/types.d.ts b/lib/typescript/src/native/types.d.ts
+index 1064df67116105d3cf50a65cdb19a2aee4ab1758..34362b2e82a459dc2881fae4ed4923df30ef7ad6 100644
+--- a/lib/typescript/src/native/types.d.ts
++++ b/lib/typescript/src/native/types.d.ts
+@@ -276,7 +276,7 @@ export type SFSymbolOptions = {
+     /**
+      * The name of the SF Symbol to display.
+      */
+-    name: import('sf-symbols-typescript').SFSymbol;
++    name: import('sf-symbols-typescript').SFSymbol | keyof import('../types').SFSymbolNames;
+     /**
+      * The size of the symbol.
+      *
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+index 66f51f905ce6a9409b80c4ee734908b42820e356..06998378bf3c0cce17fa7b286804d196b4bd38a9 100644
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -26,6 +26,8 @@ declare module '@react-navigation/core' {
+     interface Theme extends NativeTheme {
+     }
+ }
++export interface SFSymbolNames {
++}
+ export type LocaleDirection = 'ltr' | 'rtl';
+ export type LinkingPrefix = '*' | (string & {});
+ export type LinkingOptions<ParamList extends {}> = {
