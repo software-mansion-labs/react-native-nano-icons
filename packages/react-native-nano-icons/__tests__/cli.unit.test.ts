@@ -25,6 +25,7 @@ const SETS = [{ inputDir: 'a' }, { inputDir: 'b' }, { inputDir: 'c' }];
 const BUILT = [
   {
     fontFamily: 'A',
+    family: 'A-1a2b3c4d',
     ttfPath: 'A.ttf',
     glyphmapPath: 'A.glyphmap.json',
     linking: 'static' as const,

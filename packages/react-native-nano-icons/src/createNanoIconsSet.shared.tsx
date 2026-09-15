@@ -10,6 +10,9 @@ import {
   createLayerColorResolver,
 } from './utils/glyphRuntime';
 import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
+import { warnRuntime } from './utils/runtimeLog';
+import { isFontMismatch, reportFontMismatch } from './fontIntegrity';
+import { configuredFontFamily } from './utils/fontIdentity';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
@@ -31,19 +34,18 @@ export function warnIfLinkingMismatch(
   if (!__DEV__) return;
 
   const isDynamic = linking === 'd';
+  const name = configuredFontFamily(fontFamily);
   if (isDynamic && font == null) {
-    console.warn(
-      `[react-native-nano-icons] "${fontFamily}" is built with dynamic linking ` +
-        `but no font was passed to createIconSet. Icons will render as tofu ` +
-        `until a font is loaded and registered under family "${fontFamily}".`
+    warnRuntime(
+      `Icon font "${name}" is built with dynamic linking but no font was passed to createNanoIconSet, ` +
+        `so its icons will render blank until a font is registered under the family name in glyphMap.m.f.`
     );
     return;
   }
   if (!isDynamic && font != null) {
-    console.warn(
-      `[react-native-nano-icons] "${fontFamily}" is built with static linking; ` +
-        `the font argument passed to createIconSet is ignored. ` +
-        `Set linking: 'dynamic' in your config to opt into OTA delivery.`
+    warnRuntime(
+      `Icon font "${name}" is built with static linking, so the font passed to createNanoIconSet is ignored. ` +
+        `Set linking: 'dynamic' in your config to deliver it at runtime.`
     );
   }
 }
@@ -70,11 +72,11 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
   const managed = glyphMap.m.l === 'd' && font != null;
   if (managed) {
     void loadDynamicFont(fontBasename, font).catch((err) => {
-      if (__DEV__)
-        console.warn(
-          `[react-native-nano-icons] Failed to load dynamic font "${fontBasename}".`,
-          err
-        );
+      if (isFontMismatch(err)) {
+        reportFontMismatch(fontBasename, 'dynamic');
+      } else if (__DEV__) {
+        warnRuntime(`Failed to load dynamic font "${fontBasename}".`, err);
+      }
     });
   }
 

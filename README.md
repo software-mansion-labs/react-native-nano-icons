@@ -116,7 +116,7 @@ The plugin accepts an object with an `iconSets` array, allowing you to generate 
 | Property       | Type     | Required | Default        | Description                                                                                                                |
 | :------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
 | `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`).                                            |
-| `fontFamily`   | `string` | No       | Folder Name    | The name of the generated font family and file. If omitted, the name of the `inputDir` folder is used (e.g., `ui`).        |
+| `fontFamily`   | `string` | No       | Folder Name    | The name of the generated `.ttf` and `.glyphmap.json` files. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). The font family registered at runtime is `glyphMap.m.f`, which appends a short build hash (e.g. `ui-1a2b3c4d`) so every build of the set is distinct. |
 | `outputDir`    | `string` | No       | `../nanoicons` | Path where the `.ttf` and `.json` artifacts will be saved. Defaults to a sibling `nanoicons` folder relative to the input. |
 | `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
 | `startUnicode` | `string` | No       | `0xe900`       | The starting Hex Unicode point for the first icon glyph.                                                                   |
@@ -163,9 +163,9 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 > Run `EXPO_DEBUG=1 npx expo prebuild` or `npx react-native-nano-icons --verbose` to get font build-time logs.
 
 > [!NOTE]
-> Linking the font on web is just as straightforward as always and does not require any actions other than the usual web font addition.
+> Linking the font on web is just as straightforward as always and does not require any actions other than the usual web font addition. Use `glyphMap.m.f` as the `font-family` of your `@font-face` rule: the name changes with every build of the set, so read it from the glyphmap instead of hardcoding it.
 >
-> In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/). [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
+> In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/), keyed by `glyphMap.m.f`. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
 
 ### 4. Use
 
@@ -242,11 +242,11 @@ export const Icon = createNanoIconSet(glyphMap, require("./dynamic-ota-icons.ttf
 > [!NOTE]
 > In [Expo Go](https://expo.dev/go), the native font loader is unavailable, but you can still see real icons by loading the font manually via [`expo-font`](https://docs.expo.dev/versions/latest/sdk/font/) — use the value of `glyphMap.m.f` as the family name key. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library registers the font automatically and you can remove the `expo-font` setup.
 
-> If a dynamic glyphmap gets no font, icons render as tofu until one is registered (with a dev warning).
+> If a dynamic glyphmap gets no font, its icons render blank until one is registered under `glyphMap.m.f` (with a dev warning).
 
 ### 5. Font Regeneration
 
-**The build script detects changes in path and contents of the SVGs** in your input directory based on a fingerprint hash. If anything changes (file names, SVG attributes/nodes) or the output font/glyphmap files are deleted, the icon set is regenerated during `prebuild` or manual script run.
+**The build script detects changes in path and contents of the SVGs** in your input directory, in the set's config (`upm`, `safeZone`, `startUnicode`) and in the library version, based on a fingerprint hash. If anything changes (file names, SVG attributes/nodes, config, an upgrade of `react-native-nano-icons`) or the output font/glyphmap files are deleted, the icon set is regenerated during `prebuild` or manual script run. The first 8 characters of the fingerprint become part of the runtime font family (`glyphMap.m.f`), so a rebuilt set never clashes with a previous build that is still bundled in the app.
 
 ### Regenerating dynamic fonts only (useful for an OTA update) ☁️
 
@@ -267,6 +267,29 @@ npx react-native-nano-icons --path path/to/.nanoicons.json --dynamic
 > This reads your config directly from `app.json` / `app.config.js` / `app.config.ts` (no separate `.nanoicons.json` needed).
 
 The CLI rebuilds only the sets defined with `linking: "dynamic"`, and skips all native linking. Commit the updated `.ttf` and `.glyphmap.json` and push your OTA update as usual ☁️ 🚀
+
+> [!NOTE]
+> A full (non `--dynamic`) run keeps the native projects in sync with the config: the fonts linked natively are exactly the products of the current static sets. Copies of sets that were switched to dynamic, removed from the config, or rebuilt under a new fingerprint are deleted from `ios/nanoicons-fonts`, `UIAppFonts`, and `android/app/src/main/assets/fonts`. Fonts you added yourself are left alone.
+
+### Font integrity check
+
+At startup the library checks, once per icon set, that a font named `glyphMap.m.f` is available to the renderer. When the glyphmap in your JS bundle comes from a newer build than the font in the binary (for example after regenerating icons without rebuilding the app), the check fails:
+
+- in development a warning is printed: `🔬 react-native-nano-icons ⚠ Icon font "ui" is missing or out of date, so its icons will render blank. Regenerate the icon fonts with the react-native-nano-icons CLI.`
+- in every build the issue is recorded, so your monitoring can pick up a faulty release:
+
+```TypeScript
+import { addFontIntegrityListener, getFontIntegrityIssues } from "react-native-nano-icons";
+
+addFontIntegrityListener((issue) => {
+  // issue.fontFamily → "ui", issue.family → "ui-1a2b3c4d", issue.linking → "static" | "dynamic"
+  Sentry.captureMessage(issue.message, { extra: issue });
+});
+
+getFontIntegrityIssues(); // issues found so far
+```
+
+Listeners added after an issue was found receive it immediately.
 
 ---
 

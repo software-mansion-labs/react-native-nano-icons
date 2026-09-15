@@ -4,9 +4,18 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { getFingerprintSync } from '../src/utils/fingerPrint';
+import {
+  getFingerprintSync,
+  type FingerprintInputs,
+} from '../src/utils/fingerPrint';
 
 const SAMPLE_SVG = '<svg viewBox="0 0 24 24"><path d="M0 0L24 24"/></svg>';
+const INPUTS: FingerprintInputs = {
+  upm: 1024,
+  safeZone: 1020,
+  startUnicode: 0xe900,
+  version: '1.0.0',
+};
 
 function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'nano-fp-'));
@@ -17,7 +26,7 @@ describe('getFingerprintSync', () => {
     const dir = makeTmpDir();
     try {
       fs.writeFileSync(path.join(dir, 'icon.svg'), SAMPLE_SVG);
-      expect(getFingerprintSync(dir)).toMatch(/^[0-9a-f]{64}$/);
+      expect(getFingerprintSync(dir, INPUTS)).toMatch(/^[0-9a-f]{64}$/);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
@@ -27,8 +36,8 @@ describe('getFingerprintSync', () => {
     const dir = makeTmpDir();
     try {
       fs.writeFileSync(path.join(dir, 'icon.svg'), SAMPLE_SVG);
-      const h1 = getFingerprintSync(dir);
-      const h2 = getFingerprintSync(dir);
+      const h1 = getFingerprintSync(dir, INPUTS);
+      const h2 = getFingerprintSync(dir, INPUTS);
       expect(h1).toBe(h2);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -40,13 +49,13 @@ describe('getFingerprintSync', () => {
     try {
       const file = path.join(dir, 'icon.svg');
       fs.writeFileSync(file, SAMPLE_SVG);
-      const h1 = getFingerprintSync(dir);
+      const h1 = getFingerprintSync(dir, INPUTS);
 
       fs.writeFileSync(
         file,
         '<svg viewBox="0 0 24 24"><path d="M0 0L12 12"/></svg>'
       );
-      const h2 = getFingerprintSync(dir);
+      const h2 = getFingerprintSync(dir, INPUTS);
 
       expect(h1).not.toBe(h2);
     } finally {
@@ -58,11 +67,11 @@ describe('getFingerprintSync', () => {
     const dir = makeTmpDir();
     try {
       fs.writeFileSync(path.join(dir, 'aaa.svg'), SAMPLE_SVG);
-      const h1 = getFingerprintSync(dir);
+      const h1 = getFingerprintSync(dir, INPUTS);
 
       fs.unlinkSync(path.join(dir, 'aaa.svg'));
       fs.writeFileSync(path.join(dir, 'zzz.svg'), SAMPLE_SVG);
-      const h2 = getFingerprintSync(dir);
+      const h2 = getFingerprintSync(dir, INPUTS);
 
       expect(h1).not.toBe(h2);
     } finally {
@@ -74,10 +83,10 @@ describe('getFingerprintSync', () => {
     const dir = makeTmpDir();
     try {
       fs.writeFileSync(path.join(dir, 'icon.svg'), SAMPLE_SVG);
-      const h1 = getFingerprintSync(dir);
+      const h1 = getFingerprintSync(dir, INPUTS);
 
       fs.writeFileSync(path.join(dir, 'icon2.svg'), SAMPLE_SVG);
-      const h2 = getFingerprintSync(dir);
+      const h2 = getFingerprintSync(dir, INPUTS);
 
       expect(h1).not.toBe(h2);
     } finally {
@@ -89,12 +98,29 @@ describe('getFingerprintSync', () => {
     const dir = makeTmpDir();
     try {
       fs.writeFileSync(path.join(dir, 'icon.svg'), SAMPLE_SVG);
-      const h1 = getFingerprintSync(dir);
+      const h1 = getFingerprintSync(dir, INPUTS);
 
       fs.writeFileSync(path.join(dir, 'readme.txt'), 'This should be ignored');
-      const h2 = getFingerprintSync(dir);
+      const h2 = getFingerprintSync(dir, INPUTS);
 
       expect(h1).toBe(h2);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ['upm', { ...INPUTS, upm: 512 }],
+    ['safeZone', { ...INPUTS, safeZone: 1000 }],
+    ['startUnicode', { ...INPUTS, startUnicode: 0xf000 }],
+    ['version', { ...INPUTS, version: '1.0.1' }],
+  ] as const)('changing %s produces a different hash', (_, inputs) => {
+    const dir = makeTmpDir();
+    try {
+      fs.writeFileSync(path.join(dir, 'icon.svg'), SAMPLE_SVG);
+      expect(getFingerprintSync(dir, inputs)).not.toBe(
+        getFingerprintSync(dir, INPUTS)
+      );
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
