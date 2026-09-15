@@ -95,3 +95,25 @@ To learn more about React Native, take a look at the following resources:
 - [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
 - [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
 - [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+
+## Font rendering regression check
+
+The home screen has an **Open font grid** button that renders a fixed sample of glyphs from every linked font: 140 Material twotone icons at 22 px, 60 SWM outline icons at 16 and 28 px, every Testicon at 40 px, and three icons at 120 px.
+
+The Argent flow `.argent/flows/font-render-grid.yaml` launches the app, opens that screen, and compares it with a reviewed baseline under `.argent/flows/__baselines__/font-render-grid/`. Baselines are keyed by platform and screen size, so keep using the same simulator model.
+
+To seed or refresh the baseline from a known-good pipeline:
+
+```sh
+npx react-native-nano-icons            # build fonts and glyphmaps from the reference checkout
+yarn react-native run-ios --mode Release
+argent flow run font-render-grid --platform ios --device <udid> --update-baselines
+```
+
+Review the written PNG before committing it. Then, with candidate fonts built and the app rebuilt:
+
+```sh
+argent flow run font-render-grid --platform ios --device <udid>
+```
+
+The step fails when more than 0.05 % of pixels differ. Sub-pixel antialiasing between two correct fonts measures about 0.03 %; one missing 22 px glyph measures about 0.05 %; a mismatched font measures several percent. On the simulator you can also swap the `.ttf` files inside the installed `.app` bundle and relaunch instead of rebuilding.
