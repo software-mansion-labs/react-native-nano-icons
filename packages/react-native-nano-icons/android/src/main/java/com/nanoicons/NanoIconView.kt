@@ -1,10 +1,13 @@
 package com.nanoicons
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.view.View
+import com.facebook.react.bridge.ColorPropConverter
 import com.facebook.react.common.assets.ReactFontManager
 
 class NanoIconView(context: Context) : View(context) {
@@ -13,6 +16,11 @@ class NanoIconView(context: Context) : View(context) {
   private val fontMetrics = Paint.FontMetrics()
   private var codepoints: IntArray = intArrayOf()
   private var colors: IntArray = intArrayOf()
+  // Unresolved layer colors: literal ARGB, plus resource paths for the entries that
+  // depend on the theme (PlatformColor). Kept so they can be re-resolved on a
+  // configuration change — the props are not re-sent for that.
+  private var literalColors: IntArray = intArrayOf()
+  private var colorPaths: Array<Array<String>?>? = null
   private var cachedFontFamily: String? = null
   private var cachedTypeface: Typeface? = null
   // Cached String objects — rebuilt only when codepoints change
@@ -54,8 +62,32 @@ class NanoIconView(context: Context) : View(context) {
     invalidate()
   }
 
-  fun setColors(values: IntArray) {
-    colors = values
+  fun setColors(literals: IntArray, paths: Array<Array<String>?>?) {
+    literalColors = literals
+    colorPaths = paths
+    resolveColors()
+    invalidate()
+  }
+
+  // Resolve theme-dependent entries against this view's current context; literal
+  // entries pass through untouched.
+  private fun resolveColors() {
+    val paths = colorPaths
+    if (paths == null) {
+      colors = literalColors
+      return
+    }
+    colors = IntArray(literalColors.size) { i ->
+      val entry = paths[i] ?: return@IntArray literalColors[i]
+      entry.firstNotNullOfOrNull { ColorPropConverter.resolveResourcePath(context, it) }
+        ?: Color.BLACK
+    }
+  }
+
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    if (colorPaths == null) return
+    resolveColors()
     invalidate()
   }
 

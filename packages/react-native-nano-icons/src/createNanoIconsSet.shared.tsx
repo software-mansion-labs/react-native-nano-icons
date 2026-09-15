@@ -127,7 +127,6 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       );
 
       const sizeStyle = useMemo(() => ({ fontSize: size }), [size]);
-
       return (
         <View
           ref={ref}
@@ -142,7 +141,6 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
             ? null
             : layers.map(([codepoint, srcColor], i) => {
                 const layerColor = resolveColor(i, srcColor);
-
                 return (
                   <Text
                     key={i}

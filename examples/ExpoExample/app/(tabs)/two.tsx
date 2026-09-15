@@ -1,6 +1,6 @@
 import { FlatList } from 'react-native';
 
-import { Text, View } from '@/components/Themed';
+import { Text, View, useThemeColor } from '@/components/Themed';
 import swmIconGlyphMap from '@/assets/nanoicons/SWMIconsOutline.glyphmap.json';
 import { SWMIconsOutline } from '@/components/Icon';
 
@@ -35,15 +35,17 @@ const DynamicHeader = () => (
 );
 
 export default function TabTwoScreen() {
+  const background = useThemeColor({}, 'background');
+
   return (
     <FlatList
+      style={{ backgroundColor: background }}
       data={iconSubset}
       keyExtractor={(item) => item}
       ListHeaderComponent={DynamicHeader}
       renderItem={({ item }) => <Row icon={item} />}
       contentContainerStyle={{
         paddingHorizontal: 10,
-        backgroundColor: 'white',
       }}
     />
   );
