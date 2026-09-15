@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { Image, Platform } from 'react-native';
 import NanoIconsFontLoader from './specs/NativeNanoIconsFontLoader';
-import { runtimeError } from './utils/runtimeLog';
 
 /**
  * Runtime registration of dynamically-linked (`l:"d"`) fonts.
@@ -33,7 +32,9 @@ export function resolveFontUri(font: unknown): string {
   if (typeof font === 'number') {
     const source = Image.resolveAssetSource(font);
     if (!source?.uri) {
-      throw runtimeError('Could not resolve the font asset to a uri.');
+      throw new Error(
+        '[react-native-nano-icons] Could not resolve the font asset to a uri.'
+      );
     }
     return source.uri;
   }
@@ -45,8 +46,8 @@ export function resolveFontUri(font: unknown): string {
   ) {
     return (font as { uri: string }).uri;
   }
-  throw runtimeError(
-    'Unsupported font source. Pass require("Foo.ttf"), { uri }, or a path string.'
+  throw new Error(
+    '[react-native-nano-icons] Unsupported font source. Pass require("Foo.ttf"), { uri }, or a path string.'
   );
 }
 
@@ -64,8 +65,8 @@ async function register(family: string, uri: string): Promise<void> {
       document?: { fonts?: { add(face: unknown): void } };
     };
     if (!g.FontFace || !g.document?.fonts) {
-      throw runtimeError(
-        'FontFace API unavailable; cannot load dynamic font on this platform.'
+      throw new Error(
+        '[react-native-nano-icons] FontFace API unavailable; cannot load dynamic font on this platform.'
       );
     }
     const face = new g.FontFace(family, `url(${uri})`);
@@ -75,8 +76,8 @@ async function register(family: string, uri: string): Promise<void> {
   }
 
   if (!NanoIconsFontLoader) {
-    throw runtimeError(
-      'Native font loader is unavailable (Expo Go or module not built). ' +
+    throw new Error(
+      '[react-native-nano-icons] Native font loader is unavailable (Expo Go or module not built). ' +
         'Load the font yourself, or use a development/production build.'
     );
   }

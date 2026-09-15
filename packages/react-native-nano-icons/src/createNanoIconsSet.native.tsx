@@ -14,12 +14,6 @@ import {
   warnIfLinkingMismatch,
 } from './createNanoIconsSet.shared';
 import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
-import {
-  checkFontIntegrity,
-  isFontMismatch,
-  reportFontMismatch,
-} from './fontIntegrity';
-import { warnRuntime } from './utils/runtimeLog';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
@@ -59,23 +53,14 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   // dynamically linked font - register and hide icons until ready
   const managed = glyphMap.m.l === 'd' && font != null;
-  const linking = glyphMap.m.l === 'd' ? 'dynamic' : 'static';
   if (managed) {
-    void loadDynamicFont(fontFamilyBasename, font).then(
-      () => checkFontIntegrity(fontFamilyBasename, linking),
-      (err) => {
-        if (isFontMismatch(err)) {
-          reportFontMismatch(fontFamilyBasename, linking);
-        } else if (__DEV__) {
-          warnRuntime(
-            `Failed to load dynamic font "${fontFamilyBasename}".`,
-            err
-          );
-        }
-      }
-    );
-  } else if (linking === 'static') {
-    void checkFontIntegrity(fontFamilyBasename, linking);
+    void loadDynamicFont(fontFamilyBasename, font).catch((err) => {
+      if (__DEV__)
+        console.warn(
+          `[react-native-nano-icons] Failed to load dynamic font "${fontFamilyBasename}".`,
+          err
+        );
+    });
   }
 
   // Pre-compute per-icon static data (codepoints, default colors) once at set creation

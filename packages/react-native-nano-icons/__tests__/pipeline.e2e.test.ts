@@ -84,7 +84,7 @@ describe('Pipeline E2E — outline (single-colour)', () => {
 
   // ── Glyphmap meta ─────────────────────────────────────────────────────────
 
-  test('glyphmap m.f is the configured family when no inputHash is given', () => {
+  test('glyphmap m.f matches config', () => {
     expect(glyphmap.m.f).toBe(FONT_FAMILY);
   });
 
@@ -259,9 +259,5 @@ describe('Pipeline E2E — inputHash embedding', () => {
 
   test('glyphmap m.h equals the inputHash passed to runPipeline', () => {
     expect(glyphmap.m.h).toBe(INPUT_HASH);
-  });
-
-  test('glyphmap m.f carries the first 8 hash characters', () => {
-    expect(glyphmap.m.f).toBe(`${FONT_FAMILY}-deadbeef`);
   });
 });

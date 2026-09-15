@@ -9,7 +9,6 @@ jest.mock('../src/core/pipeline/index');
 import { buildAllFonts, type IconSetConfig } from '../cli/build';
 import type { NanoLogger } from '../cli/logger';
 import { getFingerprintSync } from '../src/utils/fingerPrint';
-import { packageVersion } from '../src/utils/packageVersion';
 import { runFontPipeline } from '../src/core/pipeline/index';
 
 const mockRunPipeline = runFontPipeline as jest.MockedFunction<
@@ -18,14 +17,6 @@ const mockRunPipeline = runFontPipeline as jest.MockedFunction<
 
 const SAMPLE_SVG = '<svg viewBox="0 0 24 24"><path d="M0 0L24 24"/></svg>';
 const FONT_FAMILY = 'TestFont';
-const BUILT_FAMILY = `${FONT_FAMILY}-0123abcd`;
-const STORED_FAMILY = `${FONT_FAMILY}-89efdcba`;
-const DEFAULT_INPUTS = {
-  upm: 1024,
-  safeZone: 1020,
-  startUnicode: 0xe900,
-  version: packageVersion(),
-};
 
 function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'nano-build-'));
@@ -44,7 +35,7 @@ function writeFakeOutputs(
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, `${fontFamily}.ttf`), 'fake');
   const m = {
-    f: STORED_FAMILY,
+    f: fontFamily,
     u: 1024,
     z: 1020,
     s: 0xe900,
@@ -67,13 +58,12 @@ describe('buildAllFonts — skip/rebuild logic', () => {
     inputDir = makeTmpDir();
     outputDir = makeTmpDir();
     writeSvgs(inputDir);
-    inputHash = getFingerprintSync(inputDir, DEFAULT_INPUTS);
+    inputHash = getFingerprintSync(inputDir);
 
     mockRunPipeline.mockReset();
     mockRunPipeline.mockResolvedValue({
       ttfPath: path.join(outputDir, `${FONT_FAMILY}.ttf`),
       glyphmapPath: path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
-      family: BUILT_FAMILY,
     });
   });
 
@@ -148,38 +138,24 @@ describe('buildAllFonts — skip/rebuild logic', () => {
     expect(mockRunPipeline).toHaveBeenCalledTimes(1);
   });
 
-  test('stale outputs stay in place while runFontPipeline overwrites them', async () => {
+  test('stale TTF and glyphmap are deleted before runFontPipeline is called', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash_value');
     const ttfPath = path.join(outputDir, `${FONT_FAMILY}.ttf`);
     const glyphmapPath = path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`);
 
-    let ttfExistedAtCallTime = false;
-    let glyphmapExistedAtCallTime = false;
+    let ttfExistedAtCallTime = true;
+    let glyphmapExistedAtCallTime = true;
 
     mockRunPipeline.mockImplementation(async () => {
       ttfExistedAtCallTime = fs.existsSync(ttfPath);
       glyphmapExistedAtCallTime = fs.existsSync(glyphmapPath);
-      return { ttfPath, glyphmapPath, family: BUILT_FAMILY };
+      return { ttfPath, glyphmapPath };
     });
 
     await buildAllFonts([makeIconSet()], os.tmpdir());
 
-    expect(ttfExistedAtCallTime).toBe(true);
-    expect(glyphmapExistedAtCallTime).toBe(true);
-  });
-
-  test('stale outputs are deleted when the build fails', async () => {
-    writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash_value');
-    mockRunPipeline.mockRejectedValue(new Error('boom'));
-
-    await expect(buildAllFonts([makeIconSet()], os.tmpdir())).rejects.toThrow();
-
-    expect(fs.existsSync(path.join(outputDir, `${FONT_FAMILY}.ttf`))).toBe(
-      false
-    );
-    expect(
-      fs.existsSync(path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`))
-    ).toBe(false);
+    expect(ttfExistedAtCallTime).toBe(false);
+    expect(glyphmapExistedAtCallTime).toBe(false);
   });
 
   test('runFontPipeline is called when output files exist but meta.hash is absent', async () => {
@@ -196,23 +172,6 @@ describe('buildAllFonts — skip/rebuild logic', () => {
       expect.objectContaining({ inputHash })
     );
   });
-
-  test('a built set reports the family returned by the pipeline', async () => {
-    const [built] = await buildAllFonts([makeIconSet()], os.tmpdir());
-    expect(built!.family).toBe(BUILT_FAMILY);
-  });
-
-  test('a skipped set reports the family stored in its glyphmap', async () => {
-    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
-    const [built] = await buildAllFonts([makeIconSet()], os.tmpdir());
-    expect(built!.family).toBe(STORED_FAMILY);
-  });
-
-  test('changing the config rebuilds despite unchanged SVGs', async () => {
-    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
-    await buildAllFonts([{ ...makeIconSet(), upm: 512 }], os.tmpdir());
-    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe('buildAllFonts — linking mode', () => {
@@ -224,13 +183,12 @@ describe('buildAllFonts — linking mode', () => {
     inputDir = makeTmpDir();
     outputDir = makeTmpDir();
     writeSvgs(inputDir);
-    inputHash = getFingerprintSync(inputDir, DEFAULT_INPUTS);
+    inputHash = getFingerprintSync(inputDir);
 
     mockRunPipeline.mockReset();
     mockRunPipeline.mockResolvedValue({
       ttfPath: path.join(outputDir, `${FONT_FAMILY}.ttf`),
       glyphmapPath: path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
-      family: BUILT_FAMILY,
     });
   });
 
@@ -364,7 +322,6 @@ describe('buildAllFonts — failure reporting', () => {
       .mockResolvedValueOnce({
         ttfPath: path.join(outputDir, 'Other.ttf'),
         glyphmapPath: path.join(outputDir, 'Other.glyphmap.json'),
-        family: 'Other-0123abcd',
       });
 
     await expect(

@@ -36,7 +36,6 @@ export interface NanoIconsPluginOptions {
  */
 export interface BuiltFont {
   fontFamily: string;
-  family: string;
   ttfPath: string;
   glyphmapPath: string;
   linking: 'static' | 'dynamic';

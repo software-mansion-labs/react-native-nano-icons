@@ -6,7 +6,6 @@ import {
   parseCompileTtfFromGlyphsError,
   type FontGlyph,
 } from '../font/compile';
-import { buildFontFamily } from '../../utils/fontIdentity';
 import type { GlyphLayer, NanoGlyphMap, NanoLogger } from '../types';
 import { ensureDir, type PipelineConfig, type PipelinePaths } from './config';
 import { defaultConcurrency, prepareIcons } from './iconPool';
@@ -14,7 +13,6 @@ import { defaultConcurrency, prepareIcons } from './iconPool';
 export type PipelineResult = {
   ttfPath: string;
   glyphmapPath: string;
-  family: string;
 };
 
 /**
@@ -37,14 +35,9 @@ export async function runFontPipeline(
     f.toLowerCase().endsWith('.svg')
   );
 
-  const inputHash = options?.inputHash;
-  const family = inputHash
-    ? buildFontFamily(config.fontFamily, inputHash)
-    : config.fontFamily;
-
   const glyphMap: NanoGlyphMap = {
     m: {
-      f: family,
+      f: config.fontFamily,
       u: config.upm,
       z: config.safeZone,
       s: config.startUnicode,
@@ -105,8 +98,8 @@ export async function runFontPipeline(
     `${config.fontFamily}.glyphmap.json`
   );
 
-  if (inputHash) {
-    glyphMap.m.h = inputHash;
+  if (options?.inputHash) {
+    glyphMap.m.h = options.inputHash;
   }
   await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap), 'utf8');
 
@@ -117,7 +110,7 @@ export async function runFontPipeline(
     await compileTtfFromGlyphs({
       glyphs: allGlyphs,
       outTtfPath: ttfPath,
-      fontName: family,
+      fontName: config.fontFamily,
       upm: config.upm,
       ascent: config.upm,
       descent: 0,
@@ -134,5 +127,5 @@ export async function runFontPipeline(
     } in ${elapsed}ms]`
   );
 
-  return { ttfPath, glyphmapPath, family };
+  return { ttfPath, glyphmapPath };
 }

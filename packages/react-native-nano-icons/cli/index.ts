@@ -17,4 +17,4 @@ export {
   type NanoIconsConfig,
 } from './config';
 export { loadDynamicSetsFromAppConfig } from './expoConfig';
-export { linkBare, syncAndroidFontAssets } from './link';
+export { linkBare } from './link';

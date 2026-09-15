@@ -3,7 +3,6 @@ import fs from 'fs';
 import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoLogger } from './logger';
 import { getFingerprintSync } from '../src/utils/fingerPrint';
-import { packageVersion } from '../src/utils/packageVersion';
 
 export type IconSetConfig = {
   /** Path to folder of SVG files (relative to project root). */
@@ -24,7 +23,6 @@ export type IconSetConfig = {
 
 export type BuiltFont = {
   fontFamily: string;
-  family: string;
   ttfPath: string;
   glyphmapPath: string;
   linking: 'static' | 'dynamic';
@@ -43,13 +41,13 @@ const DEFAULT_SAFE_ZONE = 1020;
 const DEFAULT_UPM = 1024;
 const DEFAULT_START_UNICODE = 0xe900;
 
-function familyOfCurrentOutput(
+function shouldSkipGeneration(
   inputHash: string,
   outputDir: string,
   fontFamily: string,
   linking: 'static' | 'dynamic',
   logger?: NanoLogger
-): string | undefined {
+): boolean {
   const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
   const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
 
@@ -58,31 +56,25 @@ function familyOfCurrentOutput(
     !fs.existsSync(ttfPath) ||
     !fs.existsSync(glyphmapPath)
   ) {
-    return undefined;
+    return false;
   }
 
   const glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
   const storedHash: string | undefined = glyphmap?.m?.h;
-  const storedFamily: string | undefined = glyphmap?.m?.f;
   const storedLinking: 'static' | 'dynamic' =
     glyphmap?.m?.l === 'd' ? 'dynamic' : 'static';
 
-  if (
-    storedHash &&
-    storedFamily &&
-    storedHash === inputHash &&
-    storedLinking === linking
-  ) {
+  if (storedHash && storedHash === inputHash && storedLinking === linking) {
     const iconCount = Object.keys(glyphmap?.i ?? {}).length;
     logger?.succeed(
       `${fontFamily}.ttf is up to date [${iconCount} icon${
         iconCount === 1 ? '' : 's'
       }]`
     );
-    return storedFamily;
+    return true;
   }
 
-  return undefined;
+  return false;
 }
 
 /**
@@ -96,7 +88,6 @@ export async function buildAllFonts(
   options?: { logger?: NanoLogger }
 ): Promise<BuiltFont[]> {
   const logger = options?.logger;
-  const version = packageVersion();
   const results: BuiltFont[] = [];
   const failures: string[] = [];
   let allSkipped = true;
@@ -119,6 +110,21 @@ export async function buildAllFonts(
     const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
     const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
 
+    const inputHash = getFingerprintSync(inputDir);
+
+    if (
+      shouldSkipGeneration(inputHash, outputDir, fontFamily, linking, logger)
+    ) {
+      results.push({ fontFamily, ttfPath, glyphmapPath, linking });
+      continue;
+    }
+
+    if (fs.existsSync(ttfPath)) fs.unlinkSync(ttfPath);
+    if (fs.existsSync(glyphmapPath)) fs.unlinkSync(glyphmapPath);
+
+    allSkipped = false;
+    const tempDir = path.join(projectRoot, '.temp_layers', fontFamily);
+
     const config = {
       fontFamily,
       upm: set.upm ?? DEFAULT_UPM,
@@ -132,34 +138,6 @@ export async function buildAllFonts(
       linking,
     };
 
-    const inputHash = getFingerprintSync(inputDir, {
-      upm: config.upm,
-      safeZone: config.safeZone,
-      startUnicode: config.startUnicode,
-      version,
-    });
-
-    const currentFamily = familyOfCurrentOutput(
-      inputHash,
-      outputDir,
-      fontFamily,
-      linking,
-      logger
-    );
-    if (currentFamily) {
-      results.push({
-        fontFamily,
-        family: currentFamily,
-        ttfPath,
-        glyphmapPath,
-        linking,
-      });
-      continue;
-    }
-
-    allSkipped = false;
-    const tempDir = path.join(projectRoot, '.temp_layers', fontFamily);
-
     logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
 
     let out;
@@ -170,8 +148,6 @@ export async function buildAllFonts(
         { logger, inputHash }
       );
     } catch (err) {
-      if (fs.existsSync(ttfPath)) fs.unlinkSync(ttfPath);
-      if (fs.existsSync(glyphmapPath)) fs.unlinkSync(glyphmapPath);
       logger?.fail(err instanceof Error ? err.message : String(err));
       failures.push(fontFamily);
       continue;
@@ -179,7 +155,6 @@ export async function buildAllFonts(
 
     results.push({
       fontFamily,
-      family: out.family,
       ttfPath: out.ttfPath,
       glyphmapPath: out.glyphmapPath,
       linking,

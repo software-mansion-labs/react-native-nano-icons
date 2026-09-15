@@ -1,4 +1,5 @@
 #import "NanoIconsFontLoader.h"
+#import "NanoIconView.h"
 #import <CoreText/CoreText.h>
 
 @implementation NanoIconsFontLoader
@@ -42,7 +43,7 @@ RCT_EXPORT_METHOD(registerFont:(NSString *)family
   if (!nameMatches) {
     CGFontRelease(cgFont);
     reject(
-        @"E_NANOICONS_FONT_MISMATCH",
+        @"E_NANOICONS_FONT_REGISTER",
         [NSString stringWithFormat:
                       @"Font name \"%@\" does not match family \"%@\". "
                       @"On iOS the TTF PostScript/full name must equal glyphMap.m.f.",
@@ -53,34 +54,49 @@ RCT_EXPORT_METHOD(registerFont:(NSString *)family
 
   CFErrorRef error = NULL;
   bool ok = CTFontManagerRegisterGraphicsFont(cgFont, &error);
-  CGFontRelease(cgFont);
+  // defer cgFont release — needed for re-registration if name conflict.
 
   if (!ok && error) {
     NSError *err = (__bridge_transfer NSError *)error;
+
     if (err.code == kCTFontManagerErrorAlreadyRegistered ||
         err.code == kCTFontManagerErrorDuplicatedName) {
+      // OTA reload: process still holds the old font. Swap it out.
+      CTFontRef existingCT = CTFontCreateWithName((__bridge CFStringRef)postScriptName, 10.0, NULL);
+      if (existingCT) {
+        CGFontRef existingCG = CTFontCopyGraphicsFont(existingCT, NULL);
+        CFRelease(existingCT);
+        if (existingCG) {
+          CFErrorRef unregErr = NULL;
+          CTFontManagerUnregisterGraphicsFont(existingCG, &unregErr);
+          CFRelease(existingCG);
+          if (unregErr) CFRelease(unregErr);
+        }
+      }
+
+      CFErrorRef regErr = NULL;
+      bool reok = CTFontManagerRegisterGraphicsFont(cgFont, &regErr);
+      CGFontRelease(cgFont);
+
+      if (!reok && regErr) {
+        NSError *reErr = (__bridge_transfer NSError *)regErr;
+        reject(@"E_NANOICONS_FONT_REGISTER", reErr.localizedDescription, reErr);
+        return;
+      }
+      if (regErr) CFRelease(regErr);
+
+      NanoIconInvalidateFontCache(postScriptName);
       resolve(@(YES));
       return;
     }
+
+    CGFontRelease(cgFont);
     reject(@"E_NANOICONS_FONT_REGISTER", err.localizedDescription, err);
     return;
   }
 
+  CGFontRelease(cgFont);
   resolve(@(YES));
-}
-
-RCT_EXPORT_METHOD(isFontRegistered:(NSString *)family
-                  resolve:(RCTPromiseResolveBlock)resolve
-                  reject:(RCTPromiseRejectBlock)reject)
-{
-  CTFontRef font = CTFontCreateWithName((__bridge CFStringRef)family, 12.0, NULL);
-  BOOL registered = NO;
-  if (font) {
-    NSString *postScriptName = (__bridge_transfer NSString *)CTFontCopyPostScriptName(font);
-    registered = [postScriptName isEqualToString:family];
-    CFRelease(font);
-  }
-  resolve(@(registered));
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED

@@ -53,7 +53,7 @@ jest.mock('xcode', () => ({
   project: () => mockXcodeProject,
 }));
 
-import { linkBare, syncAndroidFontAssets } from '../cli/link';
+import { linkBare } from '../cli/link';
 import type { NanoLogger } from '../cli/logger';
 import type { BuiltFont } from '../cli/build';
 
@@ -166,7 +166,6 @@ describe('linkBare — iOS Info.plist target selection', () => {
   test('uses the conventional Info.plist path as a fallback, not the alphabetically-first sibling', async () => {
     const builtFont: BuiltFont = {
       fontFamily: 'TestFont',
-      family: 'TestFont-1a2b3c4d',
       ttfPath: path.join(fontDir, 'TestFont.ttf'),
       glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
       linking: 'static',
@@ -218,7 +217,6 @@ describe('linkBare — iOS Info.plist target selection', () => {
 
     const builtFont: BuiltFont = {
       fontFamily: 'TestFont',
-      family: 'TestFont-1a2b3c4d',
       ttfPath: path.join(fontDir, 'TestFont.ttf'),
       glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
       linking: 'static',
@@ -252,7 +250,6 @@ describe('linkBare — iOS Info.plist target selection', () => {
 
     const builtFont: BuiltFont = {
       fontFamily: 'TestFont',
-      family: 'TestFont-1a2b3c4d',
       ttfPath: path.join(fontDir, 'TestFont.ttf'),
       glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
       linking: 'static',
@@ -272,7 +269,6 @@ describe('linkBare — iOS Info.plist target selection', () => {
       [
         {
           fontFamily: 'TestFont',
-          family: 'TestFont-1a2b3c4d',
           ttfPath: path.join(fontDir, 'TestFont.ttf'),
           glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
           linking: 'static',
@@ -299,7 +295,6 @@ describe('linkBare - dynamic fonts are excluded from native bundling', () => {
     fs.writeFileSync(ttfPath, 'fake-ttf');
     return {
       fontFamily,
-      family: `${fontFamily}-1a2b3c4d`,
       ttfPath,
       glyphmapPath: path.join(fontDir, `${fontFamily}.glyphmap.json`),
       linking,
@@ -344,10 +339,8 @@ describe('linkBare - dynamic fonts are excluded from native bundling', () => {
 
     // Android: only the static TTF is copied into assets/fonts.
     const androidFonts = path.join(projectRoot, ANDROID_FONTS_DIR);
-    expect(
-      fs.existsSync(path.join(androidFonts, 'StaticFont-1a2b3c4d.ttf'))
-    ).toBe(true);
-    expect(fs.readdirSync(androidFonts)).toEqual(['StaticFont-1a2b3c4d.ttf']);
+    expect(fs.existsSync(path.join(androidFonts, 'StaticFont.ttf'))).toBe(true);
+    expect(fs.existsSync(path.join(androidFonts, 'DynFont.ttf'))).toBe(false);
   });
 
   test('the linked line counts static, dynamic and failed sets against the total', async () => {
@@ -363,69 +356,6 @@ describe('linkBare - dynamic fonts are excluded from native bundling', () => {
     expect(logger.succeed).toHaveBeenCalledWith(
       'Linked [StaticFont] (1/3) → android, ios (1 dynamic font skipped)'
     );
-  });
-
-  test('switching a set to dynamic removes its previously bundled copies', async () => {
-    const androidFonts = path.join(projectRoot, ANDROID_FONTS_DIR);
-    fs.mkdirSync(androidFonts, { recursive: true });
-    for (const stale of ['DynFont.ttf', 'DynFont-00000000.ttf', 'User.ttf']) {
-      fs.writeFileSync(path.join(androidFonts, stale), 'stale');
-    }
-    const staging = path.join(projectRoot, 'ios', 'nanoicons-fonts');
-    fs.mkdirSync(staging, { recursive: true });
-    fs.writeFileSync(path.join(staging, 'DynFont.ttf'), 'stale');
-    const plistPath = path.join(projectRoot, 'ios', 'MyApp', 'Info.plist');
-    fs.writeFileSync(
-      plistPath,
-      plist.build({ UIAppFonts: ['DynFont.ttf', 'User.ttf'] })
-    );
-
-    await linkBare(
-      projectRoot,
-      [builtFont('StaticFont', 'static'), builtFont('DynFont', 'dynamic')],
-      makeLogger()
-    );
-
-    expect(fs.readdirSync(androidFonts).sort()).toEqual([
-      'StaticFont-1a2b3c4d.ttf',
-      'User.ttf',
-    ]);
-    expect(fs.readdirSync(staging)).toEqual(['StaticFont.ttf']);
-    expect(readUIAppFonts(plistPath)).toEqual(['User.ttf', 'StaticFont.ttf']);
-  });
-
-  test('a set dropped from the config is removed from the ios staging dir and plist', async () => {
-    const staging = path.join(projectRoot, 'ios', 'nanoicons-fonts');
-    fs.mkdirSync(staging, { recursive: true });
-    fs.writeFileSync(path.join(staging, 'Gone.ttf'), 'stale');
-    const plistPath = path.join(projectRoot, 'ios', 'MyApp', 'Info.plist');
-    fs.writeFileSync(plistPath, plist.build({ UIAppFonts: ['Gone.ttf'] }));
-
-    await linkBare(
-      projectRoot,
-      [builtFont('StaticFont', 'static')],
-      makeLogger()
-    );
-
-    expect(fs.readdirSync(staging)).toEqual(['StaticFont.ttf']);
-    expect(readUIAppFonts(plistPath)).toEqual(['StaticFont.ttf']);
-  });
-
-  test('an all-dynamic config still cleans up previously bundled copies', async () => {
-    const androidFonts = path.join(projectRoot, ANDROID_FONTS_DIR);
-    fs.mkdirSync(androidFonts, { recursive: true });
-    fs.writeFileSync(path.join(androidFonts, 'DynA-00000000.ttf'), 'stale');
-    const staging = path.join(projectRoot, 'ios', 'nanoicons-fonts');
-    fs.mkdirSync(staging, { recursive: true });
-    fs.writeFileSync(path.join(staging, 'DynA.ttf'), 'stale');
-    const plistPath = path.join(projectRoot, 'ios', 'MyApp', 'Info.plist');
-    fs.writeFileSync(plistPath, plist.build({ UIAppFonts: ['DynA.ttf'] }));
-
-    await linkBare(projectRoot, [builtFont('DynA', 'dynamic')], makeLogger());
-
-    expect(fs.readdirSync(androidFonts)).toEqual([]);
-    expect(fs.readdirSync(staging)).toEqual([]);
-    expect(readUIAppFonts(plistPath)).toEqual([]);
   });
 
   test('all-dynamic set bundles nothing natively', async () => {
@@ -467,7 +397,6 @@ describe('linkBare - platform detection & edge cases', () => {
     fs.writeFileSync(ttfPath, 'fake-ttf');
     return {
       fontFamily,
-      family: `${fontFamily}-1a2b3c4d`,
       ttfPath,
       glyphmapPath: path.join(fontDir, `${fontFamily}.glyphmap.json`),
       linking,
@@ -534,7 +463,7 @@ describe('linkBare - platform detection & edge cases', () => {
 
     expect(
       fs.existsSync(
-        path.join(projectRoot, ANDROID_FONTS_DIR, 'OnlyAndroid-1a2b3c4d.ttf')
+        path.join(projectRoot, ANDROID_FONTS_DIR, 'OnlyAndroid.ttf')
       )
     ).toBe(true);
     expect(fs.existsSync(path.join(projectRoot, 'ios'))).toBe(false);
@@ -648,75 +577,5 @@ describe('linkBare - platform detection & edge cases', () => {
 
     const entries = readUIAppFonts(infoPlistPath);
     expect(entries.filter((f) => f === 'Idem.ttf')).toHaveLength(1);
-  });
-});
-
-describe('syncAndroidFontAssets', () => {
-  let fontsDir: string;
-  let fontDir: string;
-
-  function builtFont(fontFamily: string, family: string): BuiltFont {
-    const ttfPath = path.join(fontDir, `${fontFamily}.ttf`);
-    fs.writeFileSync(ttfPath, 'fresh-ttf');
-    return {
-      fontFamily,
-      family,
-      ttfPath,
-      glyphmapPath: path.join(fontDir, `${fontFamily}.glyphmap.json`),
-      linking: 'static',
-    };
-  }
-
-  beforeEach(() => {
-    fontsDir = path.join(makeTmpDir(), 'fonts');
-    fontDir = makeTmpDir();
-  });
-
-  afterEach(() => {
-    fs.rmSync(path.dirname(fontsDir), { recursive: true, force: true });
-    fs.rmSync(fontDir, { recursive: true, force: true });
-  });
-
-  test('names the asset after the family and creates the folder', () => {
-    const font = builtFont('Icons', 'Icons-1a2b3c4d');
-    syncAndroidFontAssets(fontsDir, [font], ['Icons']);
-    expect(fs.readdirSync(fontsDir)).toEqual(['Icons-1a2b3c4d.ttf']);
-  });
-
-  test('leaves only current products plus fonts that are not ours', () => {
-    fs.mkdirSync(fontsDir, { recursive: true });
-    for (const stale of [
-      'Icons.ttf',
-      'Icons-00000000.ttf',
-      'Dropped-deadbeef.ttf',
-      'Dyn-cafebabe.ttf',
-      'Dyn.ttf',
-      'Legacy.ttf',
-      'User.ttf',
-    ]) {
-      fs.writeFileSync(path.join(fontsDir, stale), 'stale');
-    }
-    const font = builtFont('Icons', 'Icons-1a2b3c4d');
-    syncAndroidFontAssets(fontsDir, [font], ['Icons', 'Dyn']);
-    expect(fs.readdirSync(fontsDir).sort()).toEqual([
-      'Icons-1a2b3c4d.ttf',
-      'Legacy.ttf',
-      'User.ttf',
-    ]);
-  });
-
-  test('overwrites a same-named asset with the fresh bytes', () => {
-    fs.mkdirSync(fontsDir, { recursive: true });
-    fs.writeFileSync(path.join(fontsDir, 'Icons-1a2b3c4d.ttf'), 'stale');
-    const font = builtFont('Icons', 'Icons-1a2b3c4d');
-    syncAndroidFontAssets(fontsDir, [font], ['Icons']);
-    expect(
-      fs.readFileSync(path.join(fontsDir, 'Icons-1a2b3c4d.ttf'), 'utf8')
-    ).toBe('fresh-ttf');
-  });
-
-  test('with no static fonts it only cleans and never creates the folder', () => {
-    syncAndroidFontAssets(fontsDir, [], ['Icons']);
-    expect(fs.existsSync(fontsDir)).toBe(false);
   });
 });
