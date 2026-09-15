@@ -56,6 +56,7 @@ function font() {
   fs.writeFileSync(ttfPath, 'fake-ttf');
   return {
     fontFamily: 'RealFont',
+    family: 'RealFont-1a2b3c4d',
     ttfPath,
     glyphmapPath: `${ttfPath}.json`,
     linking: 'static' as const,

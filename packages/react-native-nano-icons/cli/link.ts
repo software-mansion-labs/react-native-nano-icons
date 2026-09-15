@@ -4,6 +4,7 @@ import * as plist from 'plist';
 import type { PBXNativeTarget, XcodeProject } from 'xcode';
 import type { NanoLogger } from './logger';
 import type { BuiltFont } from './build';
+import { isBuildFontFile, isFontFileOf } from '../src/utils/fontIdentity';
 
 const ANDROID_FONTS_DIR = 'android/app/src/main/assets/fonts';
 const IOS_NANOICONS_FONTS_DIR = 'nanoicons-fonts';
@@ -62,7 +63,11 @@ function resolveInfoPlistPaths(
   return fs.existsSync(fallbackPath) ? [fallbackPath] : [];
 }
 
-function addUIAppFonts(infoPlistPath: string, fontNames: string[]): void {
+function syncUIAppFonts(
+  infoPlistPath: string,
+  add: string[],
+  remove: string[]
+): void {
   const parsed = plist.parse(fs.readFileSync(infoPlistPath, 'utf8')) as Record<
     string,
     unknown
@@ -71,31 +76,60 @@ function addUIAppFonts(infoPlistPath: string, fontNames: string[]): void {
   const existing = Array.isArray(parsed['UIAppFonts'])
     ? (parsed['UIAppFonts'] as string[])
     : [];
+  const fonts = [
+    ...new Set([...existing.filter((f) => !remove.includes(f)), ...add]),
+  ];
+  if (
+    fonts.length === existing.length &&
+    fonts.every((f, i) => f === existing[i])
+  ) {
+    return;
+  }
 
-  const updated: plist.PlistObject = {
-    ...parsed,
-    UIAppFonts: [...new Set([...existing, ...fontNames])],
-  };
-
+  const updated: plist.PlistObject = { ...parsed, UIAppFonts: fonts };
   fs.writeFileSync(infoPlistPath, plist.build(updated), 'utf8');
+}
+
+export function syncAndroidFontAssets(
+  fontsDir: string,
+  staticFonts: BuiltFont[],
+  configuredFamilies: string[]
+): void {
+  const keep = new Set(staticFonts.map((b) => `${b.family}.ttf`));
+  if (fs.existsSync(fontsDir)) {
+    for (const existing of fs.readdirSync(fontsDir)) {
+      if (keep.has(existing)) continue;
+      if (
+        isBuildFontFile(existing) ||
+        configuredFamilies.some((family) => isFontFileOf(family, existing))
+      ) {
+        fs.unlinkSync(path.join(fontsDir, existing));
+      }
+    }
+  }
+  if (!staticFonts.length) return;
+  fs.mkdirSync(fontsDir, { recursive: true });
+  for (const b of staticFonts) {
+    fs.copyFileSync(b.ttfPath, path.join(fontsDir, `${b.family}.ttf`));
+  }
 }
 
 async function linkAndroid(
   projectRoot: string,
+  staticFonts: BuiltFont[],
   builtFonts: BuiltFont[]
 ): Promise<void> {
-  const androidFontsPath = path.join(projectRoot, ANDROID_FONTS_DIR);
-  fs.mkdirSync(androidFontsPath, { recursive: true });
-
-  for (const b of builtFonts) {
-    const dest = path.join(androidFontsPath, path.basename(b.ttfPath));
-    fs.copyFileSync(b.ttfPath, dest);
-  }
+  syncAndroidFontAssets(
+    path.join(projectRoot, ANDROID_FONTS_DIR),
+    staticFonts,
+    builtFonts.map((b) => b.fontFamily)
+  );
 }
 
 async function linkIos(
   projectRoot: string,
-  builtFonts: BuiltFont[],
+  staticFonts: BuiltFont[],
+  dynamicFonts: BuiltFont[],
   logger: NanoLogger
 ): Promise<boolean> {
   const iosDir = path.join(projectRoot, 'ios');
@@ -137,19 +171,34 @@ async function linkIos(
     return false;
   }
 
-  const fontNames: string[] = [];
+  const fontNames = staticFonts.map((b) => path.basename(b.ttfPath));
+  const removedNames = dynamicFonts.map((b) => `${b.fontFamily}.ttf`);
   const iosFontsStaging = path.join(iosDir, IOS_NANOICONS_FONTS_DIR);
-  fs.mkdirSync(iosFontsStaging, { recursive: true });
 
-  for (const b of builtFonts) {
-    const name = path.basename(b.ttfPath);
-    fontNames.push(name);
-    fs.copyFileSync(b.ttfPath, path.join(iosFontsStaging, name));
+  if (fs.existsSync(iosFontsStaging)) {
+    for (const existing of fs.readdirSync(iosFontsStaging)) {
+      if (existing.endsWith('.ttf') && !fontNames.includes(existing)) {
+        fs.unlinkSync(path.join(iosFontsStaging, existing));
+        removedNames.push(existing);
+      }
+    }
+  }
+
+  if (staticFonts.length) {
+    fs.mkdirSync(iosFontsStaging, { recursive: true });
+    for (const b of staticFonts) {
+      fs.copyFileSync(
+        b.ttfPath,
+        path.join(iosFontsStaging, path.basename(b.ttfPath))
+      );
+    }
   }
 
   for (const infoPlistPath of infoPlistPaths) {
-    addUIAppFonts(infoPlistPath, fontNames);
+    syncUIAppFonts(infoPlistPath, fontNames, removedNames);
   }
+
+  if (!staticFonts.length) return true;
 
   const hasPhase = Object.values(
     project.hash.project.objects['PBXShellScriptBuildPhase'] ?? {}
@@ -223,22 +272,25 @@ export async function linkBare(
     return;
   }
 
+  const linkedPlatforms: string[] = [];
+
+  if (hasAndroid) {
+    await linkAndroid(projectRoot, staticFonts, builtFonts);
+    linkedPlatforms.push('android');
+  }
+
+  if (
+    hasIos &&
+    (await linkIos(projectRoot, staticFonts, dynamicFonts, logger))
+  ) {
+    linkedPlatforms.push('ios');
+  }
+
   if (!staticFonts.length) {
     logger.succeed(
       `All ${dynamicFonts.length} font(s) use dynamic linking — nothing to bundle natively.`
     );
     return;
-  }
-
-  const linkedPlatforms: string[] = [];
-
-  if (hasAndroid) {
-    await linkAndroid(projectRoot, staticFonts);
-    linkedPlatforms.push('android');
-  }
-
-  if (hasIos && (await linkIos(projectRoot, staticFonts, logger))) {
-    linkedPlatforms.push('ios');
   }
 
   const dynamicSuffix = dynamicFonts.length
