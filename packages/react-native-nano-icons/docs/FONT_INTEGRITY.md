@@ -9,16 +9,18 @@ fingerprint = sha256( svg names + contents , upm , safeZone , startUnicode , lib
                       installed versions of @xmldom/xmldom, cubic2quad, fonteditor-core, pathkit-wasm, svg2ttf )
 family      = <fontFamily>-<hash8>          → glyphMap.m.f  ==  TTF name table
 files       = <fontFamily>.ttf / .glyphmap.json   (unchanged)
+              + <fontFamily>.woff2 when web: true  → glyphMap.m.w, same TTF build, same run
 ```
 
 ## CLI run (per set)
 
 ```
-fingerprint vs stored m.h
-├─ equal  ──────────────── "X.ttf is up to date", family kept
-└─ differs ─────────────── rebuild, outputs overwritten in place (Metro picks it up)
+fingerprint vs stored m.h · linking vs m.l · web vs m.w · files present
+├─ all equal ───────────── "X.ttf is up to date", family kept
+└─ any differs ─────────── rebuild, outputs overwritten in place (Metro picks it up)
      ├─ svg edited
      ├─ upm / safeZone / startUnicode changed
+     ├─ linking or web toggled, .woff2 missing
      └─ library or font toolchain upgraded (a dependency resolved to a new version)
 build fails ────────────── outputs deleted, other sets still linked, exit 1
 
@@ -40,6 +42,7 @@ Expo plugin ────────────── same rules on Android; iO
 native module absent (Expo Go, web) ─────────── ✔ nothing checked or recorded
 Expo Go ─────────────────────────────────────── draws through Text, so an unlinked font shows tofu;
                                                △ a dynamic set warns when no font is passed or it cannot be loaded
+web ─────────────────────────────────────────── spans use the configured name, not m.f; host app links the font
 font check ──────────────────────────────────── the lookup the icon view draws with; a system fallback never counts, and
                                                views that drew nothing pick the font up once it registers
 native module present
