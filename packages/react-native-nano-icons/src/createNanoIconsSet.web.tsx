@@ -8,6 +8,7 @@ import {
   createCharCache,
   createLayerColorResolver,
 } from './utils/glyphRuntime';
+import { configuredFontFamily } from './utils/fontIdentity';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
@@ -16,7 +17,7 @@ export { shallowEqualColor };
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
 ): IconComponent<GM> {
-  const fontBasename = glyphMap.m.f;
+  const fontBasename = configuredFontFamily(glyphMap.m.f);
   const unitsPerEm = glyphMap.m.u;
   const getChar = createCharCache();
 
@@ -105,7 +106,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   Icon.displayName = `NanoIcon(${fontBasename})`;
 
-  // No-op on web: fonts come from CSS @font-face, nothing to load at runtime.
+  // No-op on web: the host app links the font under the configured family name, nothing to load at runtime.
   const IconComp = Icon as unknown as IconComponent<GM>;
   IconComp.loadFont = () => Promise.resolve();
   return IconComp;
