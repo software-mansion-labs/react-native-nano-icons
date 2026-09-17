@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { Image, Platform } from 'react-native';
-import NanoIconsFontLoader from './specs/NativeNanoIconsFontLoader';
+import NanoIconsFontLoader from './nativeFontLoader';
 import { runtimeError } from './utils/runtimeLog';
 
 /**

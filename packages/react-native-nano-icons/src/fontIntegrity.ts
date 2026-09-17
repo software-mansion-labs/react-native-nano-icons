@@ -1,4 +1,4 @@
-import NanoIconsFontLoader from './specs/NativeNanoIconsFontLoader';
+import NanoIconsFontLoader from './nativeFontLoader';
 import { configuredFontFamily } from './utils/fontIdentity';
 import { errorRuntime, warnRuntime } from './utils/runtimeLog';
 
