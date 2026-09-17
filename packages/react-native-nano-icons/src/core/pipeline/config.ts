@@ -6,6 +6,7 @@ export type PipelineConfig = {
   safeZone: number;
   startUnicode: number;
   linking: 'static' | 'dynamic';
+  web?: boolean;
 };
 
 export type PipelinePaths = {

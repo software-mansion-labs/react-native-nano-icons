@@ -23,6 +23,8 @@ export type IconSetConfig = {
   startUnicode?: number | string;
   /** Linking type for the font (default 'static'). Static bundles the TTF, dynamic delivers it via OTA*/
   linking?: 'static' | 'dynamic';
+  /** Also emit <fontFamily>.woff2 into outputDir for web (default false). Rebuilt with the TTF, never linked natively. */
+  web?: boolean;
 };
 
 export type BuiltFont = {
@@ -31,6 +33,7 @@ export type BuiltFont = {
   ttfPath: string;
   glyphmapPath: string;
   linking: 'static' | 'dynamic';
+  woff2Path?: string;
 };
 
 export class IconSetBuildError extends Error {
@@ -51,15 +54,18 @@ function familyOfCurrentOutput(
   outputDir: string,
   fontFamily: string,
   linking: 'static' | 'dynamic',
+  web: boolean,
   logger?: NanoLogger
 ): string | undefined {
   const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
   const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
+  const woff2Path = path.join(outputDir, `${fontFamily}.woff2`);
 
   if (
     !fs.existsSync(outputDir) ||
     !fs.existsSync(ttfPath) ||
-    !fs.existsSync(glyphmapPath)
+    !fs.existsSync(glyphmapPath) ||
+    (web && !fs.existsSync(woff2Path))
   ) {
     return undefined;
   }
@@ -69,12 +75,14 @@ function familyOfCurrentOutput(
   const storedFamily: string | undefined = glyphmap?.m?.f;
   const storedLinking: 'static' | 'dynamic' =
     glyphmap?.m?.l === 'd' ? 'dynamic' : 'static';
+  const storedWeb = glyphmap?.m?.w === true;
 
   if (
     storedHash &&
     storedFamily &&
     storedHash === inputHash &&
-    storedLinking === linking
+    storedLinking === linking &&
+    storedWeb === web
   ) {
     const iconCount = Object.keys(glyphmap?.i ?? {}).length;
     logger?.succeed(
@@ -110,6 +118,7 @@ export async function buildAllFonts(
     const inputDir = path.resolve(projectRoot, set.inputDir);
     const fontFamily = set.fontFamily ?? path.basename(inputDir);
     const linking: 'static' | 'dynamic' = set.linking ?? 'static';
+    const web = set.web ?? false;
 
     if (!fs.existsSync(inputDir)) {
       throw new Error(
@@ -122,6 +131,7 @@ export async function buildAllFonts(
       : path.join(path.dirname(inputDir), 'nanoicons');
     const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
     const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
+    const woff2Path = path.join(outputDir, `${fontFamily}.woff2`);
 
     const config = {
       fontFamily,
@@ -134,6 +144,7 @@ export async function buildAllFonts(
             : set.startUnicode
           : DEFAULT_START_UNICODE,
       linking,
+      web,
     };
 
     const inputHash = getFingerprintSync(inputDir, {
@@ -149,6 +160,7 @@ export async function buildAllFonts(
       outputDir,
       fontFamily,
       linking,
+      web,
       logger
     );
     if (currentFamily) {
@@ -158,6 +170,7 @@ export async function buildAllFonts(
         ttfPath,
         glyphmapPath,
         linking,
+        ...(web ? { woff2Path } : {}),
       });
       continue;
     }
@@ -166,6 +179,8 @@ export async function buildAllFonts(
     const tempDir = path.join(projectRoot, '.temp_layers', fontFamily);
 
     logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
+
+    if (!web && fs.existsSync(woff2Path)) fs.unlinkSync(woff2Path);
 
     let out;
     try {
@@ -177,6 +192,7 @@ export async function buildAllFonts(
     } catch (err) {
       if (fs.existsSync(ttfPath)) fs.unlinkSync(ttfPath);
       if (fs.existsSync(glyphmapPath)) fs.unlinkSync(glyphmapPath);
+      if (fs.existsSync(woff2Path)) fs.unlinkSync(woff2Path);
       logger?.fail(err instanceof Error ? err.message : String(err));
       failures.push(fontFamily);
       continue;
@@ -188,6 +204,7 @@ export async function buildAllFonts(
       ttfPath: out.ttfPath,
       glyphmapPath: out.glyphmapPath,
       linking,
+      ...(out.woff2Path ? { woff2Path: out.woff2Path } : {}),
     });
   }
 

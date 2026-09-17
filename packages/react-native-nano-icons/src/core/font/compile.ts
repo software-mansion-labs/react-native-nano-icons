@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { forceTtfMetrics } from './metrics';
 import svg2ttf from 'svg2ttf';
+import { woff2 } from 'fonteditor-core';
 import { GLYPH_CODEPOINT, XML_AMP, XML_QUOT } from '../../utils/svgPatterns';
 import { SVG_NS } from '../flatten/dom';
 import { toQuadraticPath } from './quadratic';
@@ -81,7 +82,7 @@ export async function compileTtfFromGlyphs(opts: {
   ascent: number;
   descent: number;
   lineGap?: number;
-}): Promise<void> {
+}): Promise<Buffer> {
   const { glyphs, outTtfPath, fontName, upm, ascent, descent } = opts;
   const lineGap = opts.lineGap ?? 0;
 
@@ -102,4 +103,13 @@ export async function compileTtfFromGlyphs(opts: {
 
   fs.mkdirSync(path.dirname(outTtfPath), { recursive: true });
   fs.writeFileSync(outTtfPath, fixedBuf);
+  return fixedBuf;
+}
+
+let woff2Ready: Promise<unknown> | undefined;
+
+export async function compileWoff2FromTtf(ttfBuffer: Buffer): Promise<Buffer> {
+  woff2Ready ??= woff2.init();
+  await woff2Ready;
+  return Buffer.from(woff2.encode(ttfBuffer));
 }

@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   compileTtfFromGlyphs,
+  compileWoff2FromTtf,
   parseCompileTtfFromGlyphsError,
   type FontGlyph,
 } from '../font/compile';
@@ -15,6 +16,7 @@ export type PipelineResult = {
   ttfPath: string;
   glyphmapPath: string;
   family: string;
+  woff2Path?: string;
 };
 
 /**
@@ -49,6 +51,7 @@ export async function runFontPipeline(
       z: config.safeZone,
       s: config.startUnicode,
       ...(config.linking === 'dynamic' ? { l: 'd' as const } : {}),
+      ...(config.web ? { w: true as const } : {}),
     },
     i: {},
   };
@@ -113,8 +116,9 @@ export async function runFontPipeline(
   logger?.info(`Compiling TTF…`);
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
 
+  let ttfBuffer: Buffer | undefined;
   try {
-    await compileTtfFromGlyphs({
+    ttfBuffer = await compileTtfFromGlyphs({
       glyphs: allGlyphs,
       outTtfPath: ttfPath,
       fontName: family,
@@ -126,13 +130,23 @@ export async function runFontPipeline(
     parseCompileTtfFromGlyphsError(err, codepointToIcon);
   }
 
+  let woff2Path: string | undefined;
+  if (config.web && ttfBuffer) {
+    logger?.info(`Compiling WOFF2…`);
+    woff2Path = path.join(paths.outputDir, `${config.fontFamily}.woff2`);
+    await fsp.writeFile(woff2Path, await compileWoff2FromTtf(ttfBuffer));
+  }
+
   const iconCount = Object.keys(glyphMap.i).length;
   const elapsed = Date.now() - startTime;
+  const products = woff2Path
+    ? `${config.fontFamily}.ttf + ${config.fontFamily}.woff2`
+    : `${config.fontFamily}.ttf`;
   logger?.succeed(
-    `Built ${config.fontFamily}.ttf [${iconCount} icon${
+    `Built ${products} [${iconCount} icon${
       iconCount === 1 ? '' : 's'
     } in ${elapsed}ms]`
   );
 
-  return { ttfPath, glyphmapPath, family };
+  return { ttfPath, glyphmapPath, family, woff2Path };
 }
