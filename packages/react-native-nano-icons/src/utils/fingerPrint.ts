@@ -2,7 +2,18 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-export function getFingerprintSync(dir: string): string {
+export type FingerprintInputs = {
+  upm: number;
+  safeZone: number;
+  startUnicode: number;
+  version: string;
+  toolchain: readonly string[];
+};
+
+export function getFingerprintSync(
+  dir: string,
+  inputs: FingerprintInputs
+): string {
   const files = fs
     .readdirSync(dir)
     .filter((f: string) => f.endsWith('.svg'))
@@ -15,6 +26,16 @@ export function getFingerprintSync(dir: string): string {
     hash.update(file);
     hash.update(fs.readFileSync(filePath));
   }
+
+  hash.update(
+    JSON.stringify([
+      inputs.upm,
+      inputs.safeZone,
+      inputs.startUnicode,
+      inputs.version,
+      inputs.toolchain,
+    ])
+  );
 
   return hash.digest('hex');
 }

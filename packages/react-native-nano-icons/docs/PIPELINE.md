@@ -40,11 +40,11 @@ Takes an array of icon set configs, each specifying:
 For each icon set:
 
 1. Resolves absolute paths
-2. Computes SHA-256 fingerprint of all SVG inputs
-3. **Skips generation** if existing glyphmap hash matches (incremental builds)
+2. Computes SHA-256 fingerprint of all SVG inputs, the set config (`upm`, `safeZone`, `startUnicode`) and the library version
+3. **Skips generation** if existing glyphmap hash and linking match (incremental builds)
 4. Deletes stale output files
 5. Calls `runFontPipeline()` with resolved config and paths
-6. Returns `{ fontFamily, ttfPath, glyphmapPath }`
+6. Returns `{ fontFamily, family, ttfPath, glyphmapPath, linking }` — `family` is `glyphMap.m.f`, the configured name plus the first 8 fingerprint characters; it is also the TTF's internal font name and the Android asset file name
 
 ---
 
@@ -242,11 +242,12 @@ Includes metadata:
 ```json
 {
   "m": {
-    "f": "FontFamily",
+    "f": "FontFamily-1a2b3c4d", // runtime font family: configured name + first 8 fingerprint chars
     "u": 1024,          // upm
     "z": 1020,          // safeZone
     "s": 59648,         // startUnicode (0xe900)
-    "h": "sha256..."    // optional input fingerprint
+    "h": "sha256...",   // optional fingerprint of SVGs + config + library version
+    "l": "d"            // only for dynamic linking
   },
   "i": {
     "iconName": [advanceWidth, [[codepoint, "color"], ...]]

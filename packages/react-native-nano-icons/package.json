@@ -10,12 +10,9 @@
   "files": [
     "app.plugin.js",
     "LICENSES.md",
-    "bin",
     "src/specs",
     "src/const/codegenPrimitives.ts",
     "lib",
-    "plugin",
-    "scripts",
     "ios",
     "android",
     "react-native-nano-icons.podspec"
