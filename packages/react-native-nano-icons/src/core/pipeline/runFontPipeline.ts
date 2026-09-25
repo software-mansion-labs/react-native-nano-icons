@@ -9,7 +9,12 @@ import {
 } from '../font/compile';
 import { buildFontFamily } from '../../utils/fontIdentity';
 import type { GlyphLayer, NanoGlyphMap, NanoLogger } from '../types';
-import { ensureDir, type PipelineConfig, type PipelinePaths } from './config';
+import {
+  ensureDir,
+  writeFileAtomic,
+  type PipelineConfig,
+  type PipelinePaths,
+} from './config';
 import { defaultConcurrency, type SvgWorkerPool } from './iconPool';
 import {
   prepareIconsWithCache,
@@ -138,7 +143,7 @@ export async function runFontPipeline(
   if (config.web && ttfBuffer) {
     logger?.info(`Compiling WOFF2…`);
     woff2Path = path.join(paths.outputDir, `${config.fontFamily}.woff2`);
-    await fsp.writeFile(woff2Path, await compileWoff2FromTtf(ttfBuffer));
+    writeFileAtomic(woff2Path, await compileWoff2FromTtf(ttfBuffer));
   }
 
   const glyphmapPath = path.join(
@@ -149,7 +154,7 @@ export async function runFontPipeline(
   if (inputHash) {
     glyphMap.m.h = inputHash;
   }
-  await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap), 'utf8');
+  writeFileAtomic(glyphmapPath, JSON.stringify(glyphMap));
 
   const iconCount = Object.keys(glyphMap.i).length;
   const elapsed = Date.now() - startTime;

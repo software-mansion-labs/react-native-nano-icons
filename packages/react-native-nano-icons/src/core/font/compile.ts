@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { forceTtfMetrics } from './metrics';
+import { writeFileAtomic } from '../pipeline/config';
 import svg2ttf from 'svg2ttf';
 import { woff2 } from 'fonteditor-core';
 import { GLYPH_CODEPOINT, XML_AMP, XML_QUOT } from '../../utils/svgPatterns';
@@ -98,7 +99,7 @@ export async function compileTtfFromGlyphs(opts: {
   const fixedBuf = forceTtfMetrics(rawBuf, upm, ascent, descent, lineGap);
 
   fs.mkdirSync(path.dirname(outTtfPath), { recursive: true });
-  fs.writeFileSync(outTtfPath, fixedBuf);
+  writeFileAtomic(outTtfPath, fixedBuf);
   return fixedBuf;
 }
 
