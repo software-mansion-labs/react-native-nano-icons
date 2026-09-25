@@ -42,7 +42,8 @@ Expo plugin ────────────── same rules on Android; iO
 native module absent (Expo Go, web) ─────────── ✔ nothing checked or recorded
 Expo Go ─────────────────────────────────────── draws through Text, so an unlinked font shows tofu;
                                                △ a dynamic set warns when no font is passed or it cannot be loaded
-web ─────────────────────────────────────────── spans use the configured name, not m.f; host app links the font
+web ─────────────────────────────────────────── spans use the configured name, not m.f; host app links the font;
+                                               the font argument is ignored
 font check ──────────────────────────────────── the lookup the icon view draws with; a system fallback never counts, and
                                                views that drew nothing pick the font up once it registers
 native module present
