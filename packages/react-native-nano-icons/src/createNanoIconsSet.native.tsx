@@ -17,9 +17,9 @@ import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
 import {
   checkFontIntegrity,
   isFontMismatch,
+  reportDynamicFontLoadFailure,
   reportFontMismatch,
 } from './fontIntegrity';
-import { warnRuntime } from './utils/runtimeLog';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
@@ -66,11 +66,8 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       (err) => {
         if (isFontMismatch(err)) {
           reportFontMismatch(fontFamilyBasename, linking);
-        } else if (__DEV__) {
-          warnRuntime(
-            `Failed to load dynamic font "${fontFamilyBasename}".`,
-            err
-          );
+        } else {
+          void reportDynamicFontLoadFailure(fontFamilyBasename, err);
         }
       }
     );

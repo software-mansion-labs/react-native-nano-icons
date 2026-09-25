@@ -13,10 +13,14 @@ import {
   addFontIntegrityListener,
   getFontIntegrityIssues,
   isFontMismatch,
+  reportDynamicFontLoadFailure,
   reportFontMismatch,
+  reportMissingDynamicFont,
   FONT_MISMATCH_CODE,
   __resetFontIntegrityForTests,
 } from '../src/fontIntegrity';
+import { warnIfLinkingMismatch } from '../src/createNanoIconsSet.shared';
+import { FONT_SOURCE_CODE } from '../src/loadDynamicFont';
 
 let warn: jest.SpyInstance;
 
@@ -130,5 +134,95 @@ describe('reportFontMismatch', () => {
       })
     );
     expect(getFontIntegrityIssues()).toHaveLength(1);
+  });
+});
+
+describe('dynamic font issues', () => {
+  test('a dynamic set without a font is recorded and warns with the configured name', async () => {
+    mockIsFontRegistered.mockResolvedValue(false);
+    await reportMissingDynamicFont('Icons-1a2b3c4d');
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = warn.mock.calls[0]![0] as string;
+    expect(message).toMatch(
+      /^🔬 react-native-nano-icons ⚠ Icon font "Icons" is built with dynamic linking but no font was passed/
+    );
+    expect(message).not.toContain('1a2b3c4d');
+    expect(getFontIntegrityIssues()).toEqual([
+      expect.objectContaining({
+        fontFamily: 'Icons',
+        family: 'Icons-1a2b3c4d',
+        linking: 'dynamic',
+      }),
+    ]);
+  });
+
+  test('a failed load is recorded, and the dev warning carries the cause', async () => {
+    mockIsFontRegistered.mockResolvedValue(false);
+    const cause = new Error('file not found');
+    const seen = jest.fn();
+    addFontIntegrityListener(seen);
+    await reportDynamicFontLoadFailure('Icons-1a2b3c4d', cause);
+    expect(warn).toHaveBeenCalledTimes(1);
+    const [message, detail] = warn.mock.calls[0]! as [string, unknown];
+    expect(message).toBe(
+      '🔬 react-native-nano-icons ⚠ Icon font "Icons" could not be loaded: file not found. Its icons will render blank. Make sure the .ttf is delivered with your update.'
+    );
+    expect(detail).toBe(cause);
+    expect(seen).toHaveBeenCalledWith(
+      expect.objectContaining({ family: 'Icons-1a2b3c4d', linking: 'dynamic' })
+    );
+    expect(getFontIntegrityIssues()).toEqual([
+      expect.objectContaining({ cause }),
+    ]);
+  });
+
+  test('an unusable font source names the argument instead of the reason', async () => {
+    mockIsFontRegistered.mockResolvedValue(false);
+    const cause = Object.assign(new Error('Unsupported font source.'), {
+      code: FONT_SOURCE_CODE,
+    });
+    await reportDynamicFontLoadFailure('Icons-1a2b3c4d', cause);
+    expect(warn.mock.calls[0]![0]).toBe(
+      '🔬 react-native-nano-icons ⚠ Icon font "Icons" has no usable font source, so its icons will render blank. Pass require("Icons.ttf") or { uri } to createNanoIconSet.'
+    );
+    expect(getFontIntegrityIssues()).toEqual([
+      expect.objectContaining({ cause }),
+    ]);
+  });
+
+  test('a font registered by other means leaves no trace', async () => {
+    mockIsFontRegistered.mockResolvedValue(true);
+    await reportMissingDynamicFont('Icons-1a2b3c4d');
+    await reportDynamicFontLoadFailure('Icons-1a2b3c4d', new Error('boom'));
+    expect(mockIsFontRegistered).toHaveBeenCalledWith('Icons-1a2b3c4d');
+    expect(warn).not.toHaveBeenCalled();
+    expect(getFontIntegrityIssues()).toEqual([]);
+  });
+});
+
+describe('warnIfLinkingMismatch', () => {
+  test('a dynamic set without a font records an issue', async () => {
+    mockIsFontRegistered.mockResolvedValue(false);
+    warnIfLinkingMismatch('Icons-1a2b3c4d', 'd', undefined);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(getFontIntegrityIssues()).toEqual([
+      expect.objectContaining({ family: 'Icons-1a2b3c4d', linking: 'dynamic' }),
+    ]);
+  });
+
+  test('a static set given a font only warns', () => {
+    warnIfLinkingMismatch('Icons-1a2b3c4d', undefined, 42);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]![0]).toMatch(
+      /Icon font "Icons" is built with static linking, so the font passed to createNanoIconSet is ignored\./
+    );
+    expect(getFontIntegrityIssues()).toEqual([]);
+  });
+
+  test('consistent arguments stay silent', () => {
+    warnIfLinkingMismatch('Icons-1a2b3c4d', 'd', 42);
+    warnIfLinkingMismatch('Icons-1a2b3c4d', undefined, undefined);
+    expect(warn).not.toHaveBeenCalled();
+    expect(getFontIntegrityIssues()).toEqual([]);
   });
 });

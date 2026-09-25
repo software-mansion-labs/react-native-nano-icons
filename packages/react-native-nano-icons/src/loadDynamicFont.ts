@@ -29,11 +29,21 @@ export function getFontStatus(family: string): FontStatus | undefined {
 /** A font source: a require()'d module, an { uri }, or a path/uri string. */
 export type FontSource = number | string | { uri: string };
 
+export const FONT_SOURCE_CODE = 'E_NANOICONS_FONT_SOURCE';
+
+export function isFontSourceError(err: unknown): boolean {
+  return (err as { code?: unknown } | null)?.code === FONT_SOURCE_CODE;
+}
+
+function fontSourceError(message: string): Error {
+  return Object.assign(runtimeError(message), { code: FONT_SOURCE_CODE });
+}
+
 export function resolveFontUri(font: unknown): string {
   if (typeof font === 'number') {
     const source = Image.resolveAssetSource(font);
     if (!source?.uri) {
-      throw runtimeError('Could not resolve the font asset to a uri.');
+      throw fontSourceError('Could not resolve the font asset to a uri.');
     }
     return source.uri;
   }
@@ -45,7 +55,7 @@ export function resolveFontUri(font: unknown): string {
   ) {
     return (font as { uri: string }).uri;
   }
-  throw runtimeError(
+  throw fontSourceError(
     'Unsupported font source. Pass require("Foo.ttf"), { uri }, or a path string.'
   );
 }

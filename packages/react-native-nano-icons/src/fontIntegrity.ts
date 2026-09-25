@@ -1,12 +1,15 @@
+import { isFontSourceError } from './loadDynamicFont';
 import NanoIconsFontLoader from './nativeFontLoader';
 import { configuredFontFamily } from './utils/fontIdentity';
-import { errorRuntime, warnRuntime } from './utils/runtimeLog';
+import { errorRuntime, LOG_PREFIX, warnRuntime } from './utils/runtimeLog';
 
 export type FontIntegrityIssue = {
   fontFamily: string;
   family: string;
   linking: 'static' | 'dynamic';
   message: string;
+  /** The error behind a dynamic font failure, when there is one. */
+  cause?: unknown;
 };
 
 type Listener = (issue: FontIntegrityIssue) => void;
@@ -70,19 +73,68 @@ export function reportFontMismatch(
   );
 }
 
+export function reportMissingDynamicFont(family: string): Promise<void> {
+  return reportDynamicFontIssue(
+    family,
+    `Icon font "${configuredFontFamily(family)}" is built with dynamic linking but no font was passed to createNanoIconSet, ` +
+      'so its icons will render blank until a font is registered under the family name in glyphMap.m.f.'
+  );
+}
+
+export function reportDynamicFontLoadFailure(
+  family: string,
+  cause: unknown
+): Promise<void> {
+  const name = configuredFontFamily(family);
+  const message = isFontSourceError(cause)
+    ? `Icon font "${name}" has no usable font source, so its icons will render blank. ` +
+      `Pass require("${name}.ttf") or { uri } to createNanoIconSet.`
+    : `Icon font "${name}" could not be loaded: ${describeCause(cause)} Its icons will render blank. ` +
+      'Make sure the .ttf is delivered with your update.';
+
+  return reportDynamicFontIssue(family, message, cause);
+}
+
+function describeCause(cause: unknown): string {
+  const text = (cause instanceof Error ? cause.message : String(cause)).replace(
+    `${LOG_PREFIX} ✖ `,
+    ''
+  );
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+async function reportDynamicFontIssue(
+  family: string,
+  message: string,
+  cause?: unknown
+): Promise<void> {
+  if (await isFontRegistered(family)) return;
+  if (NanoIconsFontLoader) {
+    recordIssue(family, 'dynamic', message, cause);
+  } else if (__DEV__) {
+    warnRuntime(message, ...causeDetail(cause));
+  }
+}
+
+function causeDetail(cause: unknown): unknown[] {
+  return cause === undefined ? [] : [cause];
+}
+
 function recordIssue(
   family: string,
   linking: 'static' | 'dynamic',
-  message: string
+  message: string,
+  cause?: unknown
 ): void {
   const issue: FontIntegrityIssue = {
     fontFamily: configuredFontFamily(family),
     family,
     linking,
     message,
+    ...(cause === undefined ? {} : { cause }),
   };
   issues.set(family, issue);
-  if (__DEV__) warnRuntime(message);
+  if (__DEV__) warnRuntime(message, ...causeDetail(cause));
   for (const listener of listeners) listener(issue);
 }
 

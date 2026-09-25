@@ -11,7 +11,12 @@ import {
 } from './utils/glyphRuntime';
 import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
 import { warnRuntime } from './utils/runtimeLog';
-import { isFontMismatch, reportFontMismatch } from './fontIntegrity';
+import {
+  isFontMismatch,
+  reportDynamicFontLoadFailure,
+  reportFontMismatch,
+  reportMissingDynamicFont,
+} from './fontIntegrity';
 import { configuredFontFamily } from './utils/fontIdentity';
 
 export type { IconComponent, IconProps };
@@ -31,20 +36,14 @@ export function warnIfLinkingMismatch(
   linking: string | undefined,
   font: unknown
 ): void {
-  if (!__DEV__) return;
-
   const isDynamic = linking === 'd';
-  const name = configuredFontFamily(fontFamily);
   if (isDynamic && font == null) {
-    warnRuntime(
-      `Icon font "${name}" is built with dynamic linking but no font was passed to createNanoIconSet, ` +
-        `so its icons will render blank until a font is registered under the family name in glyphMap.m.f.`
-    );
+    void reportMissingDynamicFont(fontFamily);
     return;
   }
-  if (!isDynamic && font != null) {
+  if (__DEV__ && !isDynamic && font != null) {
     warnRuntime(
-      `Icon font "${name}" is built with static linking, so the font passed to createNanoIconSet is ignored. ` +
+      `Icon font "${configuredFontFamily(fontFamily)}" is built with static linking, so the font passed to createNanoIconSet is ignored. ` +
         `Set linking: 'dynamic' in your config to deliver it at runtime.`
     );
   }
@@ -74,8 +73,8 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
     void loadDynamicFont(fontBasename, font).catch((err) => {
       if (isFontMismatch(err)) {
         reportFontMismatch(fontBasename, 'dynamic');
-      } else if (__DEV__) {
-        warnRuntime(`Failed to load dynamic font "${fontBasename}".`, err);
+      } else {
+        void reportDynamicFontLoadFailure(fontBasename, err);
       }
     });
   }
