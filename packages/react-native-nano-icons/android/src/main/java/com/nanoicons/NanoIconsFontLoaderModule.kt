@@ -25,29 +25,36 @@ class NanoIconsFontLoaderModule(reactContext: ReactApplicationContext) :
   override fun getName(): String = NAME
 
   override fun registerFont(family: String, uri: String, promise: Promise) {
-    try {
-      val bytes = openStream(uri).use { it.readBytes() }
-      val postScriptName = TtfNames.postScriptName(bytes)
-      if (postScriptName != family) {
-        promise.reject(
-          "E_NANOICONS_FONT_MISMATCH",
-          "Font name \"$postScriptName\" does not match family \"$family\". " +
-            "The TTF PostScript name must equal glyphMap.m.f."
-        )
+    val bytes =
+      try {
+        openStream(uri).use { it.readBytes() }
+      } catch (e: Exception) {
+        promise.reject(REGISTER_CODE, "Could not read font at $uri", e)
         return
       }
 
+    val postScriptName = runCatching { TtfNames.postScriptName(bytes) }.getOrNull()
+    if (postScriptName == null) {
+      promise.reject(REGISTER_CODE, "Invalid font data")
+      return
+    }
+    if (postScriptName != family) {
+      promise.reject(
+        "E_NANOICONS_FONT_MISMATCH",
+        "Font name \"$postScriptName\" does not match family \"$family\". " +
+          "The TTF PostScript name must equal glyphMap.m.f."
+      )
+      return
+    }
+
+    try {
       val cacheFile = File.createTempFile("nanoicon_", ".ttf", reactApplicationContext.cacheDir)
       cacheFile.writeBytes(bytes)
       val typeface = Typeface.createFromFile(cacheFile)
       NanoIconFonts.register(family, typeface)
       promise.resolve(true)
     } catch (e: Exception) {
-      promise.reject(
-        "E_NANOICONS_FONT_REGISTER",
-        "Failed to register font \"$family\" from $uri: ${e.message}",
-        e
-      )
+      promise.reject(REGISTER_CODE, "Invalid font data", e)
     }
   }
 
@@ -76,6 +83,7 @@ class NanoIconsFontLoaderModule(reactContext: ReactApplicationContext) :
 
   companion object {
     const val NAME = "NanoIconsFontLoader"
+    private const val REGISTER_CODE = "E_NANOICONS_FONT_REGISTER"
   }
 }
 
