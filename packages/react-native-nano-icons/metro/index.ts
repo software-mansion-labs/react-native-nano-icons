@@ -30,6 +30,7 @@ export type MetroServerLike = {
 
 export type MetroConfigLike = {
   projectRoot?: string;
+  watchFolders?: readonly string[];
   server?: {
     enhanceMiddleware?: (
       middleware: Middleware,
@@ -78,6 +79,23 @@ function bufferedLogger(): DevLogger {
   };
 }
 
+function isInside(dir: string, root: string): boolean {
+  const relative = path.relative(root, dir);
+  return !relative.startsWith('..') && !path.isAbsolute(relative);
+}
+
+export function unwatchedIconSets(
+  iconSets: IconSetConfig[],
+  projectRoot: string,
+  watchFolders: readonly string[]
+): IconSetConfig[] {
+  const roots = [projectRoot, ...watchFolders];
+  return iconSets.filter((set) => {
+    const inputDir = path.resolve(projectRoot, set.inputDir);
+    return !roots.some((root) => isInside(inputDir, root));
+  });
+}
+
 export function withNanoIcons<T extends MetroConfigLike>(
   config: T,
   options?: WithNanoIconsOptions
@@ -102,6 +120,16 @@ export function withNanoIcons<T extends MetroConfigLike>(
         `Icon hot reload is off: ${err instanceof Error ? err.message : String(err)}`
       );
       return enhanced;
+    }
+
+    for (const set of unwatchedIconSets(
+      iconSets,
+      projectRoot,
+      config.watchFolders ?? []
+    )) {
+      logger.warn(
+        `Icon set "${set.fontFamily ?? path.basename(set.inputDir)}": ${set.inputDir} is outside Metro's watch folders, so its svg changes will not trigger a rebuild. Add the folder to watchFolders in metro.config.js.`
+      );
     }
 
     const fonts = new FontRebuildWatcher(

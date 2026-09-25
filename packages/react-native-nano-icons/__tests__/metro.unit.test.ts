@@ -27,6 +27,7 @@ import { FontRebuildWatcher, FONT_ROUTE } from '../metro/fontRebuildWatcher';
 import {
   withNanoIcons,
   resolveIconSets,
+  unwatchedIconSets,
   type Middleware,
 } from '../metro/index';
 
@@ -526,6 +527,39 @@ describe('withNanoIcons', () => {
       JSON.stringify({ iconSets: [makeSet('FromFile')] })
     );
     expect(resolveIconSets(root)).toEqual([makeSet('FromFile')]);
+  });
+
+  test('warns once per icon set outside the watch folders', async () => {
+    const outside = path.join(path.dirname(root), 'shared-icons');
+    const config = withNanoIcons(
+      { projectRoot: root, watchFolders: [path.join(root, 'packages')] },
+      {
+        iconSets: [
+          makeSet('A'),
+          { inputDir: path.join(root, 'packages', 'lib', 'icons') },
+          { inputDir: outside, fontFamily: 'Shared' },
+        ],
+      }
+    );
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    config.server.enhanceMiddleware(jest.fn(), metroServer().server);
+    await flush();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = warn.mock.calls[0]![0] as string;
+    expect(message).toContain('"Shared"');
+    expect(message).toContain(outside);
+    expect(message).toContain('watchFolders');
+    warn.mockRestore();
+  });
+
+  test('unwatchedIconSets treats the project root as watched', () => {
+    const inside = makeSet('A');
+    const sibling = { inputDir: path.join(path.dirname(root), 'x') };
+    expect(unwatchedIconSets([inside, sibling], root, [])).toEqual([sibling]);
+    expect(
+      unwatchedIconSets([inside, sibling], root, [path.dirname(root)])
+    ).toEqual([]);
   });
 
   test('a missing config disables hot reload without breaking the server', () => {
