@@ -121,7 +121,7 @@ The plugin accepts an object with an `iconSets` array, allowing you to generate 
 | `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
 | `startUnicode` | `string` | No       | `0xe900`       | The starting Hex Unicode point for the first icon glyph.                                                                   |
 | `linking`      | `'static' \| 'dynamic'` | No | `'static'` | Delivery mode for the generated TTF. `'static'` bundles it into the native app. `'dynamic'` excludes it from native linking so the host app can deliver it at runtime (i.e. via OTA update). See [Dynamic linking](#dynamic-linking-expo-ota-updates-support). |
-| `web`          | `boolean` | No      | `false`        | Also emit `<fontFamily>.woff2` into `outputDir`, rebuilt together with the `.ttf` on every change. It is never linked natively; link it on web like any other web font. See [Web](#web). |
+| `web`          | `boolean` | No      | `false`        | Also emit `<fontFamily>.woff2` into `outputDir`, rebuilt together with the `.ttf` on every change. It is never linked natively; link it on web like any other web font. |
 
   <details>
   <summary>Default Dir Path Behavior</summary>
@@ -168,30 +168,11 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 > [!NOTE]
 > In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/), keyed by `glyphMap.m.f`. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
 
-#### Web
-
-On web the library injects nothing: link the font yourself, like any other web font. Icons render under the configured `fontFamily` (e.g. `ui`), not the hashed `glyphMap.m.f`, so the setup never changes when the icons do. Browsers cache fonts by URL, so version the URL as you would for any web font.
-
-Set `web: true` on an icon set to also get a `<fontFamily>.woff2` next to the `.ttf`. It is regenerated together with the `.ttf` and is typically 45–80% smaller. Link either file:
-
-```css
-@font-face {
-  font-family: "ui";
-  src: url("./assets/icons/nanoicons/ui.woff2") format("woff2");
-}
-```
-
-or with `expo-font`, keyed by the configured name:
-
-```TypeScript
-const [loaded] = useFonts({ ui: require("./assets/icons/nanoicons/ui.woff2") });
-```
-
-Metro does not treat `.woff2` as an asset by default. To `require()` it, add the extension in `metro.config.js`:
-
-```js
-config.resolver.assetExts.push("woff2");
-```
+> [!NOTE]
+> On web, link the font like any other web font, under the set's `fontFamily` (e.g. `ui`), not `glyphMap.m.f`. With `web: true`, each set also gets a `<fontFamily>.woff2` next to the `.ttf`. To import it through Metro (e.g. `require()` with `expo-font`), add this to `metro.config.js`:
+> ```js
+> config.resolver.assetExts.push("woff2");
+> ```
 
 ### 4. Use
 
