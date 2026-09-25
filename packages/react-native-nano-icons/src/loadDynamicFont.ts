@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { Image, Platform } from 'react-native';
+import { FONT_SOURCE_CODE, resolveFontIssue } from './fontIntegrity';
 import NanoIconsFontLoader from './nativeFontLoader';
 import { runtimeError } from './utils/runtimeLog';
 
@@ -28,12 +29,6 @@ export function getFontStatus(family: string): FontStatus | undefined {
 
 /** A font source: a require()'d module, an { uri }, or a path/uri string. */
 export type FontSource = number | string | { uri: string };
-
-export const FONT_SOURCE_CODE = 'E_NANOICONS_FONT_SOURCE';
-
-export function isFontSourceError(err: unknown): boolean {
-  return (err as { code?: unknown } | null)?.code === FONT_SOURCE_CODE;
-}
 
 function fontSourceError(message: string): Error {
   return Object.assign(runtimeError(message), { code: FONT_SOURCE_CODE });
@@ -118,6 +113,7 @@ export function loadDynamicFont(
     try {
       await register(family, resolveFontUri(font));
       setStatus(family, 'ready');
+      resolveFontIssue(family);
     } catch (err) {
       setStatus(family, 'error');
       throw err;

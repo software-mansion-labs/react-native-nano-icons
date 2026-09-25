@@ -1,4 +1,3 @@
-import { isFontSourceError } from './loadDynamicFont';
 import NanoIconsFontLoader from './nativeFontLoader';
 import { configuredFontFamily } from './utils/fontIdentity';
 import { errorRuntime, LOG_PREFIX, warnRuntime } from './utils/runtimeLog';
@@ -12,7 +11,12 @@ export type FontIntegrityIssue = {
   cause?: unknown;
 };
 
-type Listener = (issue: FontIntegrityIssue) => void;
+export type FontIntegrityStatus = 'found' | 'resolved';
+
+type Listener = (
+  issue: FontIntegrityIssue,
+  status: FontIntegrityStatus
+) => void;
 
 const checked = new Set<string>();
 const issues = new Map<string, FontIntegrityIssue>();
@@ -59,6 +63,12 @@ export const FONT_MISMATCH_CODE = 'E_NANOICONS_FONT_MISMATCH';
 
 export function isFontMismatch(err: unknown): boolean {
   return (err as { code?: unknown } | null)?.code === FONT_MISMATCH_CODE;
+}
+
+export const FONT_SOURCE_CODE = 'E_NANOICONS_FONT_SOURCE';
+
+function isFontSourceError(err: unknown): boolean {
+  return (err as { code?: unknown } | null)?.code === FONT_SOURCE_CODE;
 }
 
 export function reportFontMismatch(
@@ -135,12 +145,19 @@ function recordIssue(
   };
   issues.set(family, issue);
   if (__DEV__) warnRuntime(message, ...causeDetail(cause));
-  for (const listener of listeners) listener(issue);
+  for (const listener of listeners) listener(issue, 'found');
+}
+
+export function resolveFontIssue(family: string): void {
+  const issue = issues.get(family);
+  if (!issue) return;
+  issues.delete(family);
+  for (const listener of listeners) listener(issue, 'resolved');
 }
 
 export function addFontIntegrityListener(listener: Listener): () => void {
   listeners.add(listener);
-  for (const issue of issues.values()) listener(issue);
+  for (const issue of issues.values()) listener(issue, 'found');
   return () => {
     listeners.delete(listener);
   };

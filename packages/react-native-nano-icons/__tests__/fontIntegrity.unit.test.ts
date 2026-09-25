@@ -1,9 +1,10 @@
 const mockIsFontRegistered = jest.fn<Promise<boolean>, [string]>();
+const mockRegisterFont = jest.fn<Promise<boolean>, [string, string]>();
 
 jest.mock('../src/specs/NativeNanoIconsFontLoader', () => ({
   __esModule: true,
   default: {
-    registerFont: jest.fn(),
+    registerFont: (...args: [string, string]) => mockRegisterFont(...args),
     isFontRegistered: (family: string) => mockIsFontRegistered(family),
   },
 }));
@@ -17,16 +18,22 @@ import {
   reportFontMismatch,
   reportMissingDynamicFont,
   FONT_MISMATCH_CODE,
+  FONT_SOURCE_CODE,
   __resetFontIntegrityForTests,
 } from '../src/fontIntegrity';
 import { warnIfLinkingMismatch } from '../src/createNanoIconsSet.shared';
-import { FONT_SOURCE_CODE } from '../src/loadDynamicFont';
+import {
+  loadDynamicFont,
+  __resetDynamicFontsForTests,
+} from '../src/loadDynamicFont';
 
 let warn: jest.SpyInstance;
 
 beforeEach(() => {
   __resetFontIntegrityForTests();
+  __resetDynamicFontsForTests();
   mockIsFontRegistered.mockReset();
+  mockRegisterFont.mockReset();
   warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 afterEach(() => warn.mockRestore());
@@ -131,7 +138,8 @@ describe('reportFontMismatch', () => {
         fontFamily: 'Icons',
         family: 'Icons-1a2b3c4d',
         linking: 'dynamic',
-      })
+      }),
+      'found'
     );
     expect(getFontIntegrityIssues()).toHaveLength(1);
   });
@@ -169,7 +177,8 @@ describe('dynamic font issues', () => {
     );
     expect(detail).toBe(cause);
     expect(seen).toHaveBeenCalledWith(
-      expect.objectContaining({ family: 'Icons-1a2b3c4d', linking: 'dynamic' })
+      expect.objectContaining({ family: 'Icons-1a2b3c4d', linking: 'dynamic' }),
+      'found'
     );
     expect(getFontIntegrityIssues()).toEqual([
       expect.objectContaining({ cause }),
@@ -197,6 +206,64 @@ describe('dynamic font issues', () => {
     expect(mockIsFontRegistered).toHaveBeenCalledWith('Icons-1a2b3c4d');
     expect(warn).not.toHaveBeenCalled();
     expect(getFontIntegrityIssues()).toEqual([]);
+  });
+});
+
+describe('resolved issues', () => {
+  test('a later successful load drops the issue and tells listeners', async () => {
+    mockIsFontRegistered.mockResolvedValue(false);
+    const seen = jest.fn();
+    addFontIntegrityListener(seen);
+    await reportDynamicFontLoadFailure('Icons-1a2b3c4d', new Error('boom'));
+    const [issue] = getFontIntegrityIssues();
+
+    mockRegisterFont.mockResolvedValue(true);
+    await loadDynamicFont('Icons-1a2b3c4d', 'file:///Icons.ttf');
+
+    expect(getFontIntegrityIssues()).toEqual([]);
+    expect(seen.mock.calls).toEqual([
+      [issue, 'found'],
+      [issue, 'resolved'],
+    ]);
+  });
+
+  test('a mismatch is dropped once the matching font loads', async () => {
+    reportFontMismatch('Icons-1a2b3c4d', 'dynamic');
+    mockRegisterFont.mockResolvedValue(true);
+    await loadDynamicFont('Icons-1a2b3c4d', 'file:///Icons.ttf', {
+      force: true,
+    });
+    expect(getFontIntegrityIssues()).toEqual([]);
+  });
+
+  test('a failed load keeps the issue', async () => {
+    mockIsFontRegistered.mockResolvedValue(false);
+    await reportMissingDynamicFont('Icons-1a2b3c4d');
+    mockRegisterFont.mockRejectedValue(new Error('still missing'));
+    await expect(
+      loadDynamicFont('Icons-1a2b3c4d', 'file:///Icons.ttf')
+    ).rejects.toThrow('still missing');
+    expect(getFontIntegrityIssues()).toHaveLength(1);
+  });
+
+  test('only the loaded family is dropped', async () => {
+    mockIsFontRegistered.mockResolvedValue(false);
+    await checkFontIntegrity('Static-0badf00d', 'static');
+    await reportMissingDynamicFont('Icons-1a2b3c4d');
+    mockRegisterFont.mockResolvedValue(true);
+    await loadDynamicFont('Icons-1a2b3c4d', 'file:///Icons.ttf');
+    expect(getFontIntegrityIssues()).toEqual([
+      expect.objectContaining({ family: 'Static-0badf00d' }),
+    ]);
+  });
+
+  test('late subscribers get no replay of a resolved issue', async () => {
+    reportFontMismatch('Icons-1a2b3c4d', 'dynamic');
+    mockRegisterFont.mockResolvedValue(true);
+    await loadDynamicFont('Icons-1a2b3c4d', 'file:///Icons.ttf');
+    const late = jest.fn();
+    addFontIntegrityListener(late);
+    expect(late).not.toHaveBeenCalled();
   });
 });
 

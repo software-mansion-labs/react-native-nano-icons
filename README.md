@@ -281,15 +281,15 @@ At startup the library checks, once per icon set, that a font named `glyphMap.m.
 ```TypeScript
 import { addFontIntegrityListener, getFontIntegrityIssues } from "react-native-nano-icons";
 
-addFontIntegrityListener((issue) => {
+addFontIntegrityListener((issue, status) => {
   // issue.fontFamily → "ui", issue.family → "ui-1a2b3c4d", issue.linking → "static" | "dynamic"
-  Sentry.captureMessage(issue.message, { extra: issue });
+  if (status === "found") Sentry.captureMessage(issue.message, { extra: issue });
 });
 
-getFontIntegrityIssues(); // issues found so far
+getFontIntegrityIssues(); // current issues
 ```
 
-Listeners added after an issue was found receive it immediately.
+Listeners added after an issue was found receive it immediately. When a font for that set loads later (for example through `loadFont`), the issue is dropped and listeners receive it again with status `"resolved"`.
 
 ---
 
