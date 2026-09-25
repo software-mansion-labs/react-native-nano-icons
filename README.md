@@ -165,6 +165,24 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 > [!TIP]
 > Run `EXPO_DEBUG=1 npx expo prebuild` or `npx react-native-nano-icons --verbose` to get font build-time logs.
 
+#### Hot reload in development (optional)
+
+Wrap your Metro config so icon fonts rebuild whenever an SVG in a configured `inputDir` changes, and the running dev app picks the new font up — no native rebuild, no manual CLI run:
+
+```js
+// metro.config.js
+const { withNanoIcons } = require('react-native-nano-icons/metro');
+
+module.exports = withNanoIcons(config);
+```
+
+It reads the same config the CLI and the config plugin use (`.nanoicons.json`, otherwise the plugin entry in the app config), builds every set when Metro starts and rebuilds only the sets whose SVGs changed. The rebuilt `.glyphmap.json` reaches the app through Fast Refresh; the `.ttf` is served by Metro and registered by the library in development builds, for static and dynamic sets alike. If a rebuild fails, the app keeps the last good font and the error is printed in the Metro terminal. Icons that did not change are not processed again, and the `.woff2` of a `web: true` set is only produced once Metro has served a web bundle.
+
+Release bundles and native builds are untouched: fonts are linked exactly as configured, and a stale natively linked font still reports the usual integrity warning.
+
+> [!NOTE]
+> Expo Go cannot register fonts natively, so hot reload needs a development build. Keep the module that calls `createNanoIconSet` exporting only components so Fast Refresh swaps the icon set in place instead of reloading the app.
+
 > [!NOTE]
 > In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/), keyed by `glyphMap.m.f`. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
 
