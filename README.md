@@ -275,23 +275,24 @@ The CLI rebuilds only the sets defined with `linking: "dynamic"`, and skips all 
 
 ### Font integrity check
 
-At startup the library checks, once per icon set, that a font named `glyphMap.m.f` is available to the renderer. When the glyphmap in your JS bundle comes from a newer build than the font in the binary (for example after regenerating icons without rebuilding the app), the check fails:
-
-- in development a warning is printed: `🔬 react-native-nano-icons ⚠ Icon font "ui" is missing or out of date, so its icons will render blank. Regenerate the icon fonts with the react-native-nano-icons CLI.`
-- in every build the issue is recorded, so your monitoring can pick up a faulty release:
+Every icon build is deterministic: the same SVGs, config and toolchain produce the same font identity, and the glyphmap refers to that exact font. At startup the library checks, once per icon set, that this font is available to the renderer, so the app always renders the font its glyphmap refers to. The check fails when the glyphmap in the JS bundle and the font in the app come from different builds, for example after an OTA update that changed icons without a new binary. In development a warning is printed. In every build the issue is recorded:
 
 ```TypeScript
 import { addFontIntegrityListener, getFontIntegrityIssues } from "react-native-nano-icons";
 
 addFontIntegrityListener((issue, status) => {
-  // issue.fontFamily → "ui", issue.family → "ui-1a2b3c4d", issue.linking → "static" | "dynamic"
-  if (status === "found") Sentry.captureMessage(issue.message, { extra: issue });
+  // status: "found" | "resolved"
 });
 
 getFontIntegrityIssues(); // current issues
 ```
 
-Listeners added after an issue was found receive it immediately. When a font for that set loads later (for example through `loadFont`), the issue is dropped and listeners receive it again with status `"resolved"`.
+- `"found"`: the set's font is missing or out of date, so its icons render blank. A listener added later receives the current issues immediately.
+- `"resolved"`: a font for that set loaded later (for example through `loadFont`), and the issue was dropped.
+
+Forward `"found"` issues to your error monitoring (e.g. Sentry) to catch a bad OTA update.
+
+For every scenario and its message, see [FONT_INTEGRITY.md](packages/react-native-nano-icons/docs/FONT_INTEGRITY.md).
 
 ---
 
