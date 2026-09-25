@@ -1,11 +1,12 @@
 # Font integrity — scenario map
 
-Legend: `✔` silent · `⚠` dev warning + issue recorded · `✖` dev error · `▢` icons blank (iOS) / boxes (Android)
+Legend: `✔` silent · `⚠` dev warning + issue recorded · `△` dev warning only · `✖` dev error · `▢` icons blank
 
 ## Build identity
 
 ```
-fingerprint = sha256( svg names + contents , upm , safeZone , startUnicode , library version )
+fingerprint = sha256( svg names + contents , upm , safeZone , startUnicode , library version ,
+                      installed versions of @xmldom/xmldom, cubic2quad, fonteditor-core, pathkit-wasm, svg2ttf )
 family      = <fontFamily>-<hash8>          → glyphMap.m.f  ==  TTF name table
 files       = <fontFamily>.ttf / .glyphmap.json   (unchanged)
 ```
@@ -18,7 +19,7 @@ fingerprint vs stored m.h
 └─ differs ─────────────── rebuild, outputs overwritten in place (Metro picks it up)
      ├─ svg edited
      ├─ upm / safeZone / startUnicode changed
-     └─ library upgraded
+     └─ library or font toolchain upgraded (a dependency resolved to a new version)
 build fails ────────────── outputs deleted, other sets still linked, exit 1
 
 linking (full run)                     iOS                          Android
@@ -36,27 +37,37 @@ Expo plugin ────────────── same rules on Android; iO
 ## Runtime (per set, at `createNanoIconSet`)
 
 ```
-native module absent (Expo Go, web) ─────────── ✔ nothing checked
+native module absent (Expo Go, web) ─────────── ✔ nothing checked or recorded
+Expo Go ─────────────────────────────────────── draws through Text, so an unlinked font shows tofu;
+                                               △ a dynamic set warns when no font is passed or it cannot be loaded
+font check ──────────────────────────────────── the lookup the icon view draws with; a system fallback never counts, and
+                                               views that drew nothing pick the font up once it registers
 native module present
 ├─ isFontRegistered missing (binary older than JS)
 │                                            ✖ "…older version of react-native-nano-icons. Rebuild the app."   once per session
 ├─ static set
-│  ├─ font argument passed ──────────────── ⚠ "…built with static linking, so the font passed … is ignored."
+│  ├─ font argument passed ──────────────── △ "…built with static linking, so the font passed … is ignored."
 │  ├─ font named m.f resident ───────────── ✔
 │  └─ not resident (fonts rebuilt, app not) ▢ ⚠ "…missing or out of date… Regenerate the icon fonts…"
 └─ dynamic set
+   ├─ m.f already registered in this process ✔ icons render, nothing recorded, whatever the font argument
+   │                                          (expo-font, an earlier load; registrations live until the process exits)
    ├─ no font argument ──────────────────── ▢ ⚠ "…no font was passed… registered under … glyphMap.m.f"
    ├─ font argument, TTF name == m.f
    │  ├─ same build as bundled ──────────── ✔ duplicate registration resolves
    │  └─ new build (OTA) ────────────────── ✔ coexists with the bundled font
    ├─ font argument, TTF name != m.f ────── ▢ ⚠ "…does not match its glyphmap… deliver the .ttf together with its .glyphmap.json."
-   └─ load fails (I/O, bad uri) ─────────── ▢ ⚠ "Failed to load dynamic font …" + error
+   ├─ font argument is not a usable source ▢ ⚠ "…has no usable font source… Pass require(\"X.ttf\") or { uri }…"
+   ├─ load fails (I/O, bad uri, bad data) ─ ▢ ⚠ "…could not be loaded: <reason>… Make sure the .ttf is delivered with your update."
+   │                                          reason: "Could not read font at <uri>" · "Invalid font data"
+   └─ font loads later (loadFont, own load) ✔ issue dropped, listeners get it with status 'resolved'
 ```
 
 ```
-release build ───── ⚠ lines silent · issues still recorded
-addFontIntegrityListener(fn) ─── fires on new issues · replays existing ones on subscribe
-getFontIntegrityIssues() ─────── { fontFamily, family, linking, message }[]
+release build ───── ⚠ △ lines silent · issues still recorded
+addFontIntegrityListener((issue, status) => …)
+                          ─────── 'found' on a new issue · 'resolved' when it is dropped · replays current issues as 'found'
+getFontIntegrityIssues() ─────── current issues: { fontFamily, family, linking, message, cause? }[]
 ```
 
 ## Producing the states
@@ -65,4 +76,8 @@ getFontIntegrityIssues() ─────── { fontFamily, family, linking, me
 stale static ───── edit an svg → CLI → reload JS only          (rebuild app = fixed)
 old binary ─────── install app from main → run JS from this branch
 OTA mismatch ───── linking: dynamic → CLI --dynamic → copy an older .ttf over the output
+late font ──────── bad { uri } or no font → icons blank → OTA with the file, or loadFont(require(…)) → icons return,
+                   issue resolved, no restart. A font registered outside the library (expo-font, a native call)
+                   repairs the views but leaves the issue
+same process ───── a font stays registered until the app is force-quit; a later bad source cannot regress it and is not reported
 ```
