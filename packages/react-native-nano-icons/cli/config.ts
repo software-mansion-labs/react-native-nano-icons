@@ -17,7 +17,7 @@ export function loadNanoIconsConfig(configRoot: string): NanoIconsConfig {
     throw new Error(
       `🔬❌ [react-native-nano-icons] No .nanoicons.json found at (${configRoot}).\n` +
         `Create one with: { "iconSets": [{ "inputDir": "assets/icons", "fontFamily": "MyIcons" }] } \n` +
-        `Run from your app root, or pass --path <app root>.`
+        `Run from your app root, or pass --path <app folder or .nanoicons.json>.`
     );
   }
 

@@ -135,7 +135,7 @@ The plugin accepts an object with an `iconSets` array, allowing you to generate 
 
 Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 
-1. **Config** – Add a `.nanoicons.json` to your app root with the same `iconSets` shape as the Expo plugin (see options above). Paths in it are relative to the app root.
+1. **Config** – Add a `.nanoicons.json` with the same `iconSets` shape as the Expo plugin (see options above). Paths in it are relative to the app root.
    <details>
     <summary>.nanoicons.json example</summary>
 
@@ -157,7 +157,7 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
    npx react-native-nano-icons
    ```
 
-   From anywhere else (for example a monorepo root), point it at the app: `--path apps/mobile`. It reads the config, builds and links there.
+   If the config lives elsewhere in the app, pass it: `--path path/to/.nanoicons.json`. From outside the app (for example a monorepo root), pass the app folder: `--path apps/mobile`. A folder with a `package.json` counts as the app, so the CLI reads the config, builds and links there.
 
    This works exactly like the config plugin, removing any necessity for manual Xcode/Android Studio font linking steps.
 

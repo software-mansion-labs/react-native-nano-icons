@@ -113,76 +113,104 @@ describe('cli main', () => {
     expect(mockLinkBare).not.toHaveBeenCalled();
   });
 
+  const tempDirs: string[] = [];
+
+  function makeFolder(isApp: boolean): string {
+    const dir = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'nano-cli-'))
+    );
+    tempDirs.push(dir);
+    if (isApp) fs.writeFileSync(path.join(dir, 'package.json'), '{}');
+    fs.writeFileSync(path.join(dir, '.nanoicons.json'), '{"iconSets":[]}');
+    return dir;
+  }
+
+  afterEach(() => {
+    for (const dir of tempDirs.splice(0)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  function expectFullRun(configRoot: string, appRoot: string): void {
+    expect(mockLoadNanoIconsConfig).toHaveBeenCalledWith(configRoot);
+    expect(mockBuildAllFonts).toHaveBeenCalledWith(
+      SETS,
+      appRoot,
+      expect.anything()
+    );
+    expect(mockLinkBare).toHaveBeenCalledWith(
+      appRoot,
+      BUILT,
+      expect.anything(),
+      SETS.length
+    );
+  }
+
   test('without --path the current directory is the app root', async () => {
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
     await main(silentLogger());
 
-    expect(mockLoadNanoIconsConfig).toHaveBeenCalledWith(process.cwd());
-    expect(mockBuildAllFonts).toHaveBeenCalledWith(
-      SETS,
-      process.cwd(),
-      expect.anything()
-    );
+    expectFullRun(process.cwd(), process.cwd());
   });
 
-  test('--path is the app root for reading, building and linking', async () => {
-    process.argv = ['node', 'cli', '--path', 'apps/mobile'];
+  test('--path to an app folder reads, builds and links there', async () => {
+    const app = makeFolder(true);
+    process.argv = ['node', 'cli', '--path', app];
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
     await main(silentLogger());
 
-    const appRoot = path.resolve(process.cwd(), 'apps/mobile');
-    expect(mockLoadNanoIconsConfig).toHaveBeenCalledWith(appRoot);
-    expect(mockBuildAllFonts).toHaveBeenCalledWith(
-      SETS,
-      appRoot,
-      expect.anything()
-    );
-    expect(mockLinkBare).toHaveBeenCalledWith(
-      appRoot,
-      BUILT,
-      expect.anything(),
-      SETS.length
-    );
+    expectFullRun(app, app);
   });
 
-  test('--path to the .nanoicons.json file means its folder', async () => {
-    const appRoot = fs.realpathSync(
-      fs.mkdtempSync(path.join(os.tmpdir(), 'nano-cli-'))
-    );
-    const configFile = path.join(appRoot, '.nanoicons.json');
-    fs.writeFileSync(configFile, '{"iconSets":[]}');
-    process.argv = ['node', 'cli', '--path', configFile];
+  test("--path to an app's .nanoicons.json means that app", async () => {
+    const app = makeFolder(true);
+    process.argv = ['node', 'cli', '--path', path.join(app, '.nanoicons.json')];
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
-    try {
-      await main(silentLogger());
-    } finally {
-      fs.rmSync(appRoot, { recursive: true, force: true });
-    }
+    await main(silentLogger());
 
-    expect(mockLoadNanoIconsConfig).toHaveBeenCalledWith(appRoot);
-    expect(mockLinkBare).toHaveBeenCalledWith(
-      appRoot,
-      BUILT,
-      expect.anything(),
-      SETS.length
-    );
+    expectFullRun(app, app);
   });
 
-  test('--dynamic with --path reads and builds in that app root', async () => {
-    process.argv = ['node', 'cli', '--dynamic', '--path', 'apps/mobile'];
+  test('--path to a config folder reads the config there and builds and links in the current directory', async () => {
+    const configFolder = makeFolder(false);
+    process.argv = ['node', 'cli', '--path', configFolder];
+    mockBuildAllFonts.mockResolvedValue(BUILT);
+
+    await main(silentLogger());
+
+    expectFullRun(configFolder, process.cwd());
+  });
+
+  test('--path to a .nanoicons.json outside an app folder keeps the current directory as the app', async () => {
+    const configFolder = makeFolder(false);
+    process.argv = [
+      'node',
+      'cli',
+      '--path',
+      path.join(configFolder, '.nanoicons.json'),
+    ];
+    mockBuildAllFonts.mockResolvedValue(BUILT);
+
+    await main(silentLogger());
+
+    expectFullRun(configFolder, process.cwd());
+  });
+
+  test('--dynamic with --path to an app folder reads and builds there', async () => {
+    const app = makeFolder(true);
+    process.argv = ['node', 'cli', '--dynamic', '--path', app];
     mockLoadDynamicIconSets.mockReturnValue([SETS[2]]);
     mockBuildAllFonts.mockResolvedValue([]);
 
     await main(silentLogger());
 
-    const appRoot = path.resolve(process.cwd(), 'apps/mobile');
-    expect(mockLoadDynamicIconSets).toHaveBeenCalledWith(appRoot);
+    expect(mockLoadDynamicIconSets).toHaveBeenCalledWith(app);
     expect(mockBuildAllFonts).toHaveBeenCalledWith(
       [SETS[2]],
-      appRoot,
+      app,
       expect.anything()
     );
   });
@@ -204,25 +232,18 @@ describe('cli main', () => {
     );
   });
 
-  test('--app-config with --path reads and builds in that app root', async () => {
-    process.argv = [
-      'node',
-      'cli',
-      '--dynamic',
-      '--app-config',
-      '--path',
-      'apps/mobile',
-    ];
+  test('--app-config with --path to an app folder reads and builds there', async () => {
+    const app = makeFolder(true);
+    process.argv = ['node', 'cli', '--dynamic', '--app-config', '--path', app];
     mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[2]]);
     mockBuildAllFonts.mockResolvedValue([]);
 
     await main(silentLogger());
 
-    const appRoot = path.resolve(process.cwd(), 'apps/mobile');
-    expect(mockLoadDynamicSetsFromAppConfig).toHaveBeenCalledWith(appRoot);
+    expect(mockLoadDynamicSetsFromAppConfig).toHaveBeenCalledWith(app);
     expect(mockBuildAllFonts).toHaveBeenCalledWith(
       [SETS[2]],
-      appRoot,
+      app,
       expect.anything()
     );
     expect(mockLinkBare).not.toHaveBeenCalled();
