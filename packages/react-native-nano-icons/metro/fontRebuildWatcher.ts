@@ -47,7 +47,7 @@ export type Next = (err?: unknown) => void;
 
 export type DevLogger = NanoLogger & { notify(msg: string): void };
 
-export class DevSession {
+export class FontRebuildWatcher {
   private readonly setsByInputDir = new Map<string, IconSetConfig>();
   private readonly fontsByFamily = new Map<string, BuiltFont>();
   private readonly dirty = new Map<IconSetConfig, string[]>();

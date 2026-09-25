@@ -22,8 +22,8 @@ import {
   type BuiltFont,
   type IconSetConfig,
 } from '../cli/build';
-import type { DevLogger } from '../metro/devSession';
-import { DevSession, FONT_ROUTE } from '../metro/devSession';
+import type { DevLogger } from '../metro/fontRebuildWatcher';
+import { FontRebuildWatcher, FONT_ROUTE } from '../metro/fontRebuildWatcher';
 import {
   withNanoIcons,
   resolveIconSets,
@@ -111,11 +111,11 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-describe('DevSession — watching', () => {
+describe('FontRebuildWatcher — watching', () => {
   test('builds every set once on start', async () => {
     const watcher = new EventEmitter();
     const sets = [makeSet('A'), makeSet('B')];
-    new DevSession(root, sets, watcher, logger);
+    new FontRebuildWatcher(root, sets, watcher, logger);
     await flush();
     expect(mockBuildAllFonts).toHaveBeenCalledTimes(1);
     expect(mockBuildAllFonts.mock.calls[0]![0]).toEqual(sets);
@@ -128,10 +128,10 @@ describe('DevSession — watching', () => {
     );
   });
 
-  test('one prepare cache is shared by every build of the session', async () => {
+  test('one prepare cache is shared by every build of the watcher', async () => {
     const watcher = new EventEmitter();
     const a = makeSet('A');
-    new DevSession(root, [a], watcher, logger);
+    new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
     watcher.emit('change', {
       eventsQueue: [{ filePath: svgPath(a, 'x.svg'), type: 'change' }],
@@ -148,7 +148,7 @@ describe('DevSession — watching', () => {
   test('an svg change rebuilds only the set that owns it', async () => {
     const watcher = new EventEmitter();
     const [a, b] = [makeSet('A'), makeSet('B')];
-    new DevSession(root, [a, b], watcher, logger);
+    new FontRebuildWatcher(root, [a, b], watcher, logger);
     await flush();
 
     watcher.emit('change', {
@@ -163,7 +163,7 @@ describe('DevSession — watching', () => {
   test('announces what changed before rebuilding', async () => {
     const watcher = new EventEmitter();
     const a = makeSet('A');
-    new DevSession(root, [a], watcher, logger);
+    new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
     expect(logged.filter((l) => l.startsWith('notify'))).toEqual([]);
 
@@ -186,7 +186,7 @@ describe('DevSession — watching', () => {
   test('added files wait for the burst to settle, edits do not', async () => {
     const watcher = new EventEmitter();
     const a = makeSet('A');
-    new DevSession(root, [a], watcher, logger);
+    new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
 
     for (const file of ['1.svg', '2.svg', '3.svg']) {
@@ -209,7 +209,7 @@ describe('DevSession — watching', () => {
   test('add and delete count as changes', async () => {
     const watcher = new EventEmitter();
     const a = makeSet('A');
-    new DevSession(root, [a], watcher, logger);
+    new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
 
     watcher.emit('change', {
@@ -227,7 +227,7 @@ describe('DevSession — watching', () => {
   test('files outside the input dirs, non-svg files and nested dirs are ignored', async () => {
     const watcher = new EventEmitter();
     const a = makeSet('A');
-    new DevSession(root, [a], watcher, logger);
+    new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
 
     watcher.emit('change', {
@@ -249,7 +249,7 @@ describe('DevSession — watching', () => {
   test('a burst of events is coalesced into one build', async () => {
     const watcher = new EventEmitter();
     const [a, b] = [makeSet('A'), makeSet('B')];
-    new DevSession(root, [a, b], watcher, logger);
+    new FontRebuildWatcher(root, [a, b], watcher, logger);
     await flush();
 
     for (const file of ['1.svg', '2.svg', '3.svg']) {
@@ -276,7 +276,7 @@ describe('DevSession — watching', () => {
           release = () => resolve(sets.map((s) => builtFont(s, 'aaaaaaaa')));
         })
     );
-    new DevSession(root, [a], watcher, logger);
+    new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
     expect(mockBuildAllFonts).toHaveBeenCalledTimes(1);
 
@@ -292,24 +292,24 @@ describe('DevSession — watching', () => {
   });
 });
 
-describe('DevSession — web output', () => {
+describe('FontRebuildWatcher — web output', () => {
   test('woff2 is deferred until a web bundle is requested', async () => {
     const watcher = new EventEmitter();
     const native = makeSet('A');
     const web = { ...makeSet('B'), web: true };
-    const session = new DevSession(root, [native, web], watcher, logger);
+    const fonts = new FontRebuildWatcher(root, [native, web], watcher, logger);
     await flush();
     expect(mockBuildAllFonts.mock.calls[0]![2]).toEqual(
       expect.objectContaining({ withWeb: false })
     );
 
     const ios = request('/index.bundle?platform=ios&dev=true');
-    session.middleware(ios.req, ios.res, ios.next);
+    fonts.middleware(ios.req, ios.res, ios.next);
     await flush();
     expect(mockBuildAllFonts).toHaveBeenCalledTimes(1);
 
     const browser = request('/index.bundle?platform=web&dev=true');
-    session.middleware(browser.req, browser.res, browser.next);
+    fonts.middleware(browser.req, browser.res, browser.next);
     expect(browser.next).toHaveBeenCalledTimes(1);
     await flush();
     expect(mockBuildAllFonts).toHaveBeenCalledTimes(2);
@@ -320,7 +320,7 @@ describe('DevSession — web output', () => {
     expect(logged).toContain('notify B: web bundle requested, rebuilding…');
 
     const again = request('/assets/?unstable_path=x.png&platform=web');
-    session.middleware(again.req, again.res, again.next);
+    fonts.middleware(again.req, again.res, again.next);
     await flush();
     expect(mockBuildAllFonts).toHaveBeenCalledTimes(2);
 
@@ -334,15 +334,15 @@ describe('DevSession — web output', () => {
   });
 });
 
-describe('DevSession — font endpoint', () => {
+describe('FontRebuildWatcher — font endpoint', () => {
   test('serves the current build of a family and moves on after a rebuild', async () => {
     const watcher = new EventEmitter();
     const a = makeSet('A');
-    const session = new DevSession(root, [a], watcher, logger);
+    const fonts = new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
 
     const first = request(`${FONT_ROUTE}A-aaaaaaaa.ttf`);
-    session.middleware(first.req, first.res, first.next);
+    fonts.middleware(first.req, first.res, first.next);
     expect(await first.res.body()).toBe('ttf:A:aaaaaaaa');
     expect(first.res.statusCode).toBe(200);
     expect(first.res.headers['Content-Type']).toBe('font/ttf');
@@ -358,17 +358,17 @@ describe('DevSession — font endpoint', () => {
     await flush();
 
     const stale = request(`${FONT_ROUTE}A-aaaaaaaa.ttf`);
-    session.middleware(stale.req, stale.res, stale.next);
+    fonts.middleware(stale.req, stale.res, stale.next);
     await stale.res.body();
     expect(stale.res.statusCode).toBe(404);
 
     const fresh = request(`${FONT_ROUTE}A-bbbbbbbb.ttf?x=1`);
-    session.middleware(fresh.req, fresh.res, fresh.next);
+    fonts.middleware(fresh.req, fresh.res, fresh.next);
     expect(await fresh.res.body()).toBe('ttf:A:bbbbbbbb');
   });
 
   test('HEAD answers with headers and no body', async () => {
-    const session = new DevSession(
+    const fonts = new FontRebuildWatcher(
       root,
       [makeSet('A')],
       new EventEmitter(),
@@ -377,7 +377,7 @@ describe('DevSession — font endpoint', () => {
     await flush();
 
     const { req, res, next } = request(`${FONT_ROUTE}A-aaaaaaaa.ttf`, 'HEAD');
-    session.middleware(req, res, next);
+    fonts.middleware(req, res, next);
     expect(await res.body()).toBe('');
     expect(res.statusCode).toBe(200);
     expect(res.headers['Content-Type']).toBe('font/ttf');
@@ -393,11 +393,11 @@ describe('DevSession — font endpoint', () => {
           release = () => resolve(sets.map((s) => builtFont(s, 'aaaaaaaa')));
         })
     );
-    const session = new DevSession(root, [a], watcher, logger);
+    const fonts = new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
 
     const { req, res, next } = request(`${FONT_ROUTE}A-aaaaaaaa.ttf`);
-    session.middleware(req, res, next);
+    fonts.middleware(req, res, next);
     let answered = false;
     const body = res.body().then((b) => {
       answered = true;
@@ -411,7 +411,7 @@ describe('DevSession — font endpoint', () => {
   });
 
   test('unknown families are 404, other routes fall through', async () => {
-    const session = new DevSession(
+    const fonts = new FontRebuildWatcher(
       root,
       [makeSet('A')],
       new EventEmitter(),
@@ -420,7 +420,7 @@ describe('DevSession — font endpoint', () => {
     await flush();
 
     const unknown = request(`${FONT_ROUTE}Nope-12345678.ttf`);
-    session.middleware(unknown.req, unknown.res, unknown.next);
+    fonts.middleware(unknown.req, unknown.res, unknown.next);
     await unknown.res.body();
     expect(unknown.res.statusCode).toBe(404);
     expect(unknown.next).not.toHaveBeenCalled();
@@ -430,7 +430,7 @@ describe('DevSession — font endpoint', () => {
       [`${FONT_ROUTE}A-aaaaaaaa.ttf`, 'POST'],
     ] as const) {
       const other = request(url, method);
-      session.middleware(other.req, other.res, other.next);
+      fonts.middleware(other.req, other.res, other.next);
       expect(other.next).toHaveBeenCalledTimes(1);
     }
   });
@@ -438,7 +438,7 @@ describe('DevSession — font endpoint', () => {
   test('a failed set keeps serving its last good build', async () => {
     const watcher = new EventEmitter();
     const a = makeSet('A');
-    const session = new DevSession(root, [a], watcher, logger);
+    const fonts = new FontRebuildWatcher(root, [a], watcher, logger);
     await flush();
 
     const { IconSetBuildError } = jest.requireActual('../cli/build');
@@ -451,7 +451,7 @@ describe('DevSession — font endpoint', () => {
     await flush();
 
     const { req, res, next } = request(`${FONT_ROUTE}A-aaaaaaaa.ttf`);
-    session.middleware(req, res, next);
+    fonts.middleware(req, res, next);
     expect(await res.body()).toBe('ttf:A:aaaaaaaa');
   });
 });

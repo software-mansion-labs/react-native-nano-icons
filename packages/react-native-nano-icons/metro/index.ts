@@ -10,11 +10,11 @@ import {
   type NanoLogger,
 } from '../cli/index';
 import {
-  DevSession,
+  FontRebuildWatcher,
   type DevLogger,
   type FileWatcher,
   type Next,
-} from './devSession';
+} from './fontRebuildWatcher';
 
 export type { IconSetConfig };
 
@@ -104,14 +104,14 @@ export function withNanoIcons<T extends MetroConfigLike>(
       return enhanced;
     }
 
-    const session = new DevSession(
+    const fonts = new FontRebuildWatcher(
       projectRoot,
       iconSets,
       server.getBundler().getBundler().getWatcher(),
       logger
     );
     return (req, res, next) =>
-      session.middleware(req, res, () => enhanced(req, res, next));
+      fonts.middleware(req, res, () => enhanced(req, res, next));
   };
 
   return {
