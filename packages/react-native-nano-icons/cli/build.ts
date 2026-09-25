@@ -1,6 +1,9 @@
 import path from 'path';
 import fs from 'fs';
-import { runFontPipeline } from '../src/core/pipeline/index';
+import {
+  runFontPipeline,
+  type PreparedSvgCache,
+} from '../src/core/pipeline/index';
 import type { NanoLogger } from './logger';
 import { getFingerprintSync } from '../src/utils/fingerPrint';
 import {
@@ -49,12 +52,20 @@ const DEFAULT_SAFE_ZONE_RATIO = 1020 / 1024;
 const DEFAULT_UPM = 1024;
 const DEFAULT_START_UNICODE = 0xe900;
 
+type WebOutput = 'required' | 'forbidden' | 'ignored';
+
+function webOutputFor(configured: boolean, withWeb: boolean): WebOutput {
+  if (!configured) return 'forbidden';
+  if (withWeb) return 'required';
+  return 'ignored';
+}
+
 function familyOfCurrentOutput(
   inputHash: string,
   outputDir: string,
   fontFamily: string,
   linking: 'static' | 'dynamic',
-  web: boolean,
+  webOutput: WebOutput,
   logger?: NanoLogger
 ): string | undefined {
   const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
@@ -65,7 +76,7 @@ function familyOfCurrentOutput(
     !fs.existsSync(outputDir) ||
     !fs.existsSync(ttfPath) ||
     !fs.existsSync(glyphmapPath) ||
-    (web && !fs.existsSync(woff2Path))
+    (webOutput === 'required' && !fs.existsSync(woff2Path))
   ) {
     return undefined;
   }
@@ -76,13 +87,15 @@ function familyOfCurrentOutput(
   const storedLinking: 'static' | 'dynamic' =
     glyphmap?.m?.l === 'd' ? 'dynamic' : 'static';
   const storedWeb = glyphmap?.m?.w === true;
+  const webCurrent =
+    webOutput === 'ignored' || storedWeb === (webOutput === 'required');
 
   if (
     storedHash &&
     storedFamily &&
     storedHash === inputHash &&
     storedLinking === linking &&
-    storedWeb === web
+    webCurrent
   ) {
     const iconCount = Object.keys(glyphmap?.i ?? {}).length;
     logger?.succeed(
@@ -104,8 +117,14 @@ function familyOfCurrentOutput(
 export async function buildAllFonts(
   iconSets: IconSetConfig[],
   projectRoot: string,
-  options?: { logger?: NanoLogger }
+  options?: {
+    logger?: NanoLogger;
+    keepOutputsOnFailure?: boolean;
+    preparedSvgCache?: PreparedSvgCache;
+    withWeb?: boolean;
+  }
 ): Promise<BuiltFont[]> {
+  const withWeb = options?.withWeb ?? true;
   const logger = options?.logger;
   const version = packageVersion();
   const toolchain = fontToolchainVersions();
@@ -118,7 +137,8 @@ export async function buildAllFonts(
     const inputDir = path.resolve(projectRoot, set.inputDir);
     const fontFamily = set.fontFamily ?? path.basename(inputDir);
     const linking: 'static' | 'dynamic' = set.linking ?? 'static';
-    const web = set.web ?? false;
+    const web = (set.web ?? false) && withWeb;
+    const webOutput = webOutputFor(set.web ?? false, withWeb);
 
     if (!fs.existsSync(inputDir)) {
       throw new Error(
@@ -168,7 +188,7 @@ export async function buildAllFonts(
       outputDir,
       fontFamily,
       linking,
-      web,
+      webOutput,
       logger
     );
     if (currentFamily) {
@@ -188,19 +208,23 @@ export async function buildAllFonts(
 
     logger?.start(`Building ${fontFamily} (${i + 1}/${iconSets.length})…`);
 
-    if (!web && fs.existsSync(woff2Path)) fs.unlinkSync(woff2Path);
+    if (webOutput === 'forbidden' && fs.existsSync(woff2Path)) {
+      fs.unlinkSync(woff2Path);
+    }
 
     let out;
     try {
       out = await runFontPipeline(
         config,
         { inputDir, outputDir, tempDir },
-        { logger, inputHash }
+        { logger, inputHash, preparedSvgCache: options?.preparedSvgCache }
       );
     } catch (err) {
-      if (fs.existsSync(ttfPath)) fs.unlinkSync(ttfPath);
-      if (fs.existsSync(glyphmapPath)) fs.unlinkSync(glyphmapPath);
-      if (fs.existsSync(woff2Path)) fs.unlinkSync(woff2Path);
+      if (!options?.keepOutputsOnFailure) {
+        if (fs.existsSync(ttfPath)) fs.unlinkSync(ttfPath);
+        if (fs.existsSync(glyphmapPath)) fs.unlinkSync(glyphmapPath);
+        if (fs.existsSync(woff2Path)) fs.unlinkSync(woff2Path);
+      }
       logger?.fail(err instanceof Error ? err.message : String(err));
       failures.push(fontFamily);
       continue;

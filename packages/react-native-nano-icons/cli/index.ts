@@ -4,6 +4,7 @@ export {
   type IconSetConfig,
   type BuiltFont,
 } from './build';
+export type { PreparedSvgCache } from '../src/core/pipeline/index';
 export {
   createOraLogger,
   createQuietLogger,
@@ -16,5 +17,8 @@ export {
   loadDynamicIconSets,
   type NanoIconsConfig,
 } from './config';
-export { loadDynamicSetsFromAppConfig } from './expoConfig';
+export {
+  loadDynamicSetsFromAppConfig,
+  loadIconSetsFromAppConfig,
+} from './expoConfig';
 export { linkBare, syncAndroidFontAssets } from './link';

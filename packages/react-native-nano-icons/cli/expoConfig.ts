@@ -15,6 +15,23 @@ type ExpoGetConfig = (
 export function loadDynamicSetsFromAppConfig(
   projectRoot: string
 ): IconSetConfig[] {
+  const dynamicSets = loadIconSetsFromAppConfig(projectRoot).filter(
+    (s) => s.linking === 'dynamic'
+  );
+
+  if (dynamicSets.length === 0) {
+    throw new Error(
+      `[react-native-nano-icons] No icon sets with linking: "dynamic" found.\n` +
+        `--dynamic --app-config only processes icon sets where linking is set to "dynamic".`
+    );
+  }
+
+  return dynamicSets;
+}
+
+export function loadIconSetsFromAppConfig(
+  projectRoot: string
+): IconSetConfig[] {
   const configModule = resolveExpoConfigModule(projectRoot);
   if (!configModule) {
     throw new Error(
@@ -40,18 +57,7 @@ export function loadDynamicSetsFromAppConfig(
   }
 
   const [, options] = entry;
-  const dynamicSets = (options.iconSets ?? []).filter(
-    (s) => s.linking === 'dynamic'
-  );
-
-  if (dynamicSets.length === 0) {
-    throw new Error(
-      `[react-native-nano-icons] No icon sets with linking: "dynamic" found.\n` +
-        `--dynamic --app-config only processes icon sets where linking is set to "dynamic".`
-    );
-  }
-
-  return dynamicSets;
+  return options.iconSets ?? [];
 }
 
 function resolveExpoConfigModule(projectRoot: string): string | undefined {
