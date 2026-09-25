@@ -10,7 +10,7 @@ export interface IconSetConfig {
   outputDir?: string;
   /** Units per em (default 1024). */
   upm?: number;
-  /** Safe zone inside UPM for glyphs (default 1020). */
+  /** Safe zone inside UPM for glyphs (default upm * 1020 / 1024, i.e. 1020 at the default upm). Must not exceed upm. */
   safeZone?: number;
   /** First Unicode codepoint for glyphs (default 0xe900). Hex string or number. */
   startUnicode?: number | string;
