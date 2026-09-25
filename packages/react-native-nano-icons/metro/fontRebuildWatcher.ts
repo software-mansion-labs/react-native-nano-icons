@@ -68,6 +68,7 @@ export class FontRebuildWatcher {
       this.setsByInputDir.set(path.resolve(projectRoot, set.inputDir), set);
     }
     watcher.on('change', ({ eventsQueue }) => this.onChange(eventsQueue));
+    this.svgWorkerPool.warm();
     this.schedule(iconSets);
   }
 

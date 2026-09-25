@@ -6,7 +6,8 @@ import { prepareIcon, type IconTask } from './prepareIcon';
 const port = parentPort;
 if (!port) throw new Error('prepareWorker must run inside a worker thread');
 
+const pathkitReady = loadPathKit();
+
 port.on('message', async (task: IconTask) => {
-  const pathkit = await loadPathKit();
-  port.postMessage(await prepareIcon(task, pathkit));
+  port.postMessage(await prepareIcon(task, await pathkitReady));
 });

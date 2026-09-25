@@ -31,6 +31,15 @@ export class SvgWorkerPool {
     return run;
   }
 
+  warm(): void {
+    if (!fs.existsSync(WORKER_PATH)) return;
+    for (let i = this.workers.length; i < this.size; i++) {
+      const worker = new Worker(WORKER_PATH);
+      worker.unref();
+      this.workers.push(worker);
+    }
+  }
+
   async close(): Promise<void> {
     await Promise.all(this.workers.splice(0).map((w) => w.terminate()));
   }
@@ -40,7 +49,7 @@ export class SvgWorkerPool {
     if (wanted <= 1 || !fs.existsSync(WORKER_PATH)) {
       return prepareInProcess(tasks);
     }
-    while (this.workers.length < wanted) {
+    for (let i = this.workers.length; i < wanted; i++) {
       this.workers.push(new Worker(WORKER_PATH));
     }
 
