@@ -169,7 +169,7 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 > In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/), keyed by `glyphMap.m.f`. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
 
 > [!NOTE]
-> On web, link the font like any other web font, under the set's `fontFamily` (e.g. `ui`), not `glyphMap.m.f`. With `web: true`, each set also gets a `<fontFamily>.woff2` next to the `.ttf`. To import it through Metro (e.g. `require()` with `expo-font`), add this to `metro.config.js`:
+> With `web: true`, the `my-icons` set also gets `assets/icons/nanoicons/my-icons.woff2` next to its `.ttf`. Link it on web like any regular font, named `my-icons`. If you want to `require()` it through Metro (e.g. with `expo-font`), add this to `metro.config.js`:
 > ```js
 > config.resolver.assetExts.push("woff2");
 > ```
