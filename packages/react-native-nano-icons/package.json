@@ -1,6 +1,6 @@
 {
   "name": "react-native-nano-icons",
-  "version": "0.2.1",
+  "version": "1.0.0-main",
   "description": "High-performance icon rendering for React Native & Expo.",
   "react-native": "./lib/module/index.js",
   "source": "src/index.ts",
