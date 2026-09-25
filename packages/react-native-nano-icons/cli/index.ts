@@ -4,7 +4,10 @@ export {
   type IconSetConfig,
   type BuiltFont,
 } from './build';
-export type { PreparedSvgCache } from '../src/core/pipeline/index';
+export {
+  SvgWorkerPool,
+  type PreparedSvgCache,
+} from '../src/core/pipeline/index';
 export {
   createOraLogger,
   createQuietLogger,

@@ -123,6 +123,7 @@ describe('DevSession — watching', () => {
       expect.objectContaining({
         keepOutputsOnFailure: true,
         preparedSvgCache: expect.any(Map),
+        svgWorkerPool: expect.any(Object),
       })
     );
   });

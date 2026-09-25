@@ -5,4 +5,5 @@ export {
 } from './runFontPipeline';
 export type { PipelineConfig, PipelinePaths } from './config';
 export type { PreparedSvgCache } from './preparedSvgCache';
+export { SvgWorkerPool } from './iconPool';
 export { ensureEmptyDir } from './config';

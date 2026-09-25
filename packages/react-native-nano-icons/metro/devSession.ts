@@ -8,6 +8,7 @@ import {
   type IconSetConfig,
   type NanoLogger,
   type PreparedSvgCache,
+  SvgWorkerPool,
 } from '../cli/index';
 
 export const FONT_ROUTE = '/__nanoicons/';
@@ -50,6 +51,7 @@ export class DevSession {
   private readonly fontsByFamily = new Map<string, BuiltFont>();
   private readonly dirty = new Map<IconSetConfig, string[]>();
   private readonly preparedSvgCache: PreparedSvgCache = new Map();
+  private readonly svgWorkerPool = new SvgWorkerPool();
   private webDetected = false;
   private pending: Promise<void> = Promise.resolve();
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -120,6 +122,7 @@ export class DevSession {
         logger: this.logger,
         keepOutputsOnFailure: true,
         preparedSvgCache: this.preparedSvgCache,
+        svgWorkerPool: this.svgWorkerPool,
         withWeb: this.webDetected,
       });
     } catch (err) {

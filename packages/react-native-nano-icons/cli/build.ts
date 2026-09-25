@@ -3,9 +3,10 @@ import fs from 'fs';
 import {
   runFontPipeline,
   type PreparedSvgCache,
+  type SvgWorkerPool,
 } from '../src/core/pipeline/index';
 import type { NanoLogger } from './logger';
-import { getFingerprintSync } from '../src/utils/fingerPrint';
+import { fingerprintSvgDirSync } from '../src/utils/fingerPrint';
 import {
   fontToolchainVersions,
   packageVersion,
@@ -121,6 +122,7 @@ export async function buildAllFonts(
     logger?: NanoLogger;
     keepOutputsOnFailure?: boolean;
     preparedSvgCache?: PreparedSvgCache;
+    svgWorkerPool?: SvgWorkerPool;
     withWeb?: boolean;
   }
 ): Promise<BuiltFont[]> {
@@ -175,7 +177,7 @@ export async function buildAllFonts(
       web,
     };
 
-    const inputHash = getFingerprintSync(inputDir, {
+    const { hash: inputHash, svgHashByFile } = fingerprintSvgDirSync(inputDir, {
       upm: config.upm,
       safeZone: config.safeZone,
       startUnicode: config.startUnicode,
@@ -217,7 +219,13 @@ export async function buildAllFonts(
       out = await runFontPipeline(
         config,
         { inputDir, outputDir, tempDir },
-        { logger, inputHash, preparedSvgCache: options?.preparedSvgCache }
+        {
+          logger,
+          inputHash,
+          preparedSvgCache: options?.preparedSvgCache,
+          svgWorkerPool: options?.svgWorkerPool,
+          svgHashByFile,
+        }
       );
     } catch (err) {
       if (!options?.keepOutputsOnFailure) {

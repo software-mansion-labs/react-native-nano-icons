@@ -10,7 +10,7 @@ import {
 import { buildFontFamily } from '../../utils/fontIdentity';
 import type { GlyphLayer, NanoGlyphMap, NanoLogger } from '../types';
 import { ensureDir, type PipelineConfig, type PipelinePaths } from './config';
-import { defaultConcurrency } from './iconPool';
+import { defaultConcurrency, type SvgWorkerPool } from './iconPool';
 import {
   prepareIconsWithCache,
   type PreparedSvgCache,
@@ -35,6 +35,8 @@ export async function runFontPipeline(
     inputHash?: string;
     concurrency?: number;
     preparedSvgCache?: PreparedSvgCache;
+    svgWorkerPool?: SvgWorkerPool;
+    svgHashByFile?: Map<string, string>;
   }
 ): Promise<PipelineResult> {
   const startTime = Date.now();
@@ -80,7 +82,9 @@ export async function runFontPipeline(
       safeZone: config.safeZone,
     })),
     options?.concurrency ?? defaultConcurrency(),
-    options?.preparedSvgCache
+    options?.preparedSvgCache,
+    options?.svgWorkerPool,
+    options?.svgHashByFile
   );
 
   for (const result of results) {
