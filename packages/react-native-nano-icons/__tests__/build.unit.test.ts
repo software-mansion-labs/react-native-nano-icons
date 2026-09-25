@@ -532,3 +532,78 @@ describe('buildAllFonts — failure reporting', () => {
     fs.rmSync(otherDir, { recursive: true, force: true });
   });
 });
+
+describe('buildAllFonts — safeZone follows upm', () => {
+  let inputDir: string;
+  let outputDir: string;
+
+  beforeEach(() => {
+    inputDir = makeTmpDir();
+    outputDir = makeTmpDir();
+    writeSvgs(inputDir);
+    mockRunPipeline.mockReset();
+    mockRunPipeline.mockResolvedValue({
+      ttfPath: path.join(outputDir, `${FONT_FAMILY}.ttf`),
+      glyphmapPath: path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
+    });
+  });
+
+  afterEach(() => {
+    fs.rmSync(inputDir, { recursive: true, force: true });
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  });
+
+  async function pipelineConfigFor(extra: Partial<IconSetConfig>) {
+    await buildAllFonts(
+      [{ inputDir, outputDir, fontFamily: FONT_FAMILY, ...extra }],
+      os.tmpdir()
+    );
+    return mockRunPipeline.mock.calls[0]![0];
+  }
+
+  test('the default upm keeps the default safeZone of 1020', async () => {
+    expect(await pipelineConfigFor({})).toMatchObject({
+      upm: 1024,
+      safeZone: 1020,
+    });
+  });
+
+  test('a custom upm scales the default safeZone', async () => {
+    expect(await pipelineConfigFor({ upm: 512 })).toMatchObject({
+      upm: 512,
+      safeZone: 510,
+    });
+    mockRunPipeline.mockClear();
+    expect(await pipelineConfigFor({ upm: 2048 })).toMatchObject({
+      upm: 2048,
+      safeZone: 2040,
+    });
+  });
+
+  test('an explicit safeZone is kept', async () => {
+    expect(await pipelineConfigFor({ upm: 512, safeZone: 480 })).toMatchObject({
+      upm: 512,
+      safeZone: 480,
+    });
+  });
+
+  test('a safeZone larger than upm fails before building', async () => {
+    await expect(
+      buildAllFonts(
+        [
+          {
+            inputDir,
+            outputDir,
+            fontFamily: FONT_FAMILY,
+            upm: 512,
+            safeZone: 1020,
+          },
+        ],
+        os.tmpdir()
+      )
+    ).rejects.toThrow(
+      '[react-native-nano-icons] safeZone (1020) of "TestFont" must not exceed upm (512).'
+    );
+    expect(mockRunPipeline).not.toHaveBeenCalled();
+  });
+});

@@ -17,7 +17,7 @@ export type IconSetConfig = {
   outputDir?: string;
   /** Units per em (default 1024). */
   upm?: number;
-  /** Safe zone inside UPM for glyphs (default 1020). */
+  /** Safe zone inside UPM for glyphs (default upm * 1020 / 1024, i.e. 1020 at the default upm). Must not exceed upm. */
   safeZone?: number;
   /** First Unicode codepoint for glyphs (default 0xe900). Hex string or number. */
   startUnicode?: number | string;
@@ -45,7 +45,7 @@ export class IconSetBuildError extends Error {
   }
 }
 
-const DEFAULT_SAFE_ZONE = 1020;
+const DEFAULT_SAFE_ZONE_RATIO = 1020 / 1024;
 const DEFAULT_UPM = 1024;
 const DEFAULT_START_UNICODE = 0xe900;
 
@@ -126,6 +126,14 @@ export async function buildAllFonts(
       );
     }
 
+    const upm = set.upm ?? DEFAULT_UPM;
+    const safeZone = set.safeZone ?? Math.round(upm * DEFAULT_SAFE_ZONE_RATIO);
+    if (safeZone > upm) {
+      throw new Error(
+        `[react-native-nano-icons] safeZone (${safeZone}) of "${fontFamily}" must not exceed upm (${upm}).`
+      );
+    }
+
     const outputDir = set.outputDir
       ? path.resolve(projectRoot, set.outputDir)
       : path.join(path.dirname(inputDir), 'nanoicons');
@@ -135,8 +143,8 @@ export async function buildAllFonts(
 
     const config = {
       fontFamily,
-      upm: set.upm ?? DEFAULT_UPM,
-      safeZone: set.safeZone ?? DEFAULT_SAFE_ZONE,
+      upm,
+      safeZone,
       startUnicode:
         set.startUnicode !== undefined
           ? typeof set.startUnicode === 'string'
