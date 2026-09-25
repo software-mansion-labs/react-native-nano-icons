@@ -1,6 +1,7 @@
 #import "NanoIconView.h"
 #import <CoreText/CoreText.h>
 #import <React/RCTConversions.h>
+#import <React/RCTConvert.h>
 #import <React/RCTFabricComponentsPlugins.h>
 #import <react/renderer/components/RNNanoIconsSpec/ComponentDescriptors.h>
 #import <react/renderer/components/RNNanoIconsSpec/Props.h>
@@ -330,17 +331,30 @@ void NanoIconInvalidateFontCache(NSString *family) {
   _cachedCGColors.clear();
 }
 
+// Icon colors use React Native's default color space, like the app's text
+// and views: Display P3 when the app enables it (RCTSetDefaultColorSpace, for
+// example via expo-color-space-plugin), sRGB otherwise. Building them as sRGB
+// unconditionally drew the same values less saturated than the rest of the UI.
+static CGColorSpaceRef NanoIconColorSpace(void) {
+  static CGColorSpaceRef displayP3 =
+      CGColorSpaceCreateWithName(kCGColorSpaceDisplayP3);
+  static CGColorSpaceRef sRGB = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+  return RCTGetDefaultColorSpace() == RCTColorSpaceDisplayP3 ? displayP3 : sRGB;
+}
+
 // Convert ARGB uint32 color values into cached CGColorRefs.
 - (void)_rebuildCachedColors {
   [self _releaseCachedColors];
   _cachedCGColors.resize(_colors.size());
+  CGColorSpaceRef colorSpace = NanoIconColorSpace();
   for (size_t i = 0; i < _colors.size(); i++) {
     uint32_t ci = _colors[i];
-    _cachedCGColors[i] = CGColorCreateSRGB(
+    const CGFloat components[4] = {
         ((ci >> 16) & 0xFF) / 255.0,
         ((ci >> 8)  & 0xFF) / 255.0,
         ( ci        & 0xFF) / 255.0,
-        ((ci >> 24) & 0xFF) / 255.0);
+        ((ci >> 24) & 0xFF) / 255.0};
+    _cachedCGColors[i] = CGColorCreate(colorSpace, components);
   }
 }
 
