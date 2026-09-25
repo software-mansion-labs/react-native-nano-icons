@@ -68,7 +68,7 @@ function svgPath(set: IconSetConfig, file: string): string {
   return path.join(root, set.inputDir, file);
 }
 
-const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 80));
+const flush = (ms = 80): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 type FakeResponse = ServerResponse & {
   headers: Record<string, string>;
@@ -176,11 +176,34 @@ describe('DevSession — watching', () => {
         { filePath: svgPath(a, 'y.svg'), type: 'change' },
       ],
     });
-    await flush();
+    await flush(400);
 
     expect(logged.filter((l) => l.startsWith('notify'))).toEqual([
       'notify A: star.svg changed, heart.svg added, old.svg removed and 2 more, rebuilding…',
     ]);
+  });
+
+  test('added files wait for the burst to settle, edits do not', async () => {
+    const watcher = new EventEmitter();
+    const a = makeSet('A');
+    new DevSession(root, [a], watcher, logger);
+    await flush();
+
+    for (const file of ['1.svg', '2.svg', '3.svg']) {
+      watcher.emit('change', {
+        eventsQueue: [{ filePath: svgPath(a, file), type: 'add' }],
+      });
+      await flush(120);
+    }
+    expect(mockBuildAllFonts).toHaveBeenCalledTimes(1);
+    await flush(300);
+    expect(mockBuildAllFonts).toHaveBeenCalledTimes(2);
+
+    watcher.emit('change', {
+      eventsQueue: [{ filePath: svgPath(a, '1.svg'), type: 'change' }],
+    });
+    await flush(120);
+    expect(mockBuildAllFonts).toHaveBeenCalledTimes(3);
   });
 
   test('add and delete count as changes', async () => {
@@ -192,7 +215,7 @@ describe('DevSession — watching', () => {
     watcher.emit('change', {
       eventsQueue: [{ filePath: svgPath(a, 'new.svg'), type: 'add' }],
     });
-    await flush();
+    await flush(400);
     watcher.emit('change', {
       eventsQueue: [{ filePath: svgPath(a, 'old.svg'), type: 'delete' }],
     });

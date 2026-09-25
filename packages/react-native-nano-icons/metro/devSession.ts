@@ -14,6 +14,7 @@ import {
 export const FONT_ROUTE = '/__nanoicons/';
 
 const REBUILD_DEBOUNCE_MS = 50;
+const ADDED_FILES_SETTLE_MS = 250;
 const MAX_LISTED_CHANGES = 3;
 
 const WEB_PLATFORM = /[?&]platform=web(?:&|$)/;
@@ -55,6 +56,7 @@ export class DevSession {
   private webDetected = false;
   private pending: Promise<void> = Promise.resolve();
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private settleMs = REBUILD_DEBOUNCE_MS;
 
   constructor(
     private readonly projectRoot: string,
@@ -82,6 +84,7 @@ export class DevSession {
       if (!event.filePath.toLowerCase().endsWith('.svg')) continue;
       const set = this.setsByInputDir.get(path.dirname(event.filePath));
       if (!set) continue;
+      if (event.type === 'add') this.settleMs = ADDED_FILES_SETTLE_MS;
       this.schedule(
         [set],
         `${path.basename(event.filePath)} ${CHANGE_LABEL[event.type]}`
@@ -96,11 +99,12 @@ export class DevSession {
       this.dirty.set(set, changes);
     }
     if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.flush(), REBUILD_DEBOUNCE_MS);
+    this.timer = setTimeout(() => this.flush(), this.settleMs);
   }
 
   private flush(): void {
     this.timer = undefined;
+    this.settleMs = REBUILD_DEBOUNCE_MS;
     this.pending = this.pending.then(() => this.rebuildDirty());
   }
 
