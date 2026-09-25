@@ -1996,7 +1996,7 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
-  - react-native-nano-icons (0.2.1):
+  - react-native-nano-icons (1.0.0-main):
     - boost
     - DoubleConversion
     - fast_float
@@ -3181,7 +3181,7 @@ SPEC CHECKSUMS:
   React-logger: 993e4b9793768764e0fdd379ad1d6582f7905463
   React-Mapbuffer: 3a5f700ed673820ab4b1b35ba0cf8476400bc4c5
   React-microtasksnativemodule: 094677e625f12276a8f871844a5ee6a945a90221
-  react-native-nano-icons: 9fd3de193b7ab5d4251991983262a07ddbd8d384
+  react-native-nano-icons: d21ec59c2f88c25bb8e2a8e29bfc4cb105e641b4
   react-native-release-profiler: 12729af9f7bd9b14426bd4610af28d5e4b4a0f0c
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   React-NativeModulesApple: 29290351acc118784e158aa7b23c42719dc57617
