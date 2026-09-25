@@ -17,6 +17,8 @@ jest.mock('../cli/index', () => ({
   createOraLogger: jest.fn(),
 }));
 
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { IconSetBuildError } from '../cli/build';
 import type { NanoLogger } from '../cli/logger';
@@ -109,6 +111,80 @@ describe('cli main', () => {
       'Input directory does not exist'
     );
     expect(mockLinkBare).not.toHaveBeenCalled();
+  });
+
+  test('without --path the current directory is the app root', async () => {
+    mockBuildAllFonts.mockResolvedValue(BUILT);
+
+    await main(silentLogger());
+
+    expect(mockLoadNanoIconsConfig).toHaveBeenCalledWith(process.cwd());
+    expect(mockBuildAllFonts).toHaveBeenCalledWith(
+      SETS,
+      process.cwd(),
+      expect.anything()
+    );
+  });
+
+  test('--path is the app root for reading, building and linking', async () => {
+    process.argv = ['node', 'cli', '--path', 'apps/mobile'];
+    mockBuildAllFonts.mockResolvedValue(BUILT);
+
+    await main(silentLogger());
+
+    const appRoot = path.resolve(process.cwd(), 'apps/mobile');
+    expect(mockLoadNanoIconsConfig).toHaveBeenCalledWith(appRoot);
+    expect(mockBuildAllFonts).toHaveBeenCalledWith(
+      SETS,
+      appRoot,
+      expect.anything()
+    );
+    expect(mockLinkBare).toHaveBeenCalledWith(
+      appRoot,
+      BUILT,
+      expect.anything(),
+      SETS.length
+    );
+  });
+
+  test('--path to the .nanoicons.json file means its folder', async () => {
+    const appRoot = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'nano-cli-'))
+    );
+    const configFile = path.join(appRoot, '.nanoicons.json');
+    fs.writeFileSync(configFile, '{"iconSets":[]}');
+    process.argv = ['node', 'cli', '--path', configFile];
+    mockBuildAllFonts.mockResolvedValue(BUILT);
+
+    try {
+      await main(silentLogger());
+    } finally {
+      fs.rmSync(appRoot, { recursive: true, force: true });
+    }
+
+    expect(mockLoadNanoIconsConfig).toHaveBeenCalledWith(appRoot);
+    expect(mockLinkBare).toHaveBeenCalledWith(
+      appRoot,
+      BUILT,
+      expect.anything(),
+      SETS.length
+    );
+  });
+
+  test('--dynamic with --path reads and builds in that app root', async () => {
+    process.argv = ['node', 'cli', '--dynamic', '--path', 'apps/mobile'];
+    mockLoadDynamicIconSets.mockReturnValue([SETS[2]]);
+    mockBuildAllFonts.mockResolvedValue([]);
+
+    await main(silentLogger());
+
+    const appRoot = path.resolve(process.cwd(), 'apps/mobile');
+    expect(mockLoadDynamicIconSets).toHaveBeenCalledWith(appRoot);
+    expect(mockBuildAllFonts).toHaveBeenCalledWith(
+      [SETS[2]],
+      appRoot,
+      expect.anything()
+    );
   });
 
   test('--app-config reads and builds in the current directory by default', async () => {
