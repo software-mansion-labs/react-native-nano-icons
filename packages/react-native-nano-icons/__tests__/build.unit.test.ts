@@ -545,6 +545,7 @@ describe('buildAllFonts — safeZone follows upm', () => {
     mockRunPipeline.mockResolvedValue({
       ttfPath: path.join(outputDir, `${FONT_FAMILY}.ttf`),
       glyphmapPath: path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
+      family: BUILT_FAMILY,
     });
   });
 
