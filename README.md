@@ -248,7 +248,7 @@ export const Icon = createNanoIconSet(glyphMap, require("./dynamic-ota-icons.ttf
 
 ### 5. Font Regeneration
 
-**The build script detects changes in path and contents of the SVGs** in your input directory, in the set's config (`upm`, `safeZone`, `startUnicode`) and in the library version, based on a fingerprint hash. If anything changes (file names, SVG attributes/nodes, config, an upgrade of `react-native-nano-icons`) or the output font/glyphmap files are deleted, the icon set is regenerated during `prebuild` or manual script run. The first 8 characters of the fingerprint become part of the runtime font family (`glyphMap.m.f`), so a rebuilt set never clashes with a previous build that is still bundled in the app.
+**The build script detects changes in path and contents of the SVGs** in your input directory, in the set's config (`upm`, `safeZone`, `startUnicode`) and in the library version or the versions of the packages it builds fonts with, based on a fingerprint hash. If anything changes (file names, SVG attributes/nodes, config, an upgrade of `react-native-nano-icons` or of a font-building dependency) or the output font/glyphmap files are deleted, the icon set is regenerated during `prebuild` or manual script run. The first 8 characters of the fingerprint become part of the runtime font family (`glyphMap.m.f`), so a rebuilt set never clashes with a previous build that is still bundled in the app.
 
 ### Regenerating dynamic fonts only (useful for an OTA update) ☁️
 

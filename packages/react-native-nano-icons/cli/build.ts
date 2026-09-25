@@ -3,7 +3,10 @@ import fs from 'fs';
 import { runFontPipeline } from '../src/core/pipeline/index';
 import type { NanoLogger } from './logger';
 import { getFingerprintSync } from '../src/utils/fingerPrint';
-import { packageVersion } from '../src/utils/packageVersion';
+import {
+  fontToolchainVersions,
+  packageVersion,
+} from '../src/utils/packageVersion';
 
 export type IconSetConfig = {
   /** Path to folder of SVG files (relative to project root). */
@@ -97,6 +100,7 @@ export async function buildAllFonts(
 ): Promise<BuiltFont[]> {
   const logger = options?.logger;
   const version = packageVersion();
+  const toolchain = fontToolchainVersions();
   const results: BuiltFont[] = [];
   const failures: string[] = [];
   let allSkipped = true;
@@ -137,6 +141,7 @@ export async function buildAllFonts(
       safeZone: config.safeZone,
       startUnicode: config.startUnicode,
       version,
+      toolchain,
     });
 
     const currentFamily = familyOfCurrentOutput(

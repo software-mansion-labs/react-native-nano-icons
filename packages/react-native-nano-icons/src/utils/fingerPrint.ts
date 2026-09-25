@@ -7,6 +7,7 @@ export type FingerprintInputs = {
   safeZone: number;
   startUnicode: number;
   version: string;
+  toolchain: readonly string[];
 };
 
 export function getFingerprintSync(
@@ -32,6 +33,7 @@ export function getFingerprintSync(
       inputs.safeZone,
       inputs.startUnicode,
       inputs.version,
+      inputs.toolchain,
     ])
   );
 

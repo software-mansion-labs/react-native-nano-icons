@@ -9,7 +9,11 @@ jest.mock('../src/core/pipeline/index');
 import { buildAllFonts, type IconSetConfig } from '../cli/build';
 import type { NanoLogger } from '../cli/logger';
 import { getFingerprintSync } from '../src/utils/fingerPrint';
-import { packageVersion } from '../src/utils/packageVersion';
+import * as packageVersionModule from '../src/utils/packageVersion';
+import {
+  fontToolchainVersions,
+  packageVersion,
+} from '../src/utils/packageVersion';
 import { runFontPipeline } from '../src/core/pipeline/index';
 
 const mockRunPipeline = runFontPipeline as jest.MockedFunction<
@@ -25,6 +29,7 @@ const DEFAULT_INPUTS = {
   safeZone: 1020,
   startUnicode: 0xe900,
   version: packageVersion(),
+  toolchain: fontToolchainVersions(),
 };
 
 function makeTmpDir(): string {
@@ -95,6 +100,25 @@ describe('buildAllFonts — skip/rebuild logic', () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
     await buildAllFonts([makeIconSet()], os.tmpdir());
     expect(mockRunPipeline).not.toHaveBeenCalled();
+  });
+
+  test('a new font toolchain version rebuilds an otherwise unchanged set', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    const toolchain = jest
+      .spyOn(packageVersionModule, 'fontToolchainVersions')
+      .mockReturnValue(
+        fontToolchainVersions().map((entry) =>
+          entry.startsWith('fonteditor-core@')
+            ? 'fonteditor-core@999.0.0'
+            : entry
+        )
+      );
+    try {
+      await buildAllFonts([makeIconSet()], os.tmpdir());
+    } finally {
+      toolchain.mockRestore();
+    }
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
   });
 
   test('a set that is already up to date still reports itself', async () => {
