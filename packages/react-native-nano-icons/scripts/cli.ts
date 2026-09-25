@@ -4,7 +4,7 @@
  *
  * Flags:
  *   --verbose          Show per-SVG processing details and pipeline timing
- *   --path <dir>       Directory containing .nanoicons.json (default: cwd)
+ *   --path <dir>       Directory containing .nanoicons.json, or the Expo app root with --app-config (default: cwd)
  *   --dynamic          Rebuild only icon sets with linking: 'dynamic'. Skips native linking —
  *                      use this for OTA font regeneration without running expo prebuild.
  *   --app-config       Read config from Expo app config (app.json / app.config.js / app.config.ts)
@@ -39,14 +39,16 @@ export async function main(logger: NanoLogger): Promise<void> {
     logger.start(`Reading dynamic icon sets from ${source}...`);
 
     const dynamicIconSets = appConfig
-      ? loadDynamicSetsFromAppConfig(projectRoot)
+      ? loadDynamicSetsFromAppConfig(configRoot)
       : loadDynamicIconSets(configRoot);
 
     logger.succeed(
       `Found ${dynamicIconSets.length} dynamic icon set(s) — skipping native linking.`
     );
 
-    await buildAllFonts(dynamicIconSets, projectRoot, { logger });
+    await buildAllFonts(dynamicIconSets, appConfig ? configRoot : projectRoot, {
+      logger,
+    });
   } else {
     const config = loadNanoIconsConfig(configRoot);
     let built: BuiltFont[];

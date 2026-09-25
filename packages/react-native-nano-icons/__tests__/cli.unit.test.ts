@@ -17,6 +17,7 @@ jest.mock('../cli/index', () => ({
   createOraLogger: jest.fn(),
 }));
 
+import path from 'node:path';
 import { IconSetBuildError } from '../cli/build';
 import type { NanoLogger } from '../cli/logger';
 import { main } from '../scripts/cli';
@@ -106,6 +107,47 @@ describe('cli main', () => {
 
     await expect(main(silentLogger())).rejects.toThrow(
       'Input directory does not exist'
+    );
+    expect(mockLinkBare).not.toHaveBeenCalled();
+  });
+
+  test('--app-config reads and builds in the current directory by default', async () => {
+    process.argv = ['node', 'cli', '--dynamic', '--app-config'];
+    mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[2]]);
+    mockBuildAllFonts.mockResolvedValue([]);
+
+    await main(silentLogger());
+
+    expect(mockLoadDynamicSetsFromAppConfig).toHaveBeenCalledWith(
+      process.cwd()
+    );
+    expect(mockBuildAllFonts).toHaveBeenCalledWith(
+      [SETS[2]],
+      process.cwd(),
+      expect.anything()
+    );
+  });
+
+  test('--app-config with --path reads and builds in that app root', async () => {
+    process.argv = [
+      'node',
+      'cli',
+      '--dynamic',
+      '--app-config',
+      '--path',
+      'apps/mobile',
+    ];
+    mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[2]]);
+    mockBuildAllFonts.mockResolvedValue([]);
+
+    await main(silentLogger());
+
+    const appRoot = path.resolve(process.cwd(), 'apps/mobile');
+    expect(mockLoadDynamicSetsFromAppConfig).toHaveBeenCalledWith(appRoot);
+    expect(mockBuildAllFonts).toHaveBeenCalledWith(
+      [SETS[2]],
+      appRoot,
+      expect.anything()
     );
     expect(mockLinkBare).not.toHaveBeenCalled();
   });

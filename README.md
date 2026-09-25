@@ -264,7 +264,7 @@ npx react-native-nano-icons --path path/to/.nanoicons.json --dynamic
 > # run from your app root
 > npx react-native-nano-icons --dynamic --app-config
 > ```
-> This reads your config directly from `app.json` / `app.config.js` / `app.config.ts` (no separate `.nanoicons.json` needed).
+> This reads your config directly from `app.json` / `app.config.js` / `app.config.ts` (no separate `.nanoicons.json` needed). In a monorepo, run it from the app's folder or point it there with `--path <app root>`.
 
 The CLI rebuilds only the sets defined with `linking: "dynamic"`, and skips all native linking. Commit the updated `.ttf` and `.glyphmap.json` and push your OTA update as usual ☁️ 🚀
 
