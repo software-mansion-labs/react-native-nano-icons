@@ -1,3 +1,4 @@
+#import "NanoIconFontResolver.h"
 #import "NanoIconsFontLoader.h"
 #import <CoreText/CoreText.h>
 
@@ -73,14 +74,7 @@ RCT_EXPORT_METHOD(isFontRegistered:(NSString *)family
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 {
-  CTFontRef font = CTFontCreateWithName((__bridge CFStringRef)family, 12.0, NULL);
-  BOOL registered = NO;
-  if (font) {
-    NSString *postScriptName = (__bridge_transfer NSString *)CTFontCopyPostScriptName(font);
-    registered = [postScriptName isEqualToString:family];
-    CFRelease(font);
-  }
-  resolve(@(registered));
+  resolve(@(NanoIconIsFontResolvable(family)));
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED

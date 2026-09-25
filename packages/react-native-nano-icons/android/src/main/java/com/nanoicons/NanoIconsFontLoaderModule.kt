@@ -4,7 +4,7 @@ import android.graphics.Typeface
 import android.net.Uri
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.common.assets.ReactFontManager
+import com.facebook.react.bridge.UiThreadUtil
 import java.io.File
 import java.io.InputStream
 import java.net.URL
@@ -24,8 +24,6 @@ class NanoIconsFontLoaderModule(reactContext: ReactApplicationContext) :
 
   override fun getName(): String = NAME
 
-  private val registeredFamilies = HashSet<String>()
-
   override fun registerFont(family: String, uri: String, promise: Promise) {
     try {
       val bytes = openStream(uri).use { it.readBytes() }
@@ -42,8 +40,7 @@ class NanoIconsFontLoaderModule(reactContext: ReactApplicationContext) :
       val cacheFile = File.createTempFile("nanoicon_", ".ttf", reactApplicationContext.cacheDir)
       cacheFile.writeBytes(bytes)
       val typeface = Typeface.createFromFile(cacheFile)
-      ReactFontManager.getInstance().setTypeface(family, Typeface.NORMAL, typeface)
-      registeredFamilies.add(family)
+      NanoIconFonts.register(family, typeface)
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject(
@@ -55,20 +52,10 @@ class NanoIconsFontLoaderModule(reactContext: ReactApplicationContext) :
   }
 
   override fun isFontRegistered(family: String, promise: Promise) {
-    promise.resolve(registeredFamilies.contains(family) || hasFontAsset(family))
-  }
-
-  private fun hasFontAsset(family: String): Boolean {
     val assets = reactApplicationContext.assets
-    for (ext in arrayOf("ttf", "otf")) {
-      try {
-        assets.open("fonts/$family.$ext").close()
-        return true
-      } catch (e: java.io.IOException) {
-        continue
-      }
+    UiThreadUtil.runOnUiThread {
+      promise.resolve(NanoIconFonts.resolve(family, assets) != null)
     }
-    return false
   }
 
   private fun openStream(uri: String): InputStream =
