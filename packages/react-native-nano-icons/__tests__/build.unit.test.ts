@@ -44,10 +44,14 @@ function writeFakeOutputs(
   outputDir: string,
   fontFamily: string,
   hash?: string,
-  linking?: 'static' | 'dynamic'
+  linking?: 'static' | 'dynamic',
+  web?: boolean
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, `${fontFamily}.ttf`), 'fake');
+  if (web) {
+    fs.writeFileSync(path.join(outputDir, `${fontFamily}.woff2`), 'fake');
+  }
   const m = {
     f: STORED_FAMILY,
     u: 1024,
@@ -56,6 +60,7 @@ function writeFakeOutputs(
     ...(hash !== undefined && { h: hash }),
     // only dynamic sets have l field, static have none
     ...(linking === 'dynamic' && { l: 'd' }),
+    ...(web && { w: true }),
   };
   fs.writeFileSync(
     path.join(outputDir, `${fontFamily}.glyphmap.json`),
@@ -311,6 +316,124 @@ describe('buildAllFonts — linking mode', () => {
       expect(mockRunPipeline).toHaveBeenCalledTimes(1);
     }
   );
+});
+
+describe('buildAllFonts — web output', () => {
+  let inputDir: string;
+  let outputDir: string;
+  let inputHash: string;
+  let ttfPath: string;
+  let glyphmapPath: string;
+  let woff2Path: string;
+
+  beforeEach(() => {
+    inputDir = makeTmpDir();
+    outputDir = makeTmpDir();
+    writeSvgs(inputDir);
+    inputHash = getFingerprintSync(inputDir, DEFAULT_INPUTS);
+    ttfPath = path.join(outputDir, `${FONT_FAMILY}.ttf`);
+    glyphmapPath = path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`);
+    woff2Path = path.join(outputDir, `${FONT_FAMILY}.woff2`);
+
+    mockRunPipeline.mockReset();
+    mockRunPipeline.mockImplementation(async (config) => ({
+      ttfPath,
+      glyphmapPath,
+      family: BUILT_FAMILY,
+      ...(config.web ? { woff2Path } : {}),
+    }));
+  });
+
+  afterEach(() => {
+    fs.rmSync(inputDir, { recursive: true, force: true });
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  });
+
+  function makeIconSet(web?: boolean): IconSetConfig {
+    return { inputDir, outputDir, fontFamily: FONT_FAMILY, web };
+  }
+
+  test('web defaults to false and yields no woff2Path', async () => {
+    const [built] = await buildAllFonts([makeIconSet()], os.tmpdir());
+
+    expect(built!.woff2Path).toBeUndefined();
+    expect(mockRunPipeline).toHaveBeenCalledWith(
+      expect.objectContaining({ web: false }),
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  test('web: true is forwarded to runFontPipeline and reflected in BuiltFont', async () => {
+    const [built] = await buildAllFonts([makeIconSet(true)], os.tmpdir());
+
+    expect(built!.woff2Path).toBe(woff2Path);
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+    expect(mockRunPipeline).toHaveBeenCalledWith(
+      expect.objectContaining({ web: true }),
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  test('an up-to-date web set is skipped and still reports its woff2Path', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', true);
+
+    const [built] = await buildAllFonts([makeIconSet(true)], os.tmpdir());
+
+    expect(mockRunPipeline).not.toHaveBeenCalled();
+    expect(built!.woff2Path).toBe(woff2Path);
+  });
+
+  test('a matching hash without m.w rebuilds when web is enabled', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    await buildAllFonts([makeIconSet(true)], os.tmpdir());
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+  });
+
+  test('a matching hash with m.w but no .woff2 file rebuilds', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', true);
+    fs.unlinkSync(woff2Path);
+
+    await buildAllFonts([makeIconSet(true)], os.tmpdir());
+
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+  });
+
+  test('dropping web rebuilds and removes the stale .woff2 before the pipeline runs', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', true);
+
+    let woff2ExistedAtCallTime = true;
+    mockRunPipeline.mockImplementation(async () => {
+      woff2ExistedAtCallTime = fs.existsSync(woff2Path);
+      return { ttfPath, glyphmapPath, family: BUILT_FAMILY };
+    });
+
+    const [built] = await buildAllFonts([makeIconSet(false)], os.tmpdir());
+
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+    expect(woff2ExistedAtCallTime).toBe(false);
+    expect(built!.woff2Path).toBeUndefined();
+  });
+
+  test('a failing web build deletes the .woff2 with the other outputs', async () => {
+    writeFakeOutputs(
+      outputDir,
+      FONT_FAMILY,
+      'stale_hash_value',
+      'static',
+      true
+    );
+    mockRunPipeline.mockRejectedValue(new Error('boom'));
+
+    await expect(
+      buildAllFonts([makeIconSet(true)], os.tmpdir())
+    ).rejects.toThrow();
+
+    expect(fs.existsSync(ttfPath)).toBe(false);
+    expect(fs.existsSync(glyphmapPath)).toBe(false);
+    expect(fs.existsSync(woff2Path)).toBe(false);
+  });
 });
 
 describe('buildAllFonts — failure reporting', () => {

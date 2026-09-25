@@ -13,6 +13,7 @@ SVG files → flatten (PathKit-backed) → parse paths → evenodd conversion �
 The pipeline converts a directory of SVG icon files into:
 - A **TrueType font** (`.ttf`) where each color layer of each icon is a separate glyph
 - A **glyphmap** (`.glyphmap.json`) mapping icon names to codepoint/color layer arrays
+- Optionally (`web: true`) a **WOFF2** (`.woff2`) wrapping the same TTF build for web, written in the same run
 
 Multi-color icons are decomposed into layers: one glyph per color, rendered on top of each other at runtime.
 
@@ -34,6 +35,8 @@ Takes an array of icon set configs, each specifying:
   upm?: number;                      // Units per em (default: 1024)
   safeZone?: number;                 // Safe zone for glyphs (default: 1020)
   startUnicode?: number | string;    // First codepoint (default: 0xe900)
+  linking?: 'static' | 'dynamic';    // Native delivery mode (default: 'static')
+  web?: boolean;                     // Also emit .woff2 (default: false)
 }
 ```
 
@@ -41,10 +44,10 @@ For each icon set:
 
 1. Resolves absolute paths
 2. Computes SHA-256 fingerprint of all SVG inputs, the set config (`upm`, `safeZone`, `startUnicode`) and the library version
-3. **Skips generation** if existing glyphmap hash and linking match (incremental builds)
+3. **Skips generation** if the existing glyphmap hash, linking and web flag (`m.w`) match the config and every expected file exists (incremental builds)
 4. Deletes stale output files
 5. Calls `runFontPipeline()` with resolved config and paths
-6. Returns `{ fontFamily, family, ttfPath, glyphmapPath, linking }` — `family` is `glyphMap.m.f`, the configured name plus the first 8 fingerprint characters; it is also the TTF's internal font name and the Android asset file name
+6. Returns `{ fontFamily, family, ttfPath, glyphmapPath, linking, woff2Path? }` — `family` is `glyphMap.m.f`, the configured name plus the first 8 fingerprint characters; it is also the TTF's internal font name and the Android asset file name
 
 ---
 
@@ -289,6 +292,8 @@ Includes metadata:
    - **Sets USE_TYPO_METRICS flag** (bit 7 of `fsSelection`) — prevents vertical clipping on Windows/Android
 
 4. **Write `.ttf` file**
+
+5. With `web: true`, **encode the same buffer to WOFF2** via the encoder bundled with `fonteditor-core` and write `<fontFamily>.woff2` beside it
 
 ---
 

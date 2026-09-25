@@ -43,18 +43,21 @@
             {
               "inputDir": "./assets/testicons",
               "fontFamily": "Testicons",
-              "outputDir": "./assets/nanoicons"
+              "outputDir": "./assets/nanoicons",
+              "web": true
             },
             {
               "inputDir": "../../packages/react-native-nano-icons/test_icons/material_icons/twotone",
               "fontFamily": "MaterialIconsTwotone",
-              "outputDir": "./assets/nanoicons"
+              "outputDir": "./assets/nanoicons",
+              "web": true
             },
             {
               "inputDir": "../../packages/react-native-nano-icons/test_icons/swm_icons/outline",
               "fontFamily": "SWMIconsOutline",
               "outputDir": "./assets/nanoicons",
-              "linking": "dynamic"
+              "linking": "dynamic",
+              "web": true
             }
           ]
         }

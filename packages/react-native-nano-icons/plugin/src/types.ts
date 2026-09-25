@@ -22,6 +22,13 @@ export interface IconSetConfig {
    *   delivering it (e.g. via OTA) and registering it under the same font family name.
    */
   linking?: 'static' | 'dynamic';
+  /**
+   * Also emit `<fontFamily>.woff2` into `outputDir` for web. Defaults to `false`.
+   *
+   * The file is rebuilt together with the TTF on every change and is never linked
+   * natively; the host app links it like any other web font, under `fontFamily`.
+   */
+  web?: boolean;
 }
 
 /**
@@ -40,4 +47,5 @@ export interface BuiltFont {
   ttfPath: string;
   glyphmapPath: string;
   linking: 'static' | 'dynamic';
+  woff2Path?: string;
 }

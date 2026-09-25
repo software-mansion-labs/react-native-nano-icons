@@ -121,6 +121,7 @@ The plugin accepts an object with an `iconSets` array, allowing you to generate 
 | `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
 | `startUnicode` | `string` | No       | `0xe900`       | The starting Hex Unicode point for the first icon glyph.                                                                   |
 | `linking`      | `'static' \| 'dynamic'` | No | `'static'` | Delivery mode for the generated TTF. `'static'` bundles it into the native app. `'dynamic'` excludes it from native linking so the host app can deliver it at runtime (i.e. via OTA update). See [Dynamic linking](#dynamic-linking-expo-ota-updates-support). |
+| `web`          | `boolean` | No      | `false`        | Also emit `<fontFamily>.woff2` into `outputDir`, rebuilt together with the `.ttf` on every change. It is never linked natively; link it on web like any other web font. |
 
   <details>
   <summary>Default Dir Path Behavior</summary>
@@ -165,9 +166,13 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 > Run `EXPO_DEBUG=1 npx expo prebuild` or `npx react-native-nano-icons --verbose` to get font build-time logs.
 
 > [!NOTE]
-> Linking the font on web is just as straightforward as always and does not require any actions other than the usual web font addition. Use `glyphMap.m.f` as the `font-family` of your `@font-face` rule: the name changes with every build of the set, so read it from the glyphmap instead of hardcoding it.
->
 > In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/), keyed by `glyphMap.m.f`. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
+
+> [!NOTE]
+> With `web: true`, the `my-icons` set also gets `assets/icons/nanoicons/my-icons.woff2` next to its `.ttf`. Link it on web like any regular font, named `my-icons`. If you want to `require()` it through Metro (e.g. with `expo-font`), add this to `metro.config.js`:
+> ```js
+> config.resolver.assetExts.push("woff2");
+> ```
 
 ### 4. Use
 

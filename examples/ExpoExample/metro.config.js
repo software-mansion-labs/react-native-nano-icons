@@ -21,6 +21,8 @@ function escapeRegExp(s) {
 
 const config = getDefaultConfig(projectRoot);
 
+config.resolver.assetExts.push('woff2');
+
 // Metro's default blockList can be RegExp or RegExp[]
 const baseBlockList = Array.isArray(config.resolver.blockList)
   ? config.resolver.blockList
