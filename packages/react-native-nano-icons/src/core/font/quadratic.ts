@@ -13,6 +13,8 @@ const cubic2quad = require('cubic2quad') as (
 const COMMAND = /([MLQCZ])([^MLQCZ]*)/g;
 const NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
 
+export const QUADRATIC_ERROR_BOUND_EM = 1 / 512;
+
 export function toQuadraticPath(d: string, errorBound: number): string {
   const out: string[] = [];
   let x = 0;

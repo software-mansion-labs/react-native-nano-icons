@@ -211,6 +211,76 @@ describe('buildAllFonts — skip/rebuild logic', () => {
     ).toBe(false);
   });
 
+  test('stale outputs are kept when the build fails with keepOutputsOnFailure', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash_value');
+    mockRunPipeline.mockRejectedValue(new Error('boom'));
+
+    await expect(
+      buildAllFonts([makeIconSet()], os.tmpdir(), {
+        keepOutputsOnFailure: true,
+      })
+    ).rejects.toThrow();
+
+    expect(fs.existsSync(path.join(outputDir, `${FONT_FAMILY}.ttf`))).toBe(
+      true
+    );
+    expect(
+      fs.existsSync(path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`))
+    ).toBe(true);
+  });
+
+  describe('withWeb: false', () => {
+    const webSet = (): IconSetConfig => ({ ...makeIconSet(), web: true });
+
+    test('a rebuild drops the woff2 that no longer matches', async () => {
+      writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash', undefined, true);
+      const [built] = await buildAllFonts([webSet()], os.tmpdir(), {
+        withWeb: false,
+      });
+      expect(mockRunPipeline).toHaveBeenCalledWith(
+        expect.objectContaining({ web: false }),
+        expect.anything(),
+        expect.anything()
+      );
+      expect(built!.woff2Path).toBeUndefined();
+      expect(fs.existsSync(path.join(outputDir, `${FONT_FAMILY}.woff2`))).toBe(
+        false
+      );
+    });
+
+    test('a failed rebuild keeps the woff2 with the other outputs', async () => {
+      writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash', undefined, true);
+      mockRunPipeline.mockRejectedValue(new Error('boom'));
+      await expect(
+        buildAllFonts([webSet()], os.tmpdir(), {
+          withWeb: false,
+          keepOutputsOnFailure: true,
+        })
+      ).rejects.toThrow();
+      expect(fs.existsSync(path.join(outputDir, `${FONT_FAMILY}.woff2`))).toBe(
+        true
+      );
+    });
+
+    test('a current build is up to date with or without its woff2', async () => {
+      writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, undefined, true);
+      await buildAllFonts([webSet()], os.tmpdir(), { withWeb: false });
+      expect(mockRunPipeline).not.toHaveBeenCalled();
+
+      writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, undefined, false);
+      await buildAllFonts([webSet()], os.tmpdir(), { withWeb: false });
+      expect(mockRunPipeline).not.toHaveBeenCalled();
+
+      await buildAllFonts([webSet()], os.tmpdir());
+      expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+      expect(mockRunPipeline).toHaveBeenCalledWith(
+        expect.objectContaining({ web: true }),
+        expect.anything(),
+        expect.anything()
+      );
+    });
+  });
+
   test('runFontPipeline is called when output files exist but meta.hash is absent', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY); // no hash argument
     await buildAllFonts([makeIconSet()], os.tmpdir());

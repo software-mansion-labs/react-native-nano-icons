@@ -38,6 +38,19 @@ function cachedProcessColor(color: string): number {
   return result;
 }
 
+async function loadFontFromDevServer(family: string): Promise<boolean> {
+  if (__DEV__) {
+    const dev = require('./devServerFont') as typeof import('./devServerFont');
+    return dev.loadFontFromDevServer(family);
+  }
+  return false;
+}
+
+async function ensureStaticFont(family: string): Promise<void> {
+  await loadFontFromDevServer(family);
+  await checkFontIntegrity(family, 'static');
+}
+
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
 ): IconComponent<GM>;
@@ -63,7 +76,8 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
   if (managed) {
     void loadDynamicFont(fontFamilyBasename, font).then(
       () => checkFontIntegrity(fontFamilyBasename, linking),
-      (err) => {
+      async (err) => {
+        if (await loadFontFromDevServer(fontFamilyBasename)) return;
         if (isFontMismatch(err)) {
           reportFontMismatch(fontFamilyBasename, linking);
         } else {
@@ -72,7 +86,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       }
     );
   } else if (linking === 'static') {
-    void checkFontIntegrity(fontFamilyBasename, linking);
+    void ensureStaticFont(fontFamilyBasename);
   }
 
   // Pre-compute per-icon static data (codepoints, default colors) once at set creation
