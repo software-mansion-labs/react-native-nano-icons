@@ -238,6 +238,10 @@ export async function buildAllFonts(
       continue;
     }
 
+    if (webOutput === 'ignored' && fs.existsSync(woff2Path)) {
+      fs.unlinkSync(woff2Path);
+    }
+
     results.push({
       fontFamily,
       family: out.family,

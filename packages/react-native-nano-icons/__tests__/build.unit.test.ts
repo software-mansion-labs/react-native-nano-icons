@@ -232,7 +232,7 @@ describe('buildAllFonts — skip/rebuild logic', () => {
   describe('withWeb: false', () => {
     const webSet = (): IconSetConfig => ({ ...makeIconSet(), web: true });
 
-    test('builds without the woff2 and leaves an existing one alone', async () => {
+    test('a rebuild drops the woff2 that no longer matches', async () => {
       writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash', undefined, true);
       const [built] = await buildAllFonts([webSet()], os.tmpdir(), {
         withWeb: false,
@@ -243,6 +243,20 @@ describe('buildAllFonts — skip/rebuild logic', () => {
         expect.anything()
       );
       expect(built!.woff2Path).toBeUndefined();
+      expect(fs.existsSync(path.join(outputDir, `${FONT_FAMILY}.woff2`))).toBe(
+        false
+      );
+    });
+
+    test('a failed rebuild keeps the woff2 with the other outputs', async () => {
+      writeFakeOutputs(outputDir, FONT_FAMILY, 'stale_hash', undefined, true);
+      mockRunPipeline.mockRejectedValue(new Error('boom'));
+      await expect(
+        buildAllFonts([webSet()], os.tmpdir(), {
+          withWeb: false,
+          keepOutputsOnFailure: true,
+        })
+      ).rejects.toThrow();
       expect(fs.existsSync(path.join(outputDir, `${FONT_FAMILY}.woff2`))).toBe(
         true
       );

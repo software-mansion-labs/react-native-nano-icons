@@ -176,7 +176,7 @@ const { withNanoIcons } = require('react-native-nano-icons/metro');
 module.exports = withNanoIcons(config);
 ```
 
-It reads the same config the CLI and the config plugin use (`.nanoicons.json`, otherwise the plugin entry in the app config), builds every set when Metro starts and rebuilds only the sets whose SVGs changed. The rebuilt `.glyphmap.json` reaches the app through Fast Refresh; the `.ttf` is served by Metro and registered by the library in development builds, for static and dynamic sets alike. If a rebuild fails, the app keeps the last good font and the error is printed in the Metro terminal. Icons that did not change are not processed again, and the `.woff2` of a `web: true` set is only produced once Metro has served a web bundle.
+It reads the same config the CLI and the config plugin use (`.nanoicons.json`, otherwise the plugin entry in the app config), builds every set when Metro starts and rebuilds only the sets whose SVGs changed. The rebuilt `.glyphmap.json` reaches the app through Fast Refresh; the `.ttf` is served by Metro and registered by the library in development builds, for static and dynamic sets alike. If a rebuild fails, the app keeps the last good font and the error is printed in the Metro terminal. Icons that did not change are not processed again, and the `.woff2` of a `web: true` set is only produced once Metro has served a web bundle; until then a rebuild removes the previous `.woff2`, so run the font step (CLI or `expo prebuild`) before exporting for web.
 
 Release bundles and native builds are untouched: fonts are linked exactly as configured, and a stale natively linked font still reports the usual integrity warning.
 
