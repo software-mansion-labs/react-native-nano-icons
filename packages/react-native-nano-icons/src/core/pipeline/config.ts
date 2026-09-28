@@ -24,3 +24,12 @@ export function ensureEmptyDir(dir: string): void {
 export function ensureDir(dir: string): void {
   fs.mkdirSync(dir, { recursive: true });
 }
+
+export function writeFileAtomic(
+  filePath: string,
+  data: string | Uint8Array
+): void {
+  const tmpPath = `${filePath}.tmp`;
+  fs.writeFileSync(tmpPath, data);
+  fs.renameSync(tmpPath, filePath);
+}

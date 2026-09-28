@@ -52,7 +52,9 @@ native module present
 ├─ static set
 │  ├─ font argument passed ──────────────── △ "…built with static linking, so the font passed … is ignored."
 │  ├─ font named m.f resident ───────────── ✔
-│  └─ not resident (fonts rebuilt, app not) ▢ ⚠ "…missing or out of date… Regenerate the icon fonts…"
+│  └─ not resident (fonts rebuilt, app not)
+│     ├─ dev build, Metro with withNanoIcons ✔ fetched from Metro at /__nanoicons/<m.f>.ttf and registered, nothing recorded
+│     └─ otherwise ─────────────────────── ▢ ⚠ "…missing or out of date… Regenerate the icon fonts…"
 └─ dynamic set
    ├─ m.f already registered in this process ✔ icons render, nothing recorded, whatever the font argument
    │                                          (expo-font, an earlier load; registrations live until the process exits)
@@ -64,6 +66,7 @@ native module present
    ├─ font argument is not a usable source ▢ ⚠ "…has no usable font source… Pass require(\"X.ttf\") or { uri }…"
    ├─ load fails (I/O, bad uri, bad data) ─ ▢ ⚠ "…could not be loaded: <reason>… Make sure the .ttf is delivered with your update."
    │                                          reason: "Could not read font at <uri>" · "Invalid font data"
+   │                                          dev build with Metro + withNanoIcons: the Metro copy is tried first, the warning only if that fails too
    └─ font loads later (loadFont, own load) ✔ issue dropped, listeners get it with status 'resolved'
 ```
 
@@ -78,6 +81,7 @@ getFontIntegrityIssues() ─────── current issues: { fontFamily, fam
 
 ```
 stale static ───── edit an svg → CLI → reload JS only          (rebuild app = fixed)
+                   with withNanoIcons in metro.config.js the edit alone rebuilds the font and the app picks it up; no state to see
 old binary ─────── install app from main → run JS from this branch
 OTA mismatch ───── linking: dynamic → CLI --dynamic → copy an older .ttf over the output
 late font ──────── bad { uri } or no font → icons blank → OTA with the file, or loadFont(require(…)) → icons return,

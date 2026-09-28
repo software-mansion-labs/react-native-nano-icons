@@ -9,8 +9,17 @@ import {
 } from '../font/compile';
 import { buildFontFamily } from '../../utils/fontIdentity';
 import type { GlyphLayer, NanoGlyphMap, NanoLogger } from '../types';
-import { ensureDir, type PipelineConfig, type PipelinePaths } from './config';
-import { defaultConcurrency, prepareIcons } from './iconPool';
+import {
+  ensureDir,
+  writeFileAtomic,
+  type PipelineConfig,
+  type PipelinePaths,
+} from './config';
+import { defaultConcurrency, type SvgWorkerPool } from './iconPool';
+import {
+  prepareIconsWithCache,
+  type PreparedSvgCache,
+} from './preparedSvgCache';
 
 export type PipelineResult = {
   ttfPath: string;
@@ -26,7 +35,14 @@ export type PipelineResult = {
 export async function runFontPipeline(
   config: PipelineConfig,
   paths: PipelinePaths,
-  options?: { logger?: NanoLogger; inputHash?: string; concurrency?: number }
+  options?: {
+    logger?: NanoLogger;
+    inputHash?: string;
+    concurrency?: number;
+    preparedSvgCache?: PreparedSvgCache;
+    svgWorkerPool?: SvgWorkerPool;
+    svgHashByFile?: Map<string, string>;
+  }
 ): Promise<PipelineResult> {
   const startTime = Date.now();
   const logger = options?.logger;
@@ -62,7 +78,7 @@ export async function runFontPipeline(
 
   const failed: string[] = [];
 
-  const results = await prepareIcons(
+  const results = await prepareIconsWithCache(
     files.map((file) => ({
       file,
       filePath: path.join(paths.inputDir, file),
@@ -70,7 +86,10 @@ export async function runFontPipeline(
       upm: config.upm,
       safeZone: config.safeZone,
     })),
-    options?.concurrency ?? defaultConcurrency()
+    options?.concurrency ?? defaultConcurrency(),
+    options?.preparedSvgCache,
+    options?.svgWorkerPool,
+    options?.svgHashByFile
   );
 
   for (const result of results) {
@@ -103,16 +122,6 @@ export async function runFontPipeline(
     );
   }
 
-  const glyphmapPath = path.join(
-    paths.outputDir,
-    `${config.fontFamily}.glyphmap.json`
-  );
-
-  if (inputHash) {
-    glyphMap.m.h = inputHash;
-  }
-  await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap), 'utf8');
-
   logger?.info(`Compiling TTF…`);
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
 
@@ -134,8 +143,18 @@ export async function runFontPipeline(
   if (config.web && ttfBuffer) {
     logger?.info(`Compiling WOFF2…`);
     woff2Path = path.join(paths.outputDir, `${config.fontFamily}.woff2`);
-    await fsp.writeFile(woff2Path, await compileWoff2FromTtf(ttfBuffer));
+    writeFileAtomic(woff2Path, await compileWoff2FromTtf(ttfBuffer));
   }
+
+  const glyphmapPath = path.join(
+    paths.outputDir,
+    `${config.fontFamily}.glyphmap.json`
+  );
+
+  if (inputHash) {
+    glyphMap.m.h = inputHash;
+  }
+  writeFileAtomic(glyphmapPath, JSON.stringify(glyphMap));
 
   const iconCount = Object.keys(glyphMap.i).length;
   const elapsed = Date.now() - startTime;

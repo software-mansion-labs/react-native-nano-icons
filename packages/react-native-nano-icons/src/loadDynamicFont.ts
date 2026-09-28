@@ -148,15 +148,19 @@ export function useDynamicFontPending(
   managed: boolean,
   family: string
 ): boolean {
-  const status = useSyncExternalStore(
+  const status = useDynamicFontStatus(family);
+  return managed && status === 'loading';
+}
+
+export function useDynamicFontStatus(family: string): FontStatus | undefined {
+  return useSyncExternalStore(
     (cb) => {
       listeners.add(cb);
       return () => listeners.delete(cb);
     },
-    () => (managed ? statusByFamily.get(family) : undefined),
+    () => statusByFamily.get(family),
     () => undefined
   );
-  return managed && status === 'loading';
 }
 
 /** Test-only: reset module state between tests. */

@@ -1,5 +1,15 @@
 import { createElement, type CSSProperties, type ReactElement } from 'react';
 
+const mockLoadFontFromDevServer = jest.fn<Promise<boolean>, [string]>();
+const mockUseDynamicFontStatus = jest.fn<string | undefined, [string]>();
+
+jest.mock('../src/devServerFont', () => ({
+  loadFontFromDevServer: (family: string) => mockLoadFontFromDevServer(family),
+}));
+jest.mock('../src/loadDynamicFont', () => ({
+  useDynamicFontStatus: (family: string) => mockUseDynamicFontStatus(family),
+}));
+
 import { createIconSet } from '../src/createNanoIconsSet.web';
 
 type HostNode = {
@@ -37,10 +47,27 @@ function layerStyles(): CSSProperties[] {
 }
 
 describe('createIconSet (web)', () => {
+  beforeEach(() => {
+    mockLoadFontFromDevServer.mockReset().mockResolvedValue(false);
+    mockUseDynamicFontStatus.mockReset().mockReturnValue(undefined);
+  });
+
   test('layers use the configured family, not the build-hashed one', () => {
     const styles = layerStyles();
     expect(styles).toHaveLength(1);
     expect(styles[0]!.fontFamily).toBe('Ui');
+  });
+
+  test('in development the build is requested from the dev server', () => {
+    createIconSet(glyphMap);
+    expect(mockLoadFontFromDevServer).toHaveBeenCalledWith('Ui-0123abcd');
+  });
+
+  test('layers switch to the build-hashed family once the dev server font is ready', () => {
+    mockUseDynamicFontStatus.mockReturnValue('ready');
+    const styles = layerStyles();
+    expect(styles[0]!.fontFamily).toBe('Ui-0123abcd');
+    expect(mockUseDynamicFontStatus).toHaveBeenCalledWith('Ui-0123abcd');
   });
 
   test('display name uses the configured family', () => {

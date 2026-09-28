@@ -12,43 +12,101 @@ export function defaultConcurrency(): number {
   return Math.max(1, Math.min(8, os.availableParallelism()));
 }
 
+async function prepareInProcess(tasks: IconTask[]): Promise<IconResult[]> {
+  const pathkit = await loadPathKit();
+  const results: IconResult[] = [];
+  for (const task of tasks) results.push(await prepareIcon(task, pathkit));
+  return results;
+}
+
+export class SvgWorkerPool {
+  private readonly workers: Worker[] = [];
+  private queue: Promise<unknown> = Promise.resolve();
+
+  constructor(private readonly size = defaultConcurrency()) {}
+
+  prepare(tasks: IconTask[]): Promise<IconResult[]> {
+    const run = this.queue.then(() => this.run(tasks));
+    this.queue = run.catch(() => {});
+    return run;
+  }
+
+  warm(): void {
+    if (!fs.existsSync(WORKER_PATH)) return;
+    for (let i = this.workers.length; i < this.size; i++) {
+      const worker = new Worker(WORKER_PATH);
+      worker.unref();
+      this.workers.push(worker);
+    }
+  }
+
+  async close(): Promise<void> {
+    await Promise.all(this.workers.splice(0).map((w) => w.terminate()));
+  }
+
+  private async run(tasks: IconTask[]): Promise<IconResult[]> {
+    const wanted = Math.min(this.size, tasks.length);
+    if (wanted <= 1 || !fs.existsSync(WORKER_PATH)) {
+      return prepareInProcess(tasks);
+    }
+    for (let i = this.workers.length; i < wanted; i++) {
+      this.workers.push(new Worker(WORKER_PATH));
+    }
+
+    const results: IconResult[] = new Array(tasks.length);
+    let next = 0;
+
+    const drain = (worker: Worker) =>
+      new Promise<void>((resolve, reject) => {
+        let current = -1;
+        const onMessage = (result: IconResult) => {
+          results[current] = result;
+          dispatch();
+        };
+        const onError = (err: Error) => {
+          detach();
+          this.discard(worker);
+          reject(err);
+        };
+        const detach = () => {
+          worker.off('message', onMessage);
+          worker.off('error', onError);
+          worker.unref();
+        };
+        const dispatch = () => {
+          if (next >= tasks.length) {
+            detach();
+            resolve();
+            return;
+          }
+          current = next++;
+          worker.postMessage(tasks[current]);
+        };
+        worker.ref();
+        worker.on('message', onMessage);
+        worker.on('error', onError);
+        dispatch();
+      });
+
+    await Promise.all(this.workers.slice(0, wanted).map(drain));
+    return results;
+  }
+
+  private discard(worker: Worker): void {
+    const i = this.workers.indexOf(worker);
+    if (i !== -1) this.workers.splice(i, 1);
+    void worker.terminate();
+  }
+}
+
 export async function prepareIcons(
   tasks: IconTask[],
   concurrency: number
 ): Promise<IconResult[]> {
-  const workers = Math.min(concurrency, tasks.length);
-  if (workers <= 1 || !fs.existsSync(WORKER_PATH)) {
-    const pathkit = await loadPathKit();
-    const results: IconResult[] = [];
-    for (const task of tasks) results.push(await prepareIcon(task, pathkit));
-    return results;
+  const pool = new SvgWorkerPool(concurrency);
+  try {
+    return await pool.prepare(tasks);
+  } finally {
+    await pool.close();
   }
-
-  const results: IconResult[] = new Array(tasks.length);
-  let next = 0;
-
-  const runWorker = () =>
-    new Promise<void>((resolve, reject) => {
-      const worker = new Worker(WORKER_PATH);
-      let current = -1;
-      const dispatch = () => {
-        if (next >= tasks.length) {
-          worker.terminate().then(() => resolve(), reject);
-          return;
-        }
-        current = next++;
-        worker.postMessage(tasks[current]);
-      };
-      worker.on('message', (result: IconResult) => {
-        results[current] = result;
-        dispatch();
-      });
-      worker.on('error', (err) => {
-        worker.terminate().finally(() => reject(err));
-      });
-      dispatch();
-    });
-
-  await Promise.all(Array.from({ length: workers }, runWorker));
-  return results;
 }

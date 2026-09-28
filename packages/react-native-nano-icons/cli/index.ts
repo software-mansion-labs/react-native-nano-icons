@@ -5,6 +5,10 @@ export {
   type BuiltFont,
 } from './build';
 export {
+  SvgWorkerPool,
+  type PreparedSvgCache,
+} from '../src/core/pipeline/index';
+export {
   createOraLogger,
   createQuietLogger,
   detectExpoLogLevel,
@@ -16,5 +20,8 @@ export {
   loadDynamicIconSets,
   type NanoIconsConfig,
 } from './config';
-export { loadDynamicSetsFromAppConfig } from './expoConfig';
+export {
+  loadDynamicSetsFromAppConfig,
+  loadIconSetsFromAppConfig,
+} from './expoConfig';
 export { linkBare, syncAndroidFontAssets } from './link';

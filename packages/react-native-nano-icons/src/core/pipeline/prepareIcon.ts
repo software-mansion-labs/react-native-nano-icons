@@ -1,5 +1,6 @@
 import path from 'node:path';
 
+import { QUADRATIC_ERROR_BOUND_EM, toQuadraticPath } from '../font/quadratic';
 import { shouldSkipPath } from '../glyph/parse';
 import { computePlacement, transformPathForFont } from '../glyph/placement';
 import type { PathKitModule } from '../pathkit/types';
@@ -83,16 +84,17 @@ export async function prepareIcon(
 
   for (const p of prepared.paths) {
     if (shouldSkipPath(p.d, p.fill)) continue;
+    const placed = transformPathForFont(pathkit, p.d, {
+      vx,
+      vy,
+      scale,
+      xOff,
+      yOff,
+      upm: task.upm,
+    });
     result.layers.push({
       fill: p.fill,
-      d: transformPathForFont(pathkit, p.d, {
-        vx,
-        vy,
-        scale,
-        xOff,
-        yOff,
-        upm: task.upm,
-      }),
+      d: toQuadraticPath(placed, task.upm * QUADRATIC_ERROR_BOUND_EM),
     });
   }
 

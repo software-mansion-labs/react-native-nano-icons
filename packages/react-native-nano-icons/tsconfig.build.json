@@ -4,6 +4,7 @@
     "lib",
     "cli",
     "plugin",
+    "metro",
     "scripts",
     "src/core/pipeline",
     "src/core/font",
