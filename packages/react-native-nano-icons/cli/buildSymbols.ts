@@ -6,7 +6,11 @@ import {
   type NanoSymbolMap,
 } from '../src/core/pipeline/runSymbolPipeline';
 import type { NanoLogger } from './logger';
-import { getFingerprintSync } from '../src/utils/fingerPrint';
+import { fingerprintSymbolDirSync } from '../src/utils/fingerPrint';
+import {
+  fontToolchainVersions,
+  packageVersion,
+} from '../src/utils/packageVersion';
 
 export type SymbolSetConfig = {
   /** Folder of SVG files (relative to project root). */
@@ -24,10 +28,6 @@ export type SymbolSetConfig = {
 export type BuiltSymbolSet = SymbolsPipelineResult;
 
 const DEFAULT_PREFIX = 'nano';
-
-// Bump when emission changes — part of the fingerprint, so upgrades invalidate
-// outputs built from unchanged SVGs.
-const GENERATOR_VERSION = 1;
 
 function shouldSkipGeneration(
   inputHash: string,
@@ -94,6 +94,8 @@ export async function buildAllSymbols(
   options?: { logger?: NanoLogger }
 ): Promise<BuiltSymbolSet[]> {
   const logger = options?.logger;
+  const version = packageVersion();
+  const toolchain = fontToolchainVersions();
   const results: BuiltSymbolSet[] = [];
 
   for (let i = 0; i < symbolSets.length; i++) {
@@ -113,8 +115,12 @@ export async function buildAllSymbols(
       : path.join(path.dirname(inputDir), 'nanoicons');
 
     const multicolor = set.multicolor === true;
-    // Output-affecting knobs are part of the fingerprint.
-    const inputHash = `${getFingerprintSync(inputDir)}:g${GENERATOR_VERSION}:mc${multicolor ? 1 : 0}`;
+    const { hash: inputHash } = fingerprintSymbolDirSync(inputDir, {
+      prefix,
+      multicolor,
+      version,
+      toolchain,
+    });
 
     const skipped = shouldSkipGeneration(
       inputHash,

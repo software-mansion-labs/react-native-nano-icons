@@ -209,7 +209,7 @@ Symbol layers **blend** (paint-over), and monochrome rendering — what tab bars
 
 Caveat: boolean subtraction along curved shared edges can leave hairline anti-aliasing seams between adjacent regions at very large render sizes; invisible at tab-bar sizes.
 
-The generator version (`GENERATOR_VERSION` in `cli/buildSymbols.ts`) is folded into the stored fingerprint, so emitter changes invalidate cached outputs even when SVG inputs are unchanged.
+The package version and the toolchain versions are folded into the stored fingerprint, so upgrades invalidate cached outputs even when SVG inputs are unchanged.
 
 ### Color management: what survives flattening, and when it blobs
 
@@ -318,7 +318,7 @@ A `withDangerousMod(['ios'])` writes the `.symbolset` folders into the **already
 
 ### Incremental builds
 
-`buildAllSymbols()` (**`cli/buildSymbols.ts`**) computes the same SHA-256 input fingerprint as the font pipeline (`getFingerprintSync`) and stores it in `<name>.symbolmap.json` (`m.h`). If the hash matches and every output exists, generation is skipped and the previous result is reconstructed from the symbolmap.
+`buildAllSymbols()` (**`cli/buildSymbols.ts`**) computes a SHA-256 input fingerprint (`fingerprintSymbolDirSync`: SVG names and contents, `prefix`, `multicolor`, package and toolchain versions) and stores it in `<name>.symbolmap.json` (`m.h`). If the hash matches and every output exists, generation is skipped and the previous result is reconstructed from the symbolmap.
 
 ---
 

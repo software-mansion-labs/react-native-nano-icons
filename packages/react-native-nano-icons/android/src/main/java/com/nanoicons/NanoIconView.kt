@@ -5,7 +5,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.view.View
-import com.facebook.react.common.assets.ReactFontManager
 
 class NanoIconView(context: Context) : View(context) {
 
@@ -26,18 +25,29 @@ class NanoIconView(context: Context) : View(context) {
   init {
     // Transparent background, no default drawing
     setBackgroundColor(0x00000000)
+    NanoIconFonts.track(this)
   }
 
   fun setFontFamily(fontFamily: String) {
     if (fontFamily != cachedFontFamily) {
       cachedFontFamily = fontFamily
-      cachedTypeface = ReactFontManager.getInstance()
-        .getTypeface(fontFamily, Typeface.NORMAL, context.assets)
-      paint.typeface = cachedTypeface
-      updateFontFactors()
-      fitToBounds()
-      invalidate()
+      applyTypeface(NanoIconFonts.resolve(fontFamily, context.assets))
     }
+  }
+
+  fun resolveFontIfMissing() {
+    val family = cachedFontFamily ?: return
+    if (cachedTypeface != null) return
+    val typeface = NanoIconFonts.resolve(family, context.assets) ?: return
+    applyTypeface(typeface)
+  }
+
+  private fun applyTypeface(typeface: Typeface?) {
+    cachedTypeface = typeface
+    paint.typeface = typeface
+    updateFontFactors()
+    fitToBounds()
+    invalidate()
   }
 
   fun setFontSize(size: Float) {

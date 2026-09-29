@@ -10,7 +10,7 @@ export interface IconSetConfig {
   outputDir?: string;
   /** Units per em (default 1024). */
   upm?: number;
-  /** Safe zone inside UPM for glyphs (default 1020). */
+  /** Safe zone inside UPM for glyphs (default upm * 1020 / 1024, i.e. 1020 at the default upm). Must not exceed upm. */
   safeZone?: number;
   /** First Unicode codepoint for glyphs (default 0xe900). Hex string or number. */
   startUnicode?: number | string;
@@ -22,6 +22,13 @@ export interface IconSetConfig {
    *   delivering it (e.g. via OTA) and registering it under the same font family name.
    */
   linking?: 'static' | 'dynamic';
+  /**
+   * Also emit `<fontFamily>.woff2` into `outputDir` for web. Defaults to `false`.
+   *
+   * The file is rebuilt together with the TTF on every change and is never linked
+   * natively; the host app links it like any other web font, under `fontFamily`.
+   */
+  web?: boolean;
 }
 
 /**
@@ -72,7 +79,9 @@ export interface NanoIconsPluginOptions {
  */
 export interface BuiltFont {
   fontFamily: string;
+  family: string;
   ttfPath: string;
   glyphmapPath: string;
   linking: 'static' | 'dynamic';
+  woff2Path?: string;
 }

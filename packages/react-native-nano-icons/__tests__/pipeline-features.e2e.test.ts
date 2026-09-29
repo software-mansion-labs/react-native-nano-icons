@@ -359,3 +359,50 @@ describe('Pipeline E2E — failure reporting', () => {
     );
   }, 120_000);
 });
+
+describe('Pipeline E2E — font identity', () => {
+  const HASH = 'c'.repeat(64);
+  const SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="10" height="10"/></svg>';
+
+  async function build(linking: 'static' | 'dynamic', inputHash?: string) {
+    const inputDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-id-in-'));
+    const outputDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-id-out-'));
+    await fsp.writeFile(path.join(inputDir, 'a.svg'), SVG);
+    const res = await runFontPipeline(
+      { ...PIPELINE, linking, fontFamily: 'IdSet' },
+      { inputDir, outputDir, tempDir: outputDir },
+      { inputHash }
+    );
+    const { Font } =
+      require('fonteditor-core') as typeof import('fonteditor-core');
+    const data = Font.create(fs.readFileSync(res.ttfPath), {
+      type: 'ttf',
+    }).get();
+    const glyphmap = JSON.parse(
+      fs.readFileSync(res.glyphmapPath, 'utf8')
+    ) as NanoGlyphMap;
+    await fsp.rm(inputDir, { recursive: true, force: true });
+    await fsp.rm(outputDir, { recursive: true, force: true });
+    return { names: data.name!, glyphmap, ttfPath: path.basename(res.ttfPath) };
+  }
+
+  test.each(['static', 'dynamic'] as const)(
+    '%s font family carries the short hash in TTF and glyphmap, file name stays',
+    async (linking) => {
+      const { names, glyphmap, ttfPath } = await build(linking, HASH);
+      expect(glyphmap.m.f).toBe('IdSet-cccccccc');
+      expect(names.postScriptName).toBe('IdSet-cccccccc');
+      expect(names.fontFamily).toBe('IdSet-cccccccc');
+      expect(glyphmap.m.h).toBe(HASH);
+      expect(ttfPath).toBe('IdSet.ttf');
+    },
+    120_000
+  );
+
+  test('without an input hash the configured name is used as is', async () => {
+    const { names, glyphmap } = await build('dynamic');
+    expect(glyphmap.m.f).toBe('IdSet');
+    expect(names.postScriptName).toBe('IdSet');
+  }, 120_000);
+});

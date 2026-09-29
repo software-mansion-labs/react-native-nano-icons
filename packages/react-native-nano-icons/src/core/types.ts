@@ -20,11 +20,20 @@ export type IconsMap = Record<string, GlyphEntry>;
  *   s - start unicode,
  *   h - hash,
  *   l - linking mode: 's' (static, bundled — default when absent) or 'd' (dynamic, OTA-delivered),
+ *   w - web output: true when a .woff2 was built alongside the .ttf (absent otherwise),
  * i - icons,
  *   adv - advance width,
  */
 export type NanoGlyphMap = {
-  m: { f: string; u: number; z: number; s: number; h?: string; l?: 's' | 'd' };
+  m: {
+    f: string;
+    u: number;
+    z: number;
+    s: number;
+    h?: string;
+    l?: 's' | 'd';
+    w?: true;
+  };
   i: IconsMap;
 };
 
@@ -37,6 +46,7 @@ export type NanoGlyphMapInput = {
     s: number;
     h?: string;
     l?: 's' | 'd' | (string & {});
+    w?: boolean;
   };
   i: Record<string, readonly unknown[]>;
 };

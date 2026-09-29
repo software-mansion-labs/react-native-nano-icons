@@ -10,6 +10,10 @@ export {
   type BuiltSymbolSet,
 } from './buildSymbols';
 export {
+  SvgWorkerPool,
+  type PreparedSvgCache,
+} from '../src/core/pipeline/index';
+export {
   createOraLogger,
   createQuietLogger,
   detectExpoLogLevel,
@@ -21,9 +25,13 @@ export {
   loadDynamicIconSets,
   type NanoIconsConfig,
 } from './config';
-export { loadDynamicSetsFromAppConfig } from './expoConfig';
+export {
+  loadDynamicSetsFromAppConfig,
+  loadIconSetsFromAppConfig,
+} from './expoConfig';
 export {
   linkBare,
+  syncAndroidFontAssets,
   linkBareSymbols,
   copySymbolsetsIntoCatalog,
   linkBareAndroidDrawables,

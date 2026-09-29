@@ -3,16 +3,29 @@ import path from 'node:path';
 
 import {
   compileTtfFromGlyphs,
+  compileWoff2FromTtf,
   parseCompileTtfFromGlyphsError,
   type FontGlyph,
 } from '../font/compile';
+import { buildFontFamily } from '../../utils/fontIdentity';
 import type { GlyphLayer, NanoGlyphMap, NanoLogger } from '../types';
-import { ensureDir, type PipelineConfig, type PipelinePaths } from './config';
-import { defaultConcurrency, prepareIcons } from './iconPool';
+import {
+  ensureDir,
+  writeFileAtomic,
+  type PipelineConfig,
+  type PipelinePaths,
+} from './config';
+import { defaultConcurrency, type SvgWorkerPool } from './iconPool';
+import {
+  prepareIconsWithCache,
+  type PreparedSvgCache,
+} from './preparedSvgCache';
 
 export type PipelineResult = {
   ttfPath: string;
   glyphmapPath: string;
+  family: string;
+  woff2Path?: string;
 };
 
 /**
@@ -22,7 +35,14 @@ export type PipelineResult = {
 export async function runFontPipeline(
   config: PipelineConfig,
   paths: PipelinePaths,
-  options?: { logger?: NanoLogger; inputHash?: string; concurrency?: number }
+  options?: {
+    logger?: NanoLogger;
+    inputHash?: string;
+    concurrency?: number;
+    preparedSvgCache?: PreparedSvgCache;
+    svgWorkerPool?: SvgWorkerPool;
+    svgHashByFile?: Map<string, string>;
+  }
 ): Promise<PipelineResult> {
   const startTime = Date.now();
   const logger = options?.logger;
@@ -35,13 +55,19 @@ export async function runFontPipeline(
     f.toLowerCase().endsWith('.svg')
   );
 
+  const inputHash = options?.inputHash;
+  const family = inputHash
+    ? buildFontFamily(config.fontFamily, inputHash)
+    : config.fontFamily;
+
   const glyphMap: NanoGlyphMap = {
     m: {
-      f: config.fontFamily,
+      f: family,
       u: config.upm,
       z: config.safeZone,
       s: config.startUnicode,
       ...(config.linking === 'dynamic' ? { l: 'd' as const } : {}),
+      ...(config.web ? { w: true as const } : {}),
     },
     i: {},
   };
@@ -52,7 +78,7 @@ export async function runFontPipeline(
 
   const failed: string[] = [];
 
-  const results = await prepareIcons(
+  const results = await prepareIconsWithCache(
     files.map((file) => ({
       file,
       filePath: path.join(paths.inputDir, file),
@@ -60,7 +86,10 @@ export async function runFontPipeline(
       upm: config.upm,
       safeZone: config.safeZone,
     })),
-    options?.concurrency ?? defaultConcurrency()
+    options?.concurrency ?? defaultConcurrency(),
+    options?.preparedSvgCache,
+    options?.svgWorkerPool,
+    options?.svgHashByFile
   );
 
   for (const result of results) {
@@ -93,24 +122,15 @@ export async function runFontPipeline(
     );
   }
 
-  const glyphmapPath = path.join(
-    paths.outputDir,
-    `${config.fontFamily}.glyphmap.json`
-  );
-
-  if (options?.inputHash) {
-    glyphMap.m.h = options.inputHash;
-  }
-  await fsp.writeFile(glyphmapPath, JSON.stringify(glyphMap), 'utf8');
-
   logger?.info(`Compiling TTF…`);
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
 
+  let ttfBuffer: Buffer | undefined;
   try {
-    await compileTtfFromGlyphs({
+    ttfBuffer = await compileTtfFromGlyphs({
       glyphs: allGlyphs,
       outTtfPath: ttfPath,
-      fontName: config.fontFamily,
+      fontName: family,
       upm: config.upm,
       ascent: config.upm,
       descent: 0,
@@ -119,13 +139,33 @@ export async function runFontPipeline(
     parseCompileTtfFromGlyphsError(err, codepointToIcon);
   }
 
+  let woff2Path: string | undefined;
+  if (config.web && ttfBuffer) {
+    logger?.info(`Compiling WOFF2…`);
+    woff2Path = path.join(paths.outputDir, `${config.fontFamily}.woff2`);
+    writeFileAtomic(woff2Path, await compileWoff2FromTtf(ttfBuffer));
+  }
+
+  const glyphmapPath = path.join(
+    paths.outputDir,
+    `${config.fontFamily}.glyphmap.json`
+  );
+
+  if (inputHash) {
+    glyphMap.m.h = inputHash;
+  }
+  writeFileAtomic(glyphmapPath, JSON.stringify(glyphMap));
+
   const iconCount = Object.keys(glyphMap.i).length;
   const elapsed = Date.now() - startTime;
+  const products = woff2Path
+    ? `${config.fontFamily}.ttf + ${config.fontFamily}.woff2`
+    : `${config.fontFamily}.ttf`;
   logger?.succeed(
-    `Built ${config.fontFamily}.ttf [${iconCount} icon${
+    `Built ${products} [${iconCount} icon${
       iconCount === 1 ? '' : 's'
     } in ${elapsed}ms]`
   );
 
-  return { ttfPath, glyphmapPath };
+  return { ttfPath, glyphmapPath, family, woff2Path };
 }

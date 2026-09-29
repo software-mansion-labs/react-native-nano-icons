@@ -33,8 +33,8 @@ if (fs.existsSync(PKG_README)) {
 let content = fs.readFileSync(ROOT_README, 'utf8');
 
 content = content.replace(
-  /\]\(packages\/react-native-nano-icons\/docs\/BENCHMARKS\.md\)/g,
-  `](${BLOB}/packages/react-native-nano-icons/docs/BENCHMARKS.md)`,
+  /\]\(packages\/react-native-nano-icons\/docs\/([^)]+\.md)\)/g,
+  `](${BLOB}/packages/react-native-nano-icons/docs/$1)`,
 );
 
 content = content.replace(

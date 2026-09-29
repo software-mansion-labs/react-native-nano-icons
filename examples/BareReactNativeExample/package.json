@@ -4,11 +4,13 @@
   "private": true,
   "scripts": {
     "build": "cd ios && bundle install && bundle exec pod update",
-    "android": "react-native run-android",
+    "start": "react-native start --client-logs",
+    "ios": "sh -c 'react-native run-ios --no-packager \"$@\" && react-native start --client-logs' --",
+    "ios:release": "react-native run-ios --no-packager --mode Release",
+    "android": "sh -c 'react-native run-android --no-packager \"$@\" && react-native start --client-logs' --",
+    "android:release": "react-native run-android --no-packager --mode Release",
     "android:clean": "rm -rf node_modules/react-native-safe-area-context/android/build android/app/.cxx android/.cxx && cd android && ./gradlew clean",
-    "ios": "yarn build && react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start",
     "test": "jest"
   },
   "dependencies": {
