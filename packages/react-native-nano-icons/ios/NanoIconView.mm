@@ -8,22 +8,8 @@
 
 using namespace facebook::react;
 
-// Forward-declare so the layer subclass can call the drawing method.
 @interface NanoIconView ()
 - (void)_resolveFontIfMissing;
-- (void)_drawIconInContext:(CGContextRef)context bounds:(CGRect)bounds;
-@end
-
-// Lightweight sublayer for inline-in-Text icons. Provides a shifted pixel
-// buffer so the icon can overflow the Yoga frame without a full UIView.
-@interface NanoIconDrawingLayer : CALayer
-@property (nonatomic, weak) NanoIconView *owner;
-@end
-
-@implementation NanoIconDrawingLayer
-- (void)drawInContext:(CGContextRef)ctx {
-  [self.owner _drawIconInContext:ctx bounds:self.bounds];
-}
 @end
 
 static NSHashTable<NanoIconView *> *sNanoIconLiveViews;
@@ -56,18 +42,6 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   CGPoint _baselinePosition;
   BOOL _metricsValid;
 
-  // Inline-in-Text detection — resolved once on first layout, cached until reparenting.
-  // Standalone icons (vast majority) skip the superview walk entirely after detection.
-  BOOL _inlineDetected;
-  BOOL _isInlineInText;
-  UIView * __weak _paragraphView;
-  CGFloat _cachedBaselineOffset;
-  BOOL _baselineOffsetValid;
-
-  // Drawing sublayer for inline icons — provides a shifted pixel buffer so the
-  // icon can overflow the Yoga frame. Lighter than a UIView (no responder chain,
-  // hit testing, or accessibility). Standalone icons draw directly via drawRect:.
-  CALayer *_drawingLayer;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
@@ -82,8 +56,6 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
     _fitScale = 1.0;
     _baselinePosition = CGPointZero;
     NanoIconTrackLiveView(self);
-
-    // _drawingLayer is created lazily only when inline in Text
   }
   return self;
 }
@@ -112,93 +84,8 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   _metricsValid = YES;
 }
 
-// Detect whether this icon is inline inside a <Text> component and, if so,
-// compute the baseline offset in a single pass. Deferred to first layout
-// (not didMoveToSuperview) because Fabric may assemble the hierarchy bottom-up.
-// For standalone icons this completes in 1-3 class name checks with no
-// ObjC runtime method resolution or attributed string reads.
-- (void)_detectAndCacheInlineState {
-  _inlineDetected = YES;
-  _isInlineInText = NO;
-  _paragraphView = nil;
-  _cachedBaselineOffset = 0;
-  _baselineOffsetValid = YES;
-
-  // RCTParagraphComponentView is the immediate or near-immediate parent
-  // when the icon is inside <Text>. Three levels covers all known layouts.
-  UIView *current = self.superview;
-  UIView *target = nil;
-  for (int i = 0; i < 3 && current; i++) {
-    if ([NSStringFromClass([current class]) isEqualToString:@"RCTParagraphComponentView"]) {
-      target = current;
-      break;
-    }
-    current = current.superview;
-  }
-
-  if (!target) return;
-
-  NSAttributedString *attrStr = nil;
-  if ([target respondsToSelector:@selector(attributedText)]) {
-    attrStr = [target performSelector:@selector(attributedText)];
-  }
-  if (!attrStr || attrStr.length == 0) return;
-
-  UIFont *f = [attrStr attribute:NSFontAttributeName atIndex:0 effectiveRange:nil];
-  if (!f) return;
-
-  _isInlineInText = YES;
-  _paragraphView = target;
-
-  // Derive the distance from this view's bottom edge to the text baseline.
-  // Respects custom RN lineHeight (mapped to NSParagraphStyle.maximumLineHeight)
-  // and any baseline offset applied by Fabric's text layout.
-  NSParagraphStyle *style = [attrStr attribute:NSParagraphStyleAttributeName
-                                       atIndex:0 effectiveRange:nil];
-  CGFloat lineHeight = (style && style.maximumLineHeight > 0)
-                     ? style.maximumLineHeight : f.lineHeight;
-
-  NSNumber *bOff = [attrStr attribute:NSBaselineOffsetAttributeName
-                              atIndex:0 effectiveRange:nil];
-  CGFloat baselineFromLineTop = f.ascender - (bOff ? bOff.doubleValue : 0);
-
-  CGFloat frameBottom = self.frame.origin.y + self.frame.size.height;
-  CGFloat posInLine = fmod(frameBottom, lineHeight);
-  if (posInLine < 0.01) posInLine = lineHeight;
-
-  _cachedBaselineOffset = MAX(0, posInLine - baselineFromLineTop);
-}
-
-// Lazily create the drawing sublayer for inline-in-Text icons.
-// The sublayer's frame is shifted upward so the icon overflows the Yoga box.
-- (void)_ensureDrawingLayer {
-  if (_drawingLayer) return;
-  NanoIconDrawingLayer *layer = [NanoIconDrawingLayer layer];
-  layer.owner = self;
-  layer.opaque = NO;
-  layer.needsDisplayOnBoundsChange = YES;
-  layer.contentsScale = [UIScreen mainScreen].scale;
-  [self.layer addSublayer:layer];
-  _drawingLayer = layer;
-}
-
-// Reset inline state when the view moves to a new parent.
-- (void)didMoveToSuperview {
-  [super didMoveToSuperview];
-  _inlineDetected = NO;
-  _isInlineInText = NO;
-  _paragraphView = nil;
-  _baselineOffsetValid = NO;
-  if (_drawingLayer) {
-    [_drawingLayer removeFromSuperlayer];
-    _drawingLayer = nil;
-  }
-}
-
-// _cachedBaselineOffset and _fitScale are both derived from bounds.
 - (void)setBounds:(CGRect)bounds {
   if (!CGSizeEqualToSize(self.bounds.size, bounds.size)) {
-    _baselineOffsetValid = NO;
     _metricsValid = NO;
   }
   [super setBounds:bounds];
@@ -206,43 +93,15 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 
 #pragma mark - Layout
 
-// Standalone: no work beyond metrics validation (drawing via drawRect: on self).
-// Inline: position the drawing sublayer with the cached baseline offset,
-// recomputing only when bounds change or the view is reparented.
 - (void)layoutSubviews {
   [super layoutSubviews];
   if (!_metricsValid) [self _updateMetrics];
-
-  if (!_inlineDetected) {
-    [self _detectAndCacheInlineState];
-  }
-
-  if (_isInlineInText) {
-    if (!_baselineOffsetValid) {
-      [self _detectAndCacheInlineState];
-    }
-    BOOL created = !_drawingLayer;
-    [self _ensureDrawingLayer];
-    CGRect newFrame = CGRectMake(0, -_cachedBaselineOffset,
-                                 self.bounds.size.width, self.bounds.size.height);
-    if (!CGRectEqualToRect(_drawingLayer.frame, newFrame)) {
-      [CATransaction begin];
-      [CATransaction setDisableActions:YES];
-      _drawingLayer.frame = newFrame;
-      [CATransaction commit];
-    }
-    // First layout after inline detection: the layer missed the initial
-    // setNeedsDisplay from updateProps (which targeted self before detection).
-    if (created) [_drawingLayer setNeedsDisplay];
-  }
-  // standalone: draws directly via drawRect: on self
 }
 
 #pragma mark - Drawing
 
 // Standalone icons draw directly in this view's drawRect:.
 - (void)drawRect:(CGRect)rect {
-  if (_isInlineInText) return; // inline icons draw via _drawingLayer
   CGContextRef ctx = UIGraphicsGetCurrentContext();
   if (ctx) [self _drawIconInContext:ctx bounds:self.bounds];
 }
@@ -402,11 +261,7 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 }
 
 - (void)_setNeedsRedraw {
-  if (_isInlineInText && _drawingLayer) {
-    [_drawingLayer setNeedsDisplay];
-  } else {
-    [self setNeedsDisplay];
-  }
+  [self setNeedsDisplay];
 }
 
 - (void)dealloc {

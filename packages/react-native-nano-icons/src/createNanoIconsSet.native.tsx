@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useContext, useMemo } from 'react';
 import { PixelRatio, UIManager, View, processColor } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
@@ -6,11 +6,14 @@ import { shallowEqualColor } from './utils/shallowEqualColor';
 import {
   DEFAULT_ICON_SIZE,
   resolveGlyphEntry,
+  createCharCache,
   createLayerColorResolver,
 } from './utils/glyphRuntime';
+import { TextAncestorContext } from './utils/textAncestor';
 import NanoIconViewNative from './specs/NanoIconViewNativeComponent';
 import {
   createJSIconSet,
+  renderInlineIcon,
   warnIfLinkingMismatch,
 } from './createNanoIconsSet.shared';
 import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
@@ -89,6 +92,8 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
     void ensureStaticFont(fontFamilyBasename);
   }
 
+  const getChar = createCharCache();
+
   // Pre-compute per-icon static data (codepoints, default colors) once at set creation
   // Avoids layers.map() + processColor per icon mount
   const codepointsCache = new Map<string, readonly number[]>();
@@ -126,7 +131,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       size = DEFAULT_ICON_SIZE,
       color,
       style,
-      allowFontScaling = true,
+      allowFontScaling,
       accessible,
       accessibilityLabel,
       accessibilityRole = 'image',
@@ -135,12 +140,14 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       testID,
       ref,
     }: IconProps<keyof GM['i']>) => {
-      const fontScale = allowFontScaling ? PixelRatio.getFontScale() : 1;
+      const fontScale =
+        allowFontScaling !== false ? PixelRatio.getFontScale() : 1;
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
       const scaledSize = size * fontScale;
       const width = (adv / unitsPerEm) * scaledSize;
 
       const pending = useDynamicFontPending(managed, fontFamilyBasename);
+      const isInlineInText = useContext(TextAncestorContext);
 
       const nameStr = name as string;
       const codepoints = getCodepoints(nameStr, layers);
@@ -160,6 +167,17 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
         () => [{ width, height: scaledSize }, style],
         [scaledSize, width, style]
       );
+
+      if (isInlineInText) {
+        return pending
+          ? null
+          : renderInlineIcon(fontFamilyBasename, layers, getChar, {
+              size,
+              color,
+              style,
+              allowFontScaling,
+            });
+      }
 
       // Hide-until-ready: while the dynamic font is registering, render a
       // placeholder. The native view mounts only once the font is registered.
