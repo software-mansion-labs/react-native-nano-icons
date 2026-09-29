@@ -161,6 +161,40 @@ describe('FontRebuildWatcher — watching', () => {
     expect(mockBuildAllFonts.mock.calls[1]![0]).toEqual([b]);
   });
 
+  test('reads the aggregated change event of metro-file-map >= 0.84.3', async () => {
+    const watcher = new EventEmitter();
+    const a = makeSet('A');
+    const b = makeSet('B');
+    new FontRebuildWatcher(root, [a, b], watcher, logger);
+    await flush();
+
+    const relative = (set: IconSetConfig, name: string) =>
+      path.relative(root, svgPath(set, name));
+    watcher.emit('change', {
+      rootDir: root,
+      logger: null,
+      changes: {
+        addedDirectories: new Set<string>(),
+        removedDirectories: new Set<string>(),
+        addedFiles: new Map([[relative(a, 'heart.svg'), { isSymlink: false }]]),
+        modifiedFiles: new Map([
+          [relative(a, 'star.svg'), { isSymlink: false }],
+        ]),
+        removedFiles: new Map([
+          [relative(a, 'old.svg'), { isSymlink: false }],
+          [relative(b, 'unrelated.ts'), { isSymlink: false }],
+        ]),
+      },
+    });
+    await flush(400);
+
+    expect(mockBuildAllFonts).toHaveBeenCalledTimes(2);
+    expect(mockBuildAllFonts.mock.calls[1]![0]).toEqual([a]);
+    expect(logged.filter((l) => l.startsWith('notify'))).toEqual([
+      'notify A: heart.svg added, star.svg changed, old.svg removed, rebuilding…',
+    ]);
+  });
+
   test('announces what changed before rebuilding', async () => {
     const watcher = new EventEmitter();
     const a = makeSet('A');
