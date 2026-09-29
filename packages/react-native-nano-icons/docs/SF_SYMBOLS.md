@@ -375,7 +375,7 @@ Compile a catalog for `--platform macosx` into a minimal `.app` shell with a `sw
 
 ## Performance
 
-- **Generation**: shares the already-initialized PathKit instance with the font pipeline; the symbol-specific work is string assembly — negligible. Incremental fingerprint skip avoids rebuilds entirely.
+- **Generation**: per-icon prep runs in the same worker pool as the font pipeline (`src/core/pipeline/iconPool.ts`, one `prepareSymbol` task per SVG); the main thread only writes files. The symbol-specific work is string assembly — negligible. Incremental fingerprint skip avoids rebuilds entirely.
 - **App build**: `actool` cost scales linearly on iOS (~3 s per 16 symbols on older measurements); tab icon sets are typically < 20 symbols. (Caution if ever shipping hundreds of symbols to **Mac Catalyst**, where actool has shown super-linear scaling.)
 - **Disk**: compiled symbols are vector path data — ~0.8–1 kB per symbol in `Assets.car`.
 - **Runtime**: rendering is fully owned by UIKit's symbol machinery (the same path as Apple's own symbols); name lookup is a hashed catalog lookup. Nothing from this library executes at runtime.

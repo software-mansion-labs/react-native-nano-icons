@@ -4,7 +4,11 @@ import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 
 import { loadPathKit } from '../pathkit/load';
-import { prepareIcon, type IconResult, type IconTask } from './prepareIcon';
+import {
+  prepareSvg,
+  type SvgPrepareTask,
+  type SvgPrepareResult,
+} from './prepareSvg';
 
 const WORKER_PATH = path.join(__dirname, 'prepareWorker.js');
 
@@ -12,10 +16,12 @@ export function defaultConcurrency(): number {
   return Math.max(1, Math.min(8, os.availableParallelism()));
 }
 
-async function prepareInProcess(tasks: IconTask[]): Promise<IconResult[]> {
+async function prepareInProcess<T extends SvgPrepareTask>(
+  tasks: T[]
+): Promise<SvgPrepareResult<T>[]> {
   const pathkit = await loadPathKit();
-  const results: IconResult[] = [];
-  for (const task of tasks) results.push(await prepareIcon(task, pathkit));
+  const results: SvgPrepareResult<T>[] = [];
+  for (const task of tasks) results.push(await prepareSvg(task, pathkit));
   return results;
 }
 
@@ -25,7 +31,9 @@ export class SvgWorkerPool {
 
   constructor(private readonly size = defaultConcurrency()) {}
 
-  prepare(tasks: IconTask[]): Promise<IconResult[]> {
+  prepare<T extends SvgPrepareTask>(
+    tasks: T[]
+  ): Promise<SvgPrepareResult<T>[]> {
     const run = this.queue.then(() => this.run(tasks));
     this.queue = run.catch(() => {});
     return run;
@@ -44,7 +52,9 @@ export class SvgWorkerPool {
     await Promise.all(this.workers.splice(0).map((w) => w.terminate()));
   }
 
-  private async run(tasks: IconTask[]): Promise<IconResult[]> {
+  private async run<T extends SvgPrepareTask>(
+    tasks: T[]
+  ): Promise<SvgPrepareResult<T>[]> {
     const wanted = Math.min(this.size, tasks.length);
     if (wanted <= 1 || !fs.existsSync(WORKER_PATH)) {
       return prepareInProcess(tasks);
@@ -53,13 +63,13 @@ export class SvgWorkerPool {
       this.workers.push(new Worker(WORKER_PATH));
     }
 
-    const results: IconResult[] = new Array(tasks.length);
+    const results: SvgPrepareResult<T>[] = new Array(tasks.length);
     let next = 0;
 
     const drain = (worker: Worker) =>
       new Promise<void>((resolve, reject) => {
         let current = -1;
-        const onMessage = (result: IconResult) => {
+        const onMessage = (result: SvgPrepareResult<T>) => {
           results[current] = result;
           dispatch();
         };
@@ -99,10 +109,10 @@ export class SvgWorkerPool {
   }
 }
 
-export async function prepareIcons(
-  tasks: IconTask[],
+export async function prepareIcons<T extends SvgPrepareTask>(
+  tasks: T[],
   concurrency: number
-): Promise<IconResult[]> {
+): Promise<SvgPrepareResult<T>[]> {
   const pool = new SvgWorkerPool(concurrency);
   try {
     return await pool.prepare(tasks);

@@ -2,32 +2,42 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 
 import { prepareIcons, type SvgWorkerPool } from './iconPool';
-import type { IconResult, IconTask } from './prepareIcon';
+import type { IconTask } from './prepareIcon';
+import type { SvgPrepareTask, SvgPrepareResult } from './prepareSvg';
 
-export type PreparedSvgCache = Map<string, IconResult>;
+export type PreparedSvgCache<T extends SvgPrepareTask = IconTask> = Map<
+  string,
+  SvgPrepareResult<T>
+>;
 
-export function preparedSvgCacheKey(task: IconTask, hash?: string): string {
+export function preparedSvgCacheKey(
+  task: SvgPrepareTask,
+  hash?: string
+): string {
   const contentHash =
     hash ??
     crypto
       .createHash('sha256')
       .update(fs.readFileSync(task.filePath))
       .digest('hex');
+  if (task.kind === 'symbol') {
+    return `symbol:${task.setName}:${task.file}:${task.prefix}:${task.multicolor}:${contentHash}`;
+  }
   return `${task.file}:${task.upm}:${task.safeZone}:${contentHash}`;
 }
 
-export async function prepareIconsWithCache(
-  tasks: IconTask[],
+export async function prepareIconsWithCache<T extends SvgPrepareTask>(
+  tasks: T[],
   concurrency: number,
-  cache: PreparedSvgCache | undefined,
+  cache: PreparedSvgCache<T> | undefined,
   pool?: SvgWorkerPool,
   svgHashByFile?: Map<string, string>
-): Promise<IconResult[]> {
-  const prepare = (batch: IconTask[]) =>
+): Promise<SvgPrepareResult<T>[]> {
+  const prepare = (batch: T[]) =>
     pool ? pool.prepare(batch) : prepareIcons(batch, concurrency);
   if (!cache) return prepare(tasks);
 
-  const results: IconResult[] = new Array(tasks.length);
+  const results: SvgPrepareResult<T>[] = new Array(tasks.length);
   const keys: string[] = new Array(tasks.length);
   const misses: number[] = [];
   tasks.forEach((task, i) => {

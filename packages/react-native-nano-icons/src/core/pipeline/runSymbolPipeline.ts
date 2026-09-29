@@ -1,15 +1,13 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-import { loadPathKit } from '../pathkit/load';
-import { ensureDir, ensureEmptyDir } from './config';
-import { prepareSvgLayers } from './prepare';
-import { shouldSkipPath } from '../glyph/parse';
-import { resolveSymbolLayers, contentBounds } from '../symbols/layers';
-import { buildSymbolTemplate } from '../symbols/template';
-import { buildColoredSymbolSvg } from '../symbols/coloredSymbol';
-import { buildVectorDrawableXml } from '../symbols/vectorDrawable';
-import { symbolsetContentsJson, imagesetContentsJson } from '../symbols/contents';
+import { ensureDir, ensureEmptyDir, writeFileAtomic } from './config';
+import { defaultConcurrency, type SvgWorkerPool } from './iconPool';
+import type { SymbolAsset, SymbolTask } from './prepareSymbol';
+import {
+  prepareIconsWithCache,
+  type PreparedSvgCache,
+} from './preparedSvgCache';
 import { toDrawableResourceName, manifestBaseName } from '../../utils/naming';
 import type { NanoLogger } from '../types';
 
@@ -100,7 +98,14 @@ declare module '@react-navigation/native' {
 export async function runSymbolPipeline(
   config: SymbolsPipelineConfig,
   paths: SymbolsPipelinePaths,
-  options?: { logger?: NanoLogger; inputHash?: string }
+  options?: {
+    logger?: NanoLogger;
+    inputHash?: string;
+    concurrency?: number;
+    preparedSvgCache?: PreparedSvgCache<SymbolTask>;
+    svgWorkerPool?: SvgWorkerPool;
+    svgHashByFile?: Map<string, string>;
+  }
 ): Promise<SymbolsPipelineResult> {
   const startTime = Date.now();
   const logger = options?.logger;
@@ -108,126 +113,99 @@ export async function runSymbolPipeline(
 
   logger?.update(`Building ${kind}s "${config.name}"…`);
 
-  ensureDir(paths.outputDir);
   const symbolsDir = path.join(paths.outputDir, `${config.name}.symbols`);
-  ensureEmptyDir(symbolsDir);
   const drawablesDir = path.join(paths.outputDir, `${config.name}.drawables`);
-  ensureEmptyDir(drawablesDir);
 
   const files = (await fsp.readdir(paths.inputDir))
     .filter((f) => f.toLowerCase().endsWith('.svg'))
     .sort();
 
-  const symbols: Record<string, string> = {};
-  const drawables: Record<string, string> = {};
-  const assetDirs: string[] = [];
-  const drawableFiles: string[] = [];
+  const failed: string[] = [];
+
+  const results = await prepareIconsWithCache(
+    files.map((file) => ({
+      kind: 'symbol' as const,
+      file,
+      filePath: path.join(paths.inputDir, file),
+      setName: config.name,
+      prefix: config.prefix,
+      multicolor: config.multicolor === true,
+    })),
+    options?.concurrency ?? defaultConcurrency(),
+    options?.preparedSvgCache,
+    options?.svgWorkerPool,
+    options?.svgHashByFile
+  );
+
   const resourceNameToFile = new Map<string, string>();
+  const assets: {
+    iconName: string;
+    asset: SymbolAsset;
+    resourceName: string;
+  }[] = [];
 
-  const PathKit = await loadPathKit();
-
-  for (const file of files) {
-    const iconName = path.parse(file).name;
-    const filePath = path.join(paths.inputDir, file);
-
-    logger?.info(`Processing ${file}`);
-
-    const prepared = await prepareSvgLayers({
-      filePath,
-      fileLabel: `${config.name}:${file}`,
-      pathkit: PathKit,
-      logger,
-    });
-    if (!prepared) continue;
-
-    const drawable = prepared.paths.filter((p) => !shouldSkipPath(p.d, p.fill));
-
-    if (drawable.length === 0) {
-      logger?.warn(`Skipping "${config.name}:${file}": no drawable paths`);
+  for (const result of results) {
+    for (const [level, msg] of result.logs) logger?.[level](msg);
+    if (result.error !== null) {
+      logger?.fail(result.error);
+      failed.push(result.file);
       continue;
     }
-
-    const assetName = `${config.prefix}.${iconName}`;
-    let assetDir: string;
-    let svgFilename: string;
-    let svg: string;
-    let contents: string;
-    let vdXml: string;
-
-    if (config.multicolor) {
-      // Colored symbol: original fills/z-order, no knockout.
-      const coloredLayers = drawable.map((p) => ({ d: p.d, fill: p.fill }));
-      const bounds =
-        contentBounds(
-          PathKit,
-          drawable.map((p) => p.d)
-        ) ?? undefined;
-      assetDir = path.join(symbolsDir, `${assetName}.imageset`);
-      svgFilename = `${assetName}.svg`;
-      svg = buildColoredSymbolSvg({
-        layers: coloredLayers,
-        viewBox: prepared.viewBox,
-        contentBounds: bounds,
-      });
-      contents = imagesetContentsJson(svgFilename);
-      vdXml = buildVectorDrawableXml({
-        layers: coloredLayers,
-        multicolor: true,
-        viewBox: prepared.viewBox,
-        contentBounds: bounds,
-      });
-    } else {
-      // Monochrome SF Symbol: resolve stacked layers (bake knockouts, occlude)
-      // so plates with light details survive monochrome tinting.
-      const layers = resolveSymbolLayers(PathKit, drawable, {
-        onEraseLayer: () =>
-          logger?.info(`    ⊖ Baked white knockout layer into lower layers`),
-      });
-      const bounds =
-        contentBounds(
-          PathKit,
-          layers.map((l) => l.d)
-        ) ?? undefined;
-      assetDir = path.join(symbolsDir, `${assetName}.symbolset`);
-      svgFilename = `${assetName}.svg`;
-      svg = buildSymbolTemplate({
-        layers,
-        viewBox: prepared.viewBox,
-        contentBounds: bounds,
-        descriptiveName: assetName,
-        logger,
-      });
-      contents = symbolsetContentsJson(svgFilename);
-      vdXml = buildVectorDrawableXml({
-        layers,
-        multicolor: false,
-        viewBox: prepared.viewBox,
-        contentBounds: bounds,
-      });
-    }
-
-    await fsp.mkdir(assetDir, { recursive: true });
-    await fsp.writeFile(path.join(assetDir, svgFilename), svg, 'utf8');
-    await fsp.writeFile(path.join(assetDir, 'Contents.json'), contents, 'utf8');
+    if (!result.asset) continue;
 
     // Android resource names are lowercased with every non-[a-z0-9_] run collapsed
     // to "_", so distinct filenames can map to the same name. They must be unique
     // within the set — fail loudly rather than silently renaming, so the runtime
     // helper can derive the name purely from the filename.
-    const resourceName = toDrawableResourceName(assetName);
+    const resourceName = toDrawableResourceName(result.asset.assetName);
     const clashingFile = resourceNameToFile.get(resourceName);
     if (clashingFile) {
       throw new Error(
-        `[react-native-nano-icons] "${config.name}": "${file}" and "${clashingFile}" ` +
+        `[react-native-nano-icons] "${config.name}": "${result.file}" and "${clashingFile}" ` +
           `both map to the Android drawable name "${resourceName}". Rename one of the ` +
           `SVGs so they differ by more than case or non-alphanumeric characters.`
       );
     }
-    resourceNameToFile.set(resourceName, file);
-    const drawableFile = path.join(drawablesDir, `${resourceName}.xml`);
-    await fsp.writeFile(drawableFile, vdXml, 'utf8');
+    resourceNameToFile.set(resourceName, result.file);
+    assets.push({
+      iconName: result.iconName,
+      asset: result.asset,
+      resourceName,
+    });
+  }
 
-    symbols[iconName] = assetName;
+  if (failed.length) {
+    throw new Error(
+      `${failed.length} of ${files.length} icons in [${config.name}] could not be converted: ${failed.join(', ')}`
+    );
+  }
+
+  ensureDir(paths.outputDir);
+  ensureEmptyDir(symbolsDir);
+  ensureEmptyDir(drawablesDir);
+
+  const symbols: Record<string, string> = {};
+  const drawables: Record<string, string> = {};
+  const assetDirs: string[] = [];
+  const drawableFiles: string[] = [];
+
+  for (const { iconName, asset, resourceName } of assets) {
+    const assetDir = path.join(symbolsDir, asset.assetDirName);
+    await fsp.mkdir(assetDir, { recursive: true });
+    await fsp.writeFile(
+      path.join(assetDir, asset.svgFilename),
+      asset.svg,
+      'utf8'
+    );
+    await fsp.writeFile(
+      path.join(assetDir, 'Contents.json'),
+      asset.contents,
+      'utf8'
+    );
+    const drawableFile = path.join(drawablesDir, `${resourceName}.xml`);
+    await fsp.writeFile(drawableFile, asset.vdXml, 'utf8');
+
+    symbols[iconName] = asset.assetName;
     drawables[iconName] = resourceName;
     assetDirs.push(assetDir);
     drawableFiles.push(drawableFile);
@@ -245,11 +223,11 @@ export async function runSymbolPipeline(
     s: symbols,
     d: drawables,
   };
-  await fsp.writeFile(symbolmapPath, JSON.stringify(symbolmap), 'utf8');
+  writeFileAtomic(symbolmapPath, JSON.stringify(symbolmap));
 
   const base = manifestBaseName(config.name);
   const dtsPath = path.join(paths.outputDir, `${config.name}.symbols.d.ts`);
-  await fsp.writeFile(dtsPath, symbolsDts(base, symbols), 'utf8');
+  writeFileAtomic(dtsPath, symbolsDts(base, symbols));
 
   const count = assetDirs.length;
   const elapsed = Date.now() - startTime;
