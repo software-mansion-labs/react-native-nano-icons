@@ -5,6 +5,9 @@ import {
   type SymbolsPipelineResult,
   type NanoSymbolMap,
 } from '../src/core/pipeline/runSymbolPipeline';
+import type { SvgWorkerPool } from '../src/core/pipeline/iconPool';
+import type { SymbolTask } from '../src/core/pipeline/prepareSymbol';
+import type { PreparedSvgCache } from '../src/core/pipeline/preparedSvgCache';
 import type { NanoLogger } from './logger';
 import { fingerprintSymbolDirSync } from '../src/utils/fingerPrint';
 import {
@@ -103,6 +106,8 @@ export async function buildAllSymbols(
   options?: {
     logger?: NanoLogger;
     keepOutputsOnFailure?: boolean;
+    preparedSvgCache?: PreparedSvgCache<SymbolTask>;
+    svgWorkerPool?: SvgWorkerPool;
   }
 ): Promise<BuiltSymbolSet[]> {
   const logger = options?.logger;
@@ -128,12 +133,15 @@ export async function buildAllSymbols(
       : path.join(path.dirname(inputDir), 'nanoicons');
 
     const multicolor = set.multicolor === true;
-    const { hash: inputHash } = fingerprintSymbolDirSync(inputDir, {
-      prefix,
-      multicolor,
-      version,
-      toolchain,
-    });
+    const { hash: inputHash, svgHashByFile } = fingerprintSymbolDirSync(
+      inputDir,
+      {
+        prefix,
+        multicolor,
+        version,
+        toolchain,
+      }
+    );
 
     const skipped = shouldSkipGeneration(
       inputHash,
@@ -154,7 +162,13 @@ export async function buildAllSymbols(
       out = await runSymbolPipeline(
         { name, prefix, multicolor },
         { inputDir, outputDir },
-        { logger, inputHash }
+        {
+          logger,
+          inputHash,
+          preparedSvgCache: options?.preparedSvgCache,
+          svgWorkerPool: options?.svgWorkerPool,
+          svgHashByFile,
+        }
       );
     } catch (err) {
       if (!options?.keepOutputsOnFailure) removeOutputs(outputDir, name);

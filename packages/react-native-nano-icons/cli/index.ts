@@ -29,6 +29,7 @@ export {
 export {
   loadDynamicSetsFromAppConfig,
   loadIconSetsFromAppConfig,
+  loadSymbolSetsFromAppConfig,
 } from './expoConfig';
 export {
   linkBare,

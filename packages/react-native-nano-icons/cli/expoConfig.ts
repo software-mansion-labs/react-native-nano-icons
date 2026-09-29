@@ -1,4 +1,5 @@
 import type { IconSetConfig } from './build';
+import type { SymbolSetConfig } from './buildSymbols';
 
 type ExpoGetConfig = (
   projectRoot: string,
@@ -29,9 +30,24 @@ export function loadDynamicSetsFromAppConfig(
   return dynamicSets;
 }
 
+type NanoIconsPluginOptions = {
+  iconSets?: IconSetConfig[];
+  symbolSets?: SymbolSetConfig[];
+};
+
 export function loadIconSetsFromAppConfig(
   projectRoot: string
 ): IconSetConfig[] {
+  return loadPluginOptions(projectRoot).iconSets ?? [];
+}
+
+export function loadSymbolSetsFromAppConfig(
+  projectRoot: string
+): SymbolSetConfig[] {
+  return loadPluginOptions(projectRoot).symbolSets ?? [];
+}
+
+function loadPluginOptions(projectRoot: string): NanoIconsPluginOptions {
   const configModule = resolveExpoConfigModule(projectRoot);
   if (!configModule) {
     throw new Error(
@@ -45,7 +61,7 @@ export function loadIconSetsFromAppConfig(
   const plugins: unknown[] = Array.isArray(exp.plugins) ? exp.plugins : [];
 
   const entry = plugins.find(
-    (p): p is [string, { iconSets: IconSetConfig[] }] =>
+    (p): p is [string, NanoIconsPluginOptions] =>
       Array.isArray(p) && p[0] === 'react-native-nano-icons'
   );
 
@@ -57,7 +73,7 @@ export function loadIconSetsFromAppConfig(
   }
 
   const [, options] = entry;
-  return options.iconSets ?? [];
+  return options;
 }
 
 function resolveExpoConfigModule(projectRoot: string): string | undefined {
