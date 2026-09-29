@@ -101,12 +101,13 @@ export async function runFontPipeline(
     }
 
     const layers: GlyphLayer[] = [];
-    for (const layer of result.layers) {
+    const lastLayerIndex = result.layers.length - 1;
+    for (const [layerIndex, layer] of result.layers.entries()) {
       const cp = currentUnicode++;
       codepointToIcon.set(cp, result.iconName);
       allGlyphs.push({
         codepoint: cp,
-        advanceWidth: result.adv,
+        advanceWidth: layerIndex === lastLayerIndex ? result.adv : 0,
         d: layer.d,
       });
       layers.push([cp, layer.fill || 'black']);

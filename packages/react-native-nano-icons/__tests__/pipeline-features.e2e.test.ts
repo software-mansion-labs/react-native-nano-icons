@@ -127,6 +127,27 @@ describe('Pipeline E2E — duotone (multi-layer)', () => {
     const distinctColors = new Set(layers.map(([, color]) => color));
     expect(distinctColors.size).toBeGreaterThanOrEqual(2);
   });
+
+  test('only the last layer glyph advances, so layers stack when set as text', () => {
+    const { Font } =
+      require('fonteditor-core') as typeof import('fonteditor-core');
+    const glyf = Font.create(fs.readFileSync(res.ttfPath), {
+      type: 'ttf',
+    }).get().glyf;
+    const advanceByCodepoint = new Map<number, number>();
+    for (const glyph of glyf) {
+      for (const codepoint of glyph.unicode ?? []) {
+        advanceByCodepoint.set(codepoint, glyph.advanceWidth ?? 0);
+      }
+    }
+
+    for (const [adv, layers] of Object.values(res.glyphmap.i)) {
+      const advances = layers.map(([codepoint]) =>
+        advanceByCodepoint.get(codepoint)
+      );
+      expect(advances).toEqual([...Array(layers.length - 1).fill(0), adv]);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,13 @@
-import { memo, useMemo } from 'react';
-import { PixelRatio, Platform, Text, View, type TextProps } from 'react-native';
-import type { NanoGlyphMapInput } from './core/types';
+import { memo, useContext, useMemo } from 'react';
+import {
+  PixelRatio,
+  Platform,
+  Text,
+  View,
+  type TextProps,
+  type TextStyle,
+} from 'react-native';
+import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
 import { shallowEqualColor } from './utils/shallowEqualColor';
 import {
@@ -18,6 +25,7 @@ import {
   reportMissingDynamicFont,
 } from './fontIntegrity';
 import { configuredFontFamily } from './utils/fontIdentity';
+import { TextAncestorContext } from './utils/textAncestor';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
@@ -47,6 +55,41 @@ export function warnIfLinkingMismatch(
         `Set linking: 'dynamic' in your config to deliver it at runtime.`
     );
   }
+}
+
+const inlineTextStyle: TextStyle = {
+  fontWeight: 'normal',
+  fontStyle: 'normal',
+  textDecorationLine: 'none',
+};
+
+export function renderInlineIcon(
+  fontFamily: string,
+  layers: GlyphEntry[1],
+  getChar: (codepoint: number) => string,
+  {
+    size,
+    color,
+    style,
+    allowFontScaling,
+  }: Pick<IconProps<unknown>, 'size' | 'color' | 'style' | 'allowFontScaling'>
+) {
+  const resolveColor = createLayerColorResolver(color);
+  return (
+    <Text
+      allowFontScaling={allowFontScaling}
+      style={[
+        inlineTextStyle,
+        { fontFamily, fontSize: size },
+        style as TextStyle,
+      ]}>
+      {layers.map(([codepoint, srcColor], i) => (
+        <Text key={i} style={{ color: resolveColor(i, srcColor) }}>
+          {getChar(codepoint)}
+        </Text>
+      ))}
+    </Text>
+  );
 }
 
 /**
@@ -102,7 +145,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       size = DEFAULT_ICON_SIZE,
       color,
       style,
-      allowFontScaling = true,
+      allowFontScaling,
       accessible,
       accessibilityLabel,
       accessibilityRole = 'image',
@@ -111,12 +154,14 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       testID,
       ref,
     }: IconProps<keyof GM['i']>) => {
-      const fontScale = allowFontScaling ? PixelRatio.getFontScale() : 1;
+      const scalesWithFont = allowFontScaling !== false;
+      const fontScale = scalesWithFont ? PixelRatio.getFontScale() : 1;
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
       const scaledSize = size * fontScale;
       const width = (adv / unitsPerEm) * scaledSize;
 
       const pending = useDynamicFontPending(managed, fontBasename);
+      const isInlineInText = useContext(TextAncestorContext);
 
       const resolveColor = createLayerColorResolver(color);
 
@@ -126,6 +171,17 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       );
 
       const sizeStyle = useMemo(() => ({ fontSize: size }), [size]);
+
+      if (isInlineInText) {
+        return pending
+          ? null
+          : renderInlineIcon(fontReference, layers, getChar, {
+              size,
+              color,
+              style,
+              allowFontScaling,
+            });
+      }
 
       return (
         <View
@@ -147,7 +203,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
                     key={i}
                     selectable={false}
                     accessible={false}
-                    allowFontScaling={allowFontScaling}
+                    allowFontScaling={scalesWithFont}
                     style={[styleOverrides, sizeStyle, { color: layerColor }]}>
                     {getChar(codepoint)}
                   </Text>
