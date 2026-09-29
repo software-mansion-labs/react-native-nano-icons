@@ -36,12 +36,49 @@ export type WatchEvent = {
   type: 'add' | 'change' | 'delete';
 };
 
-export type FileWatcher = {
-  on(
-    event: 'change',
-    listener: (change: { eventsQueue: WatchEvent[] }) => void
-  ): unknown;
+/** metro-file-map < 0.84.3: one entry per raw watcher event, absolute paths. */
+type LegacyChangeEvent = { eventsQueue: WatchEvent[] };
+
+/**
+ * metro-file-map >= 0.84.3 (Expo SDK 57 ships 0.84.5): events are
+ * aggregated per file into `changes`, keyed by paths relative to `rootDir`.
+ */
+type AggregatedChangeEvent = {
+  rootDir: string;
+  changes: {
+    addedFiles: Iterable<[string, unknown]>;
+    modifiedFiles: Iterable<[string, unknown]>;
+    removedFiles: Iterable<[string, unknown]>;
+  };
 };
+
+export type ChangeEvent = LegacyChangeEvent | AggregatedChangeEvent;
+
+export type FileWatcher = {
+  on(event: 'change', listener: (change: ChangeEvent) => void): unknown;
+};
+
+export function toWatchEvents(change: ChangeEvent): WatchEvent[] {
+  if ('eventsQueue' in change && Array.isArray(change.eventsQueue)) {
+    return change.eventsQueue;
+  }
+  if (!('changes' in change) || !change.changes) return [];
+  const { changes, rootDir } = change;
+  const events: WatchEvent[] = [];
+  const collect = (
+    files: Iterable<[string, unknown]> | undefined,
+    type: WatchEvent['type']
+  ) => {
+    if (!files) return;
+    for (const [relativePath] of files) {
+      events.push({ filePath: path.resolve(rootDir, relativePath), type });
+    }
+  };
+  collect(changes.addedFiles, 'add');
+  collect(changes.modifiedFiles, 'change');
+  collect(changes.removedFiles, 'delete');
+  return events;
+}
 
 export type Next = (err?: unknown) => void;
 
@@ -67,7 +104,7 @@ export class FontRebuildWatcher {
     for (const set of iconSets) {
       this.setsByInputDir.set(path.resolve(projectRoot, set.inputDir), set);
     }
-    watcher.on('change', ({ eventsQueue }) => this.onChange(eventsQueue));
+    watcher.on('change', (change) => this.onChange(toWatchEvents(change)));
     this.svgWorkerPool.warm();
     this.schedule(iconSets);
   }
