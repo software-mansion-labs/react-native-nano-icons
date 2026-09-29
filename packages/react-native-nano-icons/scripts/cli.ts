@@ -23,10 +23,12 @@ import {
   buildAllFonts,
   buildAllSymbols,
   IconSetBuildError,
+  SymbolSetBuildError,
   linkBare,
   linkBareSymbols,
   linkBareAndroidDrawables,
   type BuiltFont,
+  type BuiltSymbolSet,
 } from '../cli/index';
 
 export async function main(logger: NanoLogger): Promise<void> {
@@ -50,7 +52,7 @@ export async function main(logger: NanoLogger): Promise<void> {
     await buildAllFonts(dynamicIconSets, appRoot, { logger });
   } else {
     const config = loadNanoIconsConfig(configRoot);
-    let buildError: IconSetBuildError | undefined;
+    let buildError: IconSetBuildError | SymbolSetBuildError | undefined;
 
     if (config.iconSets?.length) {
       let built: BuiltFont[];
@@ -66,9 +68,17 @@ export async function main(logger: NanoLogger): Promise<void> {
     }
 
     if (config.symbolSets?.length) {
-      const builtSymbols = await buildAllSymbols(config.symbolSets, appRoot, {
-        logger,
-      });
+      let builtSymbols: BuiltSymbolSet[];
+      try {
+        builtSymbols = await buildAllSymbols(config.symbolSets, appRoot, {
+          logger,
+        });
+      } catch (err) {
+        if (!(err instanceof SymbolSetBuildError)) throw err;
+        buildError ??= err;
+        builtSymbols = err.built;
+      }
+
       await linkBareSymbols(appRoot, builtSymbols, logger);
       await linkBareAndroidDrawables(appRoot, builtSymbols, logger);
     }

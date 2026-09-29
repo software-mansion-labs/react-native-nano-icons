@@ -6,6 +6,7 @@ export {
 } from './build';
 export {
   buildAllSymbols,
+  SymbolSetBuildError,
   type SymbolSetConfig,
   type BuiltSymbolSet,
 } from './buildSymbols';

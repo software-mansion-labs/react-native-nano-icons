@@ -27,6 +27,15 @@ export type SymbolSetConfig = {
 
 export type BuiltSymbolSet = SymbolsPipelineResult;
 
+export class SymbolSetBuildError extends Error {
+  built: BuiltSymbolSet[];
+
+  constructor(message: string, built: BuiltSymbolSet[]) {
+    super(message);
+    this.built = built;
+  }
+}
+
 const DEFAULT_PREFIX = 'nano';
 
 function shouldSkipGeneration(
@@ -91,12 +100,16 @@ function shouldSkipGeneration(
 export async function buildAllSymbols(
   symbolSets: SymbolSetConfig[],
   projectRoot: string,
-  options?: { logger?: NanoLogger }
+  options?: {
+    logger?: NanoLogger;
+    keepOutputsOnFailure?: boolean;
+  }
 ): Promise<BuiltSymbolSet[]> {
   const logger = options?.logger;
   const version = packageVersion();
   const toolchain = fontToolchainVersions();
   const results: BuiltSymbolSet[] = [];
+  const failures: string[] = [];
 
   for (let i = 0; i < symbolSets.length; i++) {
     const set = symbolSets[i]!;
@@ -136,14 +149,42 @@ export async function buildAllSymbols(
 
     logger?.start(`Building ${name} (${i + 1}/${symbolSets.length})…`);
 
-    const out = await runSymbolPipeline(
-      { name, prefix, multicolor },
-      { inputDir, outputDir },
-      { logger, inputHash }
-    );
+    let out;
+    try {
+      out = await runSymbolPipeline(
+        { name, prefix, multicolor },
+        { inputDir, outputDir },
+        { logger, inputHash }
+      );
+    } catch (err) {
+      if (!options?.keepOutputsOnFailure) removeOutputs(outputDir, name);
+      logger?.fail(err instanceof Error ? err.message : String(err));
+      failures.push(name);
+      continue;
+    }
 
     results.push(out);
   }
 
+  if (failures.length) {
+    throw new SymbolSetBuildError(
+      `${failures.length} symbol set${
+        failures.length === 1 ? '' : 's'
+      } failed to build: ${failures.join(', ')}`,
+      results
+    );
+  }
+
   return results;
+}
+
+function removeOutputs(outputDir: string, name: string): void {
+  for (const output of [
+    `${name}.symbolmap.json`,
+    `${name}.symbols.d.ts`,
+    `${name}.symbols`,
+    `${name}.drawables`,
+  ]) {
+    fs.rmSync(path.join(outputDir, output), { recursive: true, force: true });
+  }
 }

@@ -9,7 +9,8 @@ import path from 'node:path';
 // Must be set before any pipeline import so getPackageRoot() picks it up.
 process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
 
-import { buildAllSymbols } from '../cli/buildSymbols';
+import { buildAllSymbols, SymbolSetBuildError } from '../cli/buildSymbols';
+import type { NanoLogger } from '../cli/logger';
 import { copySymbolsetsIntoCatalog } from '../cli/link';
 import { type NanoSymbolMap } from '../src/core/pipeline/runSymbolPipeline';
 import { manifestBaseName } from '../src/utils/naming';
@@ -381,11 +382,62 @@ describe('Symbols E2E — Android name collisions', () => {
     await fsp.rm(projectRoot, { recursive: true, force: true });
   });
 
+  function collectingLogger(failed: string[]): NanoLogger {
+    return {
+      start: () => {},
+      update: () => {},
+      succeed: () => {},
+      info: () => {},
+      warn: () => {},
+      fail: (msg) => failed.push(msg),
+    };
+  }
+
   it('fails the build naming both colliding files', async () => {
+    const failed: string[] = [];
+    await expect(
+      buildAllSymbols([{ inputDir: 'icons', name: 'tabs' }], projectRoot, {
+        logger: collectingLogger(failed),
+      })
+    ).rejects.toThrow(SymbolSetBuildError);
+    expect(failed).toEqual([
+      expect.stringMatching(
+        /both map to the Android drawable name "nano_heart_fill"/
+      ),
+    ]);
+  });
+
+  it('keeps the previous outputs when asked to', async () => {
+    const outputDir = path.join(projectRoot, 'nanoicons');
+    const collision = path.join(projectRoot, 'icons', 'heart-fill.svg');
+    await fsp.rename(collision, `${collision}.off`);
+    await buildAllSymbols([{ inputDir: 'icons', name: 'tabs' }], projectRoot);
+    await fsp.rename(`${collision}.off`, collision);
+    const symbolmap = await fsp.readFile(
+      path.join(outputDir, 'tabs.symbolmap.json'),
+      'utf8'
+    );
+
+    await expect(
+      buildAllSymbols([{ inputDir: 'icons', name: 'tabs' }], projectRoot, {
+        keepOutputsOnFailure: true,
+      })
+    ).rejects.toThrow(SymbolSetBuildError);
+    expect(
+      await fsp.readFile(path.join(outputDir, 'tabs.symbolmap.json'), 'utf8')
+    ).toBe(symbolmap);
+    expect(
+      fs.existsSync(
+        path.join(outputDir, 'tabs.symbols', 'nano.heart.fill.symbolset')
+      )
+    ).toBe(true);
+
     await expect(
       buildAllSymbols([{ inputDir: 'icons', name: 'tabs' }], projectRoot)
-    ).rejects.toThrow(
-      /both map to the Android drawable name "nano_heart_fill"/
+    ).rejects.toThrow(SymbolSetBuildError);
+    expect(fs.existsSync(path.join(outputDir, 'tabs.symbolmap.json'))).toBe(
+      false
     );
+    expect(fs.existsSync(path.join(outputDir, 'tabs.symbols'))).toBe(false);
   });
 });

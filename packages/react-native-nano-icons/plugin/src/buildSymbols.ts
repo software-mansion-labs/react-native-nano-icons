@@ -5,23 +5,13 @@ import {
 } from '../../cli/index';
 import type { SymbolSetConfig, BuiltSymbolSet } from './types';
 
-// Build all symbol sets. Shows a friendly message on error unless EXPO_DEBUG is set.
+// Build all symbol sets.
 export async function buildAllSymbols(
   symbolSets: SymbolSetConfig[],
   projectRoot: string
 ): Promise<BuiltSymbolSet[]> {
-  const level = detectExpoLogLevel();
-  const logger = await createQuietLogger(level);
-
-  try {
-    return await coreBuildAllSymbols(symbolSets, projectRoot, { logger });
-  } catch (err: unknown) {
-    if (level === 'verbose') {
-      throw err;
-    }
-    logger.fail('Error building symbols. Run with EXPO_DEBUG=1 for more logs.');
-    return [];
-  }
+  const logger = await createQuietLogger(detectExpoLogLevel());
+  return coreBuildAllSymbols(symbolSets, projectRoot, { logger });
 }
 
 // Single build run per process; reused across mods.
