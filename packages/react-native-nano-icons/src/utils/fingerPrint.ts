@@ -10,6 +10,13 @@ export type FingerprintInputs = {
   toolchain: readonly string[];
 };
 
+export type SymbolFingerprintInputs = {
+  prefix: string;
+  multicolor: boolean;
+  version: string;
+  toolchain: readonly string[];
+};
+
 export type SvgDirFingerprint = {
   hash: string;
   svgHashByFile: Map<string, string>;
@@ -26,6 +33,29 @@ export function fingerprintSvgDirSync(
   dir: string,
   inputs: FingerprintInputs
 ): SvgDirFingerprint {
+  return hashSvgDir(dir, [
+    inputs.upm,
+    inputs.safeZone,
+    inputs.startUnicode,
+    inputs.version,
+    inputs.toolchain,
+  ]);
+}
+
+export function fingerprintSymbolDirSync(
+  dir: string,
+  inputs: SymbolFingerprintInputs
+): SvgDirFingerprint {
+  return hashSvgDir(dir, [
+    'symbol',
+    inputs.prefix,
+    inputs.multicolor,
+    inputs.version,
+    inputs.toolchain,
+  ]);
+}
+
+function hashSvgDir(dir: string, settings: unknown[]): SvgDirFingerprint {
   const files = fs
     .readdirSync(dir)
     .filter((f: string) => f.endsWith('.svg'))
@@ -45,15 +75,7 @@ export function fingerprintSvgDirSync(
     );
   }
 
-  hash.update(
-    JSON.stringify([
-      inputs.upm,
-      inputs.safeZone,
-      inputs.startUnicode,
-      inputs.version,
-      inputs.toolchain,
-    ])
-  );
+  hash.update(JSON.stringify(settings));
 
   return { hash: hash.digest('hex'), svgHashByFile };
 }

@@ -29,6 +29,7 @@
     "./pipeline/**/*.ts",
     "./font/**/*.ts",
     "./flatten/**/*.ts",
-    "./glyph/**/*.ts"
+    "./glyph/**/*.ts",
+    "./symbols/**/*.ts"
   ]
 }

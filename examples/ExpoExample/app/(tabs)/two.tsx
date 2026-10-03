@@ -1,4 +1,5 @@
 import { FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text, View } from '@/components/Themed';
 import swmIconGlyphMap from '@/assets/nanoicons/SWMIconsOutline.glyphmap.json';
@@ -36,15 +37,17 @@ const DynamicHeader = () => (
 
 export default function TabTwoScreen() {
   return (
-    <FlatList
-      data={iconSubset}
-      keyExtractor={(item) => item}
-      ListHeaderComponent={DynamicHeader}
-      renderItem={({ item }) => <Row icon={item} />}
-      contentContainerStyle={{
-        paddingHorizontal: 10,
-        backgroundColor: 'white',
-      }}
-    />
+    <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+      <FlatList
+        data={iconSubset}
+        keyExtractor={(item) => item}
+        ListHeaderComponent={DynamicHeader}
+        renderItem={({ item }) => <Row icon={item} />}
+        contentContainerStyle={{
+          paddingHorizontal: 10,
+          backgroundColor: 'white',
+        }}
+      />
+    </SafeAreaView>
   );
 }

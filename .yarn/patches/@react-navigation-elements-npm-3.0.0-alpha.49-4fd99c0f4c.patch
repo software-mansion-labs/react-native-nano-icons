@@ -1,0 +1,40 @@
+diff --git a/lib/module/PlatformIcon.js b/lib/module/PlatformIcon.js
+index 3a3e6979f21b36584eaaad2a6849105524544638..50cd5dd50f309129c755eb0facde9f942628bc1a 100644
+--- a/lib/module/PlatformIcon.js
++++ b/lib/module/PlatformIcon.js
+@@ -36,7 +36,7 @@ export function PlatformIcon({
+         fadeDuration: 0,
+         tintColor: icon.tinted === false ? undefined : color,
+         style: [{
+-          width: size,
++          width: size * (icon.aspectRatio ?? 1),
+           height: size
+         }, style],
+         ...rest
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+index 0d0e9082021ade2ecdbd7fadadfa4d9211561e13..baf68021462d7443100af5d83c71952b66ac81cf 100644
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -26,6 +26,13 @@ type IconImage = {
+      * Defaults to `true`.
+      */
+     tinted?: boolean;
++    /**
++     * Width to height ratio for non-square images.
++     * The image renders at `size * aspectRatio` × `size` of the consumer's icon size.
++     *
++     * Defaults to `1`.
++     */
++    aspectRatio?: number;
+ };
+ type IconSfSymbol = {
+     /**
+@@ -35,7 +42,7 @@ type IconSfSymbol = {
+     /**
+      * Name of the SF Symbol to use as the icon.
+      */
+-    name: SFSymbol;
++    name: SFSymbol | keyof import('@react-navigation/native').SFSymbolNames;
+ };
+ type IconMaterialSymbol = {
+     /**

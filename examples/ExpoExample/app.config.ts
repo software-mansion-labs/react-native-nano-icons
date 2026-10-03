@@ -76,9 +76,25 @@ const config: ExpoConfig = {
             web: true,
           },
         ],
+        symbolSets: [
+          {
+            inputDir: './assets/tabicons',
+            name: 'tabicons',
+            prefix: 'nano',
+            outputDir: './assets/nanoicons',
+          },
+          {
+            inputDir: './assets/mcicons',
+            name: 'mcicons',
+            prefix: 'nanomc',
+            outputDir: './assets/nanoicons',
+            multicolor: true,
+          },
+        ],
       },
     ],
     'expo-router',
+    'expo-splash-screen',
   ],
   ...otaConfig,
 };
