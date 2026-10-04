@@ -12,6 +12,7 @@ export type ParsedPath = {
   fill: string | null;
   fillRule?: 'evenodd';
   noMerge?: boolean;
+  knockout?: boolean;
 };
 
 export type ParsedFlatSvg = {
