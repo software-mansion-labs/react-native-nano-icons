@@ -1,5 +1,10 @@
 import type { Cmd, PathKitModule } from './types';
-import { fillTypes, orientedContours, roundN, verbMap } from './contours';
+import {
+  cmdsToPathData,
+  fillTypes,
+  orientedContours,
+  verbMap,
+} from './contours';
 
 /**
  * Convert a path `d` string with evenodd fill semantics to an equivalent
@@ -40,21 +45,5 @@ export function convertEvenoddToWinding(
   const allCmds = orientedContours(cmds, V).flatMap((x) => x.cmds);
 
   // 4. Reconstruct d string from fixed commands
-  const parts: string[] = [];
-  for (const cmd of allCmds) {
-    const v = cmd[0]!;
-    if (v === V.MOVE) parts.push(`M${roundN(cmd[1]!)} ${roundN(cmd[2]!)}`);
-    else if (v === V.LINE) parts.push(`L${roundN(cmd[1]!)} ${roundN(cmd[2]!)}`);
-    else if (v === V.QUAD)
-      parts.push(
-        `Q${roundN(cmd[1]!)} ${roundN(cmd[2]!)} ${roundN(cmd[3]!)} ${roundN(cmd[4]!)}`
-      );
-    else if (v === V.CUBIC)
-      parts.push(
-        `C${roundN(cmd[1]!)} ${roundN(cmd[2]!)} ${roundN(cmd[3]!)} ${roundN(cmd[4]!)} ${roundN(cmd[5]!)} ${roundN(cmd[6]!)}`
-      );
-    else if (v === V.CLOSE) parts.push('Z');
-  }
-
-  return parts.join(' ');
+  return cmdsToPathData(allCmds, V);
 }
