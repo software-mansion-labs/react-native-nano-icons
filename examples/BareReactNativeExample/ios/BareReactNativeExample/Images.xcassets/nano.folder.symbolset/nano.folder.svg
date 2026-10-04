@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="800" height="600" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <style>
+    .monochrome-0 {fill:#000000}
+    .multicolor-0:custom {fill:#000000;opacity:0.3}
+    .monochrome-1 {fill:#000000}
+    .multicolor-1:custom {fill:#000000}
+  </style>
   <g id="Notes" font-family="'LucidaGrande', 'Lucida Grande', sans-serif" font-weight="500" font-size="13px">
     <rect x="0" y="0" width="800" height="600" fill="white"/>
     <g font-weight="500" font-size="13px">
@@ -33,16 +39,16 @@
   </g>
   <g id="Symbols">
     <g id="Ultralight-S" transform="matrix(4.375,0,0,4.375,212.5,58.5)">
-      <path class="monochrome-0 hierarchical-0:secondary" d="M11.17 8L9.17 6L4 6L4 18L20 18L20 8L11.17 8Z"/>
-      <path class="monochrome-1 hierarchical-1:primary" d="M12 6L20 6C21.1 6 22 6.9 22 8L22 18C22 19.1 21.1 20 20 20L4 20C2.9 20 2 19.1 2 18L2.01 6C2.01 4.9 2.9 4 4 4L10 4L12 6ZM4 6L4 18L20 18L20 8L11.17 8L9.17 6L4 6Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M11.17 8L9.17 6L4 6L4 18L20 18L20 8L11.17 8Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M12 6L20 6C21.1 6 22 6.9 22 8L22 18C22 19.1 21.1 20 20 20L4 20C2.9 20 2 19.1 2 18L2.01 6C2.01 4.9 2.9 4 4 4L10 4L12 6ZM4 6L4 18L20 18L20 8L11.17 8L9.17 6L4 6Z"/>
     </g>
     <g id="Regular-S" transform="matrix(4.375,0,0,4.375,412.5,58.5)">
-      <path class="monochrome-0 hierarchical-0:secondary" d="M11.17 8L9.17 6L4 6L4 18L20 18L20 8L11.17 8Z"/>
-      <path class="monochrome-1 hierarchical-1:primary" d="M12 6L20 6C21.1 6 22 6.9 22 8L22 18C22 19.1 21.1 20 20 20L4 20C2.9 20 2 19.1 2 18L2.01 6C2.01 4.9 2.9 4 4 4L10 4L12 6ZM4 6L4 18L20 18L20 8L11.17 8L9.17 6L4 6Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M11.17 8L9.17 6L4 6L4 18L20 18L20 8L11.17 8Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M12 6L20 6C21.1 6 22 6.9 22 8L22 18C22 19.1 21.1 20 20 20L4 20C2.9 20 2 19.1 2 18L2.01 6C2.01 4.9 2.9 4 4 4L10 4L12 6ZM4 6L4 18L20 18L20 8L11.17 8L9.17 6L4 6Z"/>
     </g>
     <g id="Black-S" transform="matrix(4.375,0,0,4.375,612.5,58.5)">
-      <path class="monochrome-0 hierarchical-0:secondary" d="M11.17 8L9.17 6L4 6L4 18L20 18L20 8L11.17 8Z"/>
-      <path class="monochrome-1 hierarchical-1:primary" d="M12 6L20 6C21.1 6 22 6.9 22 8L22 18C22 19.1 21.1 20 20 20L4 20C2.9 20 2 19.1 2 18L2.01 6C2.01 4.9 2.9 4 4 4L10 4L12 6ZM4 6L4 18L20 18L20 8L11.17 8L9.17 6L4 6Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M11.17 8L9.17 6L4 6L4 18L20 18L20 8L11.17 8Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M12 6L20 6C21.1 6 22 6.9 22 8L22 18C22 19.1 21.1 20 20 20L4 20C2.9 20 2 19.1 2 18L2.01 6C2.01 4.9 2.9 4 4 4L10 4L12 6ZM4 6L4 18L20 18L20 8L11.17 8L9.17 6L4 6Z"/>
     </g>
   </g>
 </svg>
