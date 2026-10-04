@@ -285,48 +285,76 @@ describe('Symbols E2E — .symbolset generation', () => {
   }, 120000);
 
   describe('knockouts', () => {
-    it('cuts white out of the layers below and keeps the other fills in one symbolset', async () => {
+    const PLATE = '<rect x="0" y="0" width="60" height="100" fill="#001A72"/>';
+    const RED_DOT = '<circle cx="70" cy="50" r="15" fill="#FF0000"/>';
+
+    async function buildKnockout(body: string) {
       const root = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-ko-'));
       const input = path.join(root, 'icons');
       await fsp.mkdir(input);
       await fsp.writeFile(
         path.join(input, 'plate.svg'),
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
-          '<rect x="0" y="0" width="60" height="100" fill="#001A72"/>' +
-          '<rect x="10" y="40" width="20" height="20" fill="#FFFFFF"/>' +
-          '<circle cx="70" cy="50" r="15" fill="#FF0000"/>' +
-          '</svg>'
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${body}</svg>`
       );
       const built = await buildAllSymbols(
         [{ inputDir: 'icons', name: 'ko', prefix: PREFIX }],
         root
       );
-      const symbolsetDir = path.join(
-        built[0]!.symbolsDir,
-        `${PREFIX}.plate.symbolset`
-      );
       const svg = await fsp.readFile(
-        path.join(symbolsetDir, `${PREFIX}.plate.svg`),
+        path.join(
+          built[0]!.symbolsDir,
+          `${PREFIX}.plate.symbolset`,
+          `${PREFIX}.plate.svg`
+        ),
         'utf8'
       );
       const contents = JSON.parse(
-        await fsp.readFile(path.join(symbolsetDir, 'Contents.json'), 'utf8')
+        await fsp.readFile(
+          path.join(
+            built[0]!.symbolsDir,
+            `${PREFIX}.plate.symbolset`,
+            'Contents.json'
+          ),
+          'utf8'
+        )
       );
-      const drawable = await fsp.readFile(built[0]!.drawableFiles[0]!, 'utf8');
+      const [original = ''] = await Promise.all(
+        built[0]!.drawableFiles.map((f) => fsp.readFile(f, 'utf8'))
+      );
       await fsp.rm(root, { recursive: true, force: true });
+      return { built, svg, contents, original };
+    }
+
+    const fills = (xml: string) =>
+      [...xml.matchAll(/android:fillColor="(#[0-9a-f]{6})"/g)].map((m) => m[1]);
+
+    it('keeps white over ink as its own layer in one symbolset', async () => {
+      const { built, svg, contents, original } = await buildKnockout(
+        PLATE +
+          '<rect x="10" y="40" width="20" height="20" fill="#FFFFFF"/>' +
+          RED_DOT
+      );
 
       expect(built[0]!.assetDirs[0]).toMatch(/\.symbolset$/);
       expect(contents.properties['symbol-rendering-intent']).toBe('template');
+
       expect(svg).toContain('.multicolor-0:custom {fill:#001A72}');
-      expect(svg).toContain('.multicolor-1:custom {fill:#FF0000}');
-      expect(svg).not.toContain('#FFFFFF');
-      expect(svg).not.toContain('multicolor-2');
-      expect(built[0]!.drawableFiles).toHaveLength(1);
-      expect(
-        [...drawable.matchAll(/android:fillColor="(#[0-9a-f]{6})"/g)].map(
-          (m) => m[1]
-        )
-      ).toEqual(['#001a72', '#ff0000']);
+      expect(svg).toContain('.multicolor-1:custom {fill:#FFFFFF}');
+      expect(svg).toContain('.multicolor-2:custom {fill:#FF0000}');
+
+      expect(fills(original)).toEqual(['#001a72', '#ffffff', '#ff0000']);
+    }, 120000);
+
+    it('data-nano-knockout picks the knockout and leaves white drawn', async () => {
+      const { svg, original } = await buildKnockout(
+        PLATE +
+          '<rect x="10" y="10" width="20" height="20" fill="#FFFFFF"/>' +
+          '<rect data-nano-knockout="true" x="10" y="60" width="20" height="20" fill="#FF0000"/>'
+      );
+
+      expect(svg).toContain('.multicolor-1:custom {fill:#FFFFFF}');
+      expect(svg).toContain('.multicolor-2:custom {fill:#FF0000}');
+      expect(fills(original)).toEqual(['#001a72', '#ffffff', '#ff0000']);
     }, 120000);
   });
 

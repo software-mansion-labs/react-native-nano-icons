@@ -1,35 +1,120 @@
 import { parseColor } from '../../utils/parse';
 import type { PathKitModule, PathKitPath } from '../pathkit/types';
+import {
+  canonicalWinding,
+  orientedPathData,
+  reversedWinding,
+} from '../pathkit/winding';
 
 /**
- * Resolve stacked layers into SF Symbol template layers. Monochrome draws the
- * union in one color, so:
- * 1. Erase: near-white-over-darker = knockout — subtract from below, drop it.
- *    Skipped for all-white icons or white floating on transparent.
- * 2. Occlusion: subtract layers above from each layer (for palette/hierarchical).
- * In: back→front layers with fills. Out: visible layers in z-order.
+ * Resolve stacked layers into SF Symbol template layers. Monochrome joins every
+ * layer into one nonzero-filled path, multicolor paints each layer on its own:
+ * 1. Knockouts: layers annotated with `data-nano-knockout`, or (when nothing is
+ *    annotated) near-white layers over ink. Their part over ink is emitted with
+ *    reversed winding, so it cancels the ink beneath it in monochrome while
+ *    multicolor still paints it in its own fill. Their part over nothing is
+ *    drawn in both modes.
+ * 2. Occlusion: subtract layers above from each layer; ink is never cut by a
+ *    knockout, so the winding under every knockout is exactly one.
+ * In: back→front layers with fills. Out: visible layers in z-order plus the
+ * monochrome silhouette.
  */
-export function resolveSymbolLayers(
-  PathKit: PathKitModule,
-  layers: Array<{ d: string; fill: string | null }>,
-  options?: { onEraseLayer?: (index: number) => void }
-): Array<{ d: string; fill: string | null }> {
-  if (layers.length <= 1) return layers.map((l) => ({ d: l.d, fill: l.fill }));
+export type SymbolLayerInput = {
+  d: string;
+  fill: string | null;
+  knockout?: boolean;
+};
 
-  const isWhiteish = (fill: string | null): boolean => {
-    if (fill === null) return false;
-    const [r, g, b, a] = parseColor(fill);
-    return a >= 0.9 && r >= 240 && g >= 240 && b >= 240;
+export type SymbolLayer = { d: string; fill: string | null };
+
+export type ResolvedSymbolLayers = {
+  layers: SymbolLayer[];
+  monochrome: string;
+};
+
+export function isKnockoutFill(fill: string | null): boolean {
+  if (fill === null) return false;
+  const [r, g, b, a] = parseColor(fill);
+  return a >= 0.9 && r >= 240 && g >= 240 && b >= 240;
+}
+
+function knockoutFlags(layers: SymbolLayerInput[]): boolean[] {
+  if (layers.some((l) => l.knockout)) return layers.map((l) => !!l.knockout);
+  const whiteFlags = layers.map((l) => isKnockoutFill(l.fill));
+  return whiteFlags.some((w) => !w) ? whiteFlags : layers.map(() => false);
+}
+
+function pathOps(PathKit: PathKitModule) {
+  const Ops = PathKit.PathOp ?? {};
+  const run = (a: string, b: string, op: number): string => {
+    if (a.trim() === '') return op === (Ops.UNION ?? 1) ? b : '';
+    if (b.trim() === '') return op === (Ops.INTERSECT ?? 2) ? '' : a;
+    const pa = PathKit.FromSVGString(a);
+    const pb = PathKit.FromSVGString(b);
+    const out = pa && pb ? PathKit.MakeFromOp(pa, pb, op) : null;
+    pa?.delete?.();
+    pb?.delete?.();
+    if (!out) return a;
+    const d = orientedPathData(PathKit, out);
+    out.delete?.();
+    return d;
   };
+  return {
+    difference: (a: string, b: string) => run(a, b, Ops.DIFFERENCE ?? 0),
+    union: (a: string, b: string) => run(a, b, Ops.UNION ?? 1),
+    intersect: (a: string, b: string) => run(a, b, Ops.INTERSECT ?? 2),
+  };
+}
 
-  const whiteFlags = layers.map((l) => isWhiteish(l.fill));
-  // All-white icon: never erase.
-  const hasInk = whiteFlags.some((w) => !w);
+function resolveWithKnockouts(
+  PathKit: PathKitModule,
+  layers: SymbolLayerInput[],
+  flags: boolean[],
+  onKnockoutLayer?: (index: number) => void
+): ResolvedSymbolLayers {
+  const ops = pathOps(PathKit);
+  const visible: string[] = new Array(layers.length).fill('');
 
+  let aboveAll = '';
+  let aboveInk = '';
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const d = layers[i]!.d;
+    visible[i] = ops.difference(d, flags[i] ? aboveAll : aboveInk);
+    aboveAll = ops.union(aboveAll, d);
+    if (!flags[i]) aboveInk = ops.union(aboveInk, d);
+  }
+
+  const emitted: SymbolLayer[] = [];
+  let monochrome = '';
+  layers.forEach((layer, i) => {
+    const region = visible[i]!;
+    if (region.trim() === '') return;
+    if (!flags[i]) {
+      emitted.push({ d: canonicalWinding(PathKit, region), fill: layer.fill });
+      monochrome = ops.union(monochrome, region);
+      return;
+    }
+    const inside = ops.intersect(region, monochrome);
+    const outside = ops.difference(region, monochrome);
+    const parts = [
+      inside.trim() === '' ? '' : reversedWinding(PathKit, inside),
+      outside.trim() === '' ? '' : canonicalWinding(PathKit, outside),
+    ].filter((part) => part !== '');
+    if (inside.trim() !== '') onKnockoutLayer?.(i);
+    emitted.push({ d: parts.join(' '), fill: layer.fill });
+    monochrome = ops.union(ops.difference(monochrome, inside), outside);
+  });
+
+  return { layers: emitted, monochrome: canonicalWinding(PathKit, monochrome) };
+}
+
+function resolveOccluded(
+  PathKit: PathKitModule,
+  layers: SymbolLayerInput[]
+): ResolvedSymbolLayers {
   const Ops = PathKit.PathOp ?? {};
   const DIFFERENCE = Ops.DIFFERENCE ?? 0;
   const UNION = Ops.UNION ?? 1;
-  const INTERSECT = Ops.INTERSECT ?? 2;
 
   const isEmptyD = (d: string) => d.trim() === '';
 
@@ -61,30 +146,10 @@ export function resolveSymbolLayers(
       }
     }
 
-    let erase = false;
-    if (hasInk && whiteFlags[i]) {
-      // Erase only where white overlaps geometry below (knockout); white over
-      // transparent stays drawn.
-      const belowUnion = unionOf(
-        PathKit,
-        layers.slice(0, i).map((l) => l.d)
-      );
-      if (belowUnion) {
-        const overlap = PathKit.MakeFromOp(p, belowUnion, INTERSECT);
-        const overlapD = overlap?.toSVGString() ?? '';
-        overlap?.delete?.();
-        belowUnion.delete?.();
-        erase = !isEmptyD(overlapD);
-      }
-    }
-
-    if (erase) {
-      options?.onEraseLayer?.(i);
-    } else if (!isEmptyD(visibleD)) {
+    if (!isEmptyD(visibleD)) {
       emitted.push({ index: i, d: visibleD, fill: layers[i]!.fill });
     }
 
-    // Both normal and erase layers cut everything below them.
     if (above === null) {
       above = p;
     } else {
@@ -97,31 +162,38 @@ export function resolveSymbolLayers(
       }
     }
   }
+  const monochrome = above?.toSVGString() ?? '';
   above?.delete?.();
 
-  return emitted
-    .sort((a, b) => a.index - b.index)
-    .map((r) => ({ d: r.d, fill: r.fill }));
+  return {
+    layers: emitted
+      .sort((a, b) => a.index - b.index)
+      .map((r) => ({ d: r.d, fill: r.fill })),
+    monochrome,
+  };
 }
 
-function unionOf(PathKit: PathKitModule, ds: string[]): PathKitPath | null {
-  const UNION = PathKit.PathOp?.UNION ?? 1;
-  let acc: PathKitPath | null = null;
-  for (const d of ds) {
-    const p = PathKit.FromSVGString(d);
-    if (!p) continue;
-    if (acc === null) {
-      acc = p;
-      continue;
-    }
-    const merged = PathKit.MakeFromOp(acc, p, UNION);
-    p.delete?.();
-    if (merged) {
-      acc.delete?.();
-      acc = merged;
-    }
+export function resolveSymbolLayers(
+  PathKit: PathKitModule,
+  layers: SymbolLayerInput[],
+  options?: { onKnockoutLayer?: (index: number) => void }
+): ResolvedSymbolLayers {
+  const flags = knockoutFlags(layers);
+  if (flags.some(Boolean)) {
+    return resolveWithKnockouts(
+      PathKit,
+      layers,
+      flags,
+      options?.onKnockoutLayer
+    );
   }
-  return acc;
+  if (layers.length <= 1) {
+    return {
+      layers: layers.map((l) => ({ d: l.d, fill: l.fill })),
+      monochrome: layers[0]?.d ?? '',
+    };
+  }
+  return resolveOccluded(PathKit, layers);
 }
 
 /**

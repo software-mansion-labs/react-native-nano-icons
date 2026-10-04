@@ -59,6 +59,7 @@ export async function prepareSymbol(
       fileLabel,
       pathkit,
       logger,
+      tagKnockouts: true,
     });
   } catch (err) {
     result.error = err instanceof Error ? err.message : String(err);
@@ -76,11 +77,11 @@ export async function prepareSymbol(
   const assetName = `${task.prefix}.${iconName}`;
   const svgFilename = `${assetName}.svg`;
 
-  // Resolve stacked layers (bake knockouts, occlude)
-  // so plates with light details survive monochrome tinting.
-  const layers = resolveSymbolLayers(pathkit, drawable, {
-    onEraseLayer: () =>
-      logger.info(`    ⊖ Baked white knockout layer into lower layers`),
+  const { layers } = resolveSymbolLayers(pathkit, drawable, {
+    onKnockoutLayer: () =>
+      logger.info(
+        `    ⊖ Knockout layer: hole in monochrome, own fill in original`
+      ),
   });
   const bounds =
     contentBounds(
