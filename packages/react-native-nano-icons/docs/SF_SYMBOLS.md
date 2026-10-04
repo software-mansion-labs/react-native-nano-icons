@@ -22,7 +22,7 @@ The pipeline converts a directory of SVG icon files into:
 - A **typed manifest** (`<set>.symbols.ts`) exporting a const map of icon names → symbol names
 - A **symbolmap** (`<set>.symbolmap.json`) carrying the input fingerprint for incremental builds
 
-Unlike the font pipeline (which produces glyphs *we* render via CoreText), symbol mode produces assets that **the OS renders**. The result is a first-class system symbol: native tinting, selected/unselected tab states, weight/scale configuration, hierarchical/palette rendering modes, and automatic Liquid Glass treatment in iOS 26 tab bars — with zero runtime code in this library.
+Unlike the font pipeline (which produces glyphs *we* render via CoreText), symbol mode produces assets that **the OS renders**. The result is a first-class system symbol: native tinting, selected/unselected tab states, weight/scale configuration, a runtime `monochrome`/`original` rendering-mode switch, and automatic Liquid Glass treatment in iOS 26 tab bars — with zero runtime code in this library.
 
 ### Why this exists
 
@@ -74,6 +74,7 @@ Native bottom-tab libraries (react-native-screens `Tabs`, expo-router `NativeTab
 ```
 
 - **`prefix`** namespaces symbol names (`home.svg` → `nano.home`), preventing collisions with Apple's built-in symbol names (imagine shadowing `house`) and letting the linker safely clean up stale symbolsets it owns.
+- **`data-nano-knockout="true"`** on a shape or group of an input SVG marks it as a knockout: a hole in monochrome, painted in its own fill in original (see [Layer resolution](#layer-resolution-knockouts--occlusion)). Without annotations, near-white details over ink are knockouts.
 - **`name`** drives output filenames (`tabicons.symbols.ts`, `tabicons.symbolmap.json`, `tabicons.symbols/`) and the manifest export name (`TabiconsSymbols`).
 
 ### Outputs (per set)
@@ -85,6 +86,9 @@ Native bottom-tab libraries (react-native-screens `Tabs`, expo-router `NativeTab
 │   │   ├── <prefix>.<icon>.svg     # the symbol template
 │   │   └── Contents.json
 │   └── ...
+├── <name>.drawables/
+│   ├── <prefix>_<icon>.xml          # Android monochrome: one solid silhouette path
+│   └── <prefix>_<icon>_original.xml # Android original: every layer with its fill
 ├── <name>.symbols.ts               # typed manifest (DX)
 └── <name>.symbolmap.json           # { m: { p: prefix, h: sha256 }, s: { icon: symbolName } }
 ```
@@ -197,38 +201,50 @@ A *variable* template requires exactly the `Ultralight-S`, `Regular-S`, `Black-S
 - `actool` compiles cleanly; the symbol renders the same design at every requested weight
 - **Empirically required:** a Regular-S–only template is *rejected* by actool (`Symbol image file … must have a glyph for Regular weight Medium size`). Single-weight templates are not a thing; duplication is the correct degenerate form.
 
-### Layer resolution: erase baking + occlusion knockout
+### Layer resolution: knockouts + occlusion
 
 **File:** `src/core/symbols/layers.ts` → `resolveSymbolLayers()`
 
-Symbol layers **blend** (paint-over), and monochrome rendering — what tab bars use — draws the **union** of all layers in one color. Stacked SVG art breaks under this model: a solid plate with light details painted on top becomes a featureless blob. Two geometric transforms fix it before template emission:
+Monochrome rendering (what tab bars use) joins every layer into **one path** and fills it with the **nonzero winding rule**. Multicolor paints each layer on its own, back to front. Stacked SVG art breaks monochrome: a plate with light details painted on top becomes a solid block. The resolver turns such details into *knockouts*: holes in monochrome that multicolor still paints in their own fill.
 
-1. **Erase baking.** Near-white layers (`r,g,b ≥ 240`, `α ≥ 0.9`) painted over darker geometry are the canonical *knockout* idiom in logo art — they map to Apple's per-layer erase semantics, which we bake: the white layer is **subtracted from every layer below it and not emitted**. Guards: an all-white icon is never erased (it's figure on transparent ground), and a white layer that overlaps nothing beneath it stays drawn.
-   *Example:* the SWM logo (navy plate + white frame + white lettering) resolves to a single navy layer with the frame line and "software mansion" knocked out — the classic engraved tab-icon silhouette, instead of a solid blob.
-2. **Occlusion knockout.** Every remaining layer is reduced to its **visible region** (path minus the union of layers above it, via PathKit `DIFFERENCE`/`UNION`), so hierarchical/palette modes tint distinct regions instead of overlapping paint. Fully-hidden layers are dropped.
+1. **Which layers are knockouts.**
+   - Annotated: any element with `data-nano-knockout` (it needs a value, e.g. `="true"`, to be valid XML) in the input SVG. On a group it applies to everything inside. When an icon has any annotation, only annotated layers are knockouts.
+   - Automatic, when nothing is annotated: near-white layers (`r,g,b ≥ 240`, `α ≥ 0.9`) in an icon that also has non-white ink. An all-white icon has no knockouts.
+2. **Occlusion.** Each layer is reduced to its visible region (path minus the union of layers above it). Ink layers are cut only by ink above them, never by a knockout, so ink stays whole under every knockout and no two ink layers overlap.
+3. **Reversed winding.** A knockout's visible region is split against the monochrome silhouette beneath it:
+   - The part over ink is emitted with **reversed winding**. In the monochrome join the ink beneath winds +1 there and the knockout −1, so the sum is 0: a hole. Multicolor paints the same part on top in the knockout's fill.
+   - The part over nothing keeps normal winding and is drawn in both modes.
+
+   Both parts go into one layer path, so multicolor shows no seam between them.
+4. **Canonical winding.** Every layer of an icon with knockouts is re-oriented by contour containment (outer contours one direction, holes the other). PathKit's boolean ops return even-odd paths with arbitrary contour directions, and an SVG path string cannot carry the fill rule, so without this step a ring can turn into a filled shape under nonzero. Conic segments (from arcs) are converted to cubics first.
+
+The resolver also returns the monochrome silhouette as one path. It feeds the Android monochrome drawable and the join check in the tests.
+
+*Example:* the SWM logo (navy plate + white frame + white lettering). The plate stays whole and the frame and lettering become knockout layers. Tinted, it is an engraved silhouette with see-through text. In color, the text is white on navy on any background.
+
+Icons without knockouts keep the plain occlusion path, so their output is unchanged.
+
+**Annotation transport.** `data-*` attributes do not survive flattening. When an input contains `data-nano-knockout`, prep flattens a second copy in which the annotated elements' explicit fills and strokes are replaced by a marker color (`#fe01fe`), and tags every parsed path whose fill differs between the two flattens. If the two flattens disagree on the shape count (e.g. an annotated element whose paint is inherited as `none`), the annotations are ignored with a warning. Tagged paths are never merged with untagged paths of the same color.
 
 Caveat: boolean subtraction along curved shared edges can leave hairline anti-aliasing seams between adjacent regions at very large render sizes; invisible at tab-bar sizes.
 
 The package version and the toolchain versions are folded into the stored fingerprint, so upgrades invalidate cached outputs even when SVG inputs are unchanged.
 
-### Color management: what survives flattening, and when it blobs
+### Color management: one asset, two rendering modes
 
-A monochrome `.symbolset` carries **no color**. The original fills are used only as *signals* during resolution and are then discarded — the emitted template has path geometry and `class` annotations but no `fill` at all. Exactly three things survive:
+The public API names the modes `monochrome` (one color, tinted by the host) and `original` (the asset's own colors). For SF Symbols `original` corresponds to Apple's **"multicolor"** rendering mode, which is why the layer classes below say `multicolor-N:custom` — that word is Apple's file format, not this library's API.
 
-1. **Geometry** — the silhouette after erase baking + occlusion.
-2. **White knockouts** — near-white-over-darker regions become holes (the only color semantic that is baked).
-3. **Z-order → tier** — layer stacking drives the `hierarchical-N:<tier>` annotations (≤ 3 distinct tiers).
+Monochrome rendering joins every layer into one nonzero-filled path in one color, regardless of class. No per-layer style can hide a layer in monochrome only (see the findings below). Knockouts are therefore expressed in geometry: a knockout layer winds against the ink beneath it, so the join has a hole there while multicolor still paints the layer.
 
-Everything else about color is gone. This works **only for the white-knockout logo idiom** (a solid shape with near-white details cut out of it). Art that relies on color any other way flattens to a single tinted **blob** — the union of all ink in one color:
+What survives:
 
-- **Side-by-side colored regions** (no overlap, no white) union into one solid shape. The whole point of the icon is lost.
-- **Off-white / light-grey details** (any channel `< 240`, or `α < 0.9`) fall below the knockout threshold → drawn as ink, not cut out.
-- **Dark-on-light cutouts** (a dark detail meant to read as a hole) are ink, never a knockout — only *white*-on-darker is recognized.
-- **Gradients / patterns** (`fill="url(#…)"`) and unknown fills parse to black (`parseColor`), so they become opaque ink.
+1. **Geometry** — the visible layers after occlusion. Identical in both modes.
+2. **Knockouts** — holes in monochrome (the bar shows through), painted in their own fill in original.
+3. **Fills** — each remaining layer's color, declared for the `original` (Apple: multicolor) mode. Fill opacity is kept: on iOS as an `opacity` property in the layer's multicolor rule (e.g. `.multicolor-0:custom {fill:#000000;opacity:0.3}`), on Android as `fillAlpha`.
 
-To keep an icon's actual colors, set `multicolor: true` (the colored-symbol path below) or, for app content, use the font pipeline's `<NanoIcon>`.
+Consequences for monochrome tinting are unchanged: side-by-side colored regions union into one shape, off-white tones (any channel below 240, or `α < 0.9`) are ink unless annotated, and gradients/patterns parse to black. The `original` mode shows those icons in their colors.
 
-**Worked examples** (`examples/BareReactNativeExample`, monochrome `tabicons` set):
+**Worked examples** (`examples/BareReactNativeExample`, `tabicons` set), tinted:
 
 | Tab | Icon | Result | Why |
 |---|---|---|---|
@@ -236,59 +252,76 @@ To keep an icon's actual colors, set `multicolor: true` (the colored-symbol path
 | **BlobFlag** | `AO.svg` (red top half + black bottom half + yellow/black emblem) | ❌ solid rectangle | all non-white ink; the two halves union to fill the box, the emblem fills the occlusion seam |
 | **BlobWalk** | `person-walking.svg` (multicolor figure with off-white/grey detailing) | ❌ featureless silhouette | legibility is pure colour contrast; sub-threshold tones are drawn, not cut |
 
-`usFlag.svg` is a deliberate *non*-example: its white stripes and stars **are** white-over-color knockouts, so it flattens to a recognizable striped silhouette — color management succeeds there for the same reason it fails for `AO`.
+`usFlag.svg` is a deliberate *non*-example: its white stripes and stars **are** white-over-color knockouts, so it flattens to a recognizable striped silhouette — color management succeeds there for the same reason it fails for `AO`. Untinted, all four render in their own colors.
 
-### Rendering-mode annotations (multicolor → hierarchical/palette layers)
+### Rendering-mode annotations
 
-The resolved z-ordered layers map onto Apple's symbol layer system via plain `class` attributes on paths (no SF Symbols.app involved):
+The template encodes rendering modes as per-layer CSS classes inside the one SVG (verified against actool and UIKit on iOS 26/27). `Contents.json` has no per-file rendering mode and a second SVG in the same slot is ignored by actool as an "unassigned child", so there is exactly one file.
 
 ```xml
-<!-- 2-layer icon (e.g. a twotone heart): back layer first -->
-<path class="monochrome-0 hierarchical-0:secondary" d="…"/>
-<path class="monochrome-1 hierarchical-1:primary"   d="…"/>
+<svg …>
+  <style>
+    .monochrome-0 {fill:#000000}
+    .multicolor-0:custom {fill:#001A72}
+    .monochrome-1 {fill:#000000}
+    .multicolor-1:custom {fill:#FF0000}
+  </style>
+  …
+  <g id="Regular-S" transform="matrix(…)">
+    <path class="monochrome-0 multicolor-0:custom" d="…"/>
+    <path class="monochrome-1 multicolor-1:custom" d="…"/>
+  </g>
 ```
 
-- Layer index = z-order (back → front); the **front-most layer is `primary`**, then `secondary`, `tertiary` going back (extra back layers share `tertiary`)
-- Single-layer icons are emitted **plain** (no classes) — a pure tintable template glyph
-- Verified at runtime: hierarchical rendering applies tiered opacity per layer; palette rendering (`SymbolConfiguration(paletteColors:)`) colors layers independently
+Rules the emitter follows, each one a verified failure mode otherwise (`multicolor` here is Apple's name for the `original` rendering mode):
 
-Original SVG *colors* are dropped for symbols — they are template images; color is supplied at render time by the system (tab tint) or by the consumer (palette/hierarchical configuration). To keep an icon's **original colors**, use the colored-symbol path below instead.
+- Every layer path gets `class="monochrome-N multicolor-N:custom"`, `N` = z-order index (back → front), unique per layer. Single-layer icons are annotated too.
+- Custom colors are declared **only** in the `<style>` block placed right after the opening `<svg>` tag. `fill` attributes on the paths, `rgb()` fills, `custom-RRGGBB` suffixes and `SFSymbolsPreview…` classes are ignored by UIKit and render black — so layer paths carry no `fill` at all.
+- Layer paths are **direct children** of the weight group. Any nested `<g>` inside `Ultralight-S`/`Regular-S`/`Black-S` breaks rendering (color layers vanish, knockouts fill in).
+- The margin guides of every weight group equal the scaled glyph bounds, so the symbol is horizontally centered in its box; a guide left at a default width renders the glyph off-center in the tab bar.
+- `Contents.json` keeps `symbol-rendering-intent: template`, so the default is tinted; the consumer selects the mode at runtime.
 
-### Colored ("avatar") symbols: `multicolor: true`
+- A translucent layer's alpha goes into its multicolor rule as `opacity:<a>` (e.g. `.multicolor-0:custom {fill:#000000;opacity:0.3}`). The monochrome rule stays solid.
+- A knockout layer gets the same classes as any other layer; only its winding differs (see [Layer resolution](#layer-resolution-knockouts--occlusion)).
 
-A monochrome symbol is always template-tinted by `UITabBar` (the native convention). When a symbolSet sets `multicolor: true`, the pipeline emits the **colored symbol** as a plain vector `.imageset` instead of a `.symbolset`, so the icon renders in its **original colors** in the bar.
+Hierarchical/palette annotations are not emitted; those modes fall back to monochrome.
 
-Why this works (verified, Xcode 26 / iOS 26):
-- A regular imageset with `Contents.json` `properties: { "template-rendering-intent": "original" }` makes `[UIImage imageNamed:]` return an image whose `renderingMode == .alwaysOriginal`. `UITabBar` honors that and shows the image in full color — **no native patch** (RNScreens' `xcasset` type already just calls `imageNamed:`). Spike-confirmed: a navy/orange/white icon rendered colored in the bar while monochrome symbols stayed tinted.
-- This is distinct from the *symbol* `symbol-rendering-intent: original`, which is symbol-only and **is** ignored by the bar — that earlier dead end was the wrong property, not proof the bar can't show color.
+### Findings: what the template format can and cannot express
 
-**Emitter** (`src/core/symbols/coloredSymbol.ts`, `buildColoredSymbolSvg`): the prepared layers are serialized straight to a plain SVG with their **original fills and z-order** (normal paint-over — no symbol knockout/erase). Fills are normalized via `parseColor` to `fill="rgb(r,g,b)"` + `fill-opacity` (SVG has no valid `rgba()` fill). The asset uses the source viewBox; iOS aspect-fits it into the tab slot. Vector data is preserved (`preserves-vector-representation: true`) so it stays crisp at any size.
+Measured in the Bare example (iOS 27 simulator, `<SFSymbol>` view and tab bar) and in the macOS render harness, with variants of the SWM logo on dark and green backgrounds, where a hole and white paint look different:
 
-Trade-offs, by design:
-- **No per-state tint** — a colored (`.alwaysOriginal`) image looks the same selected and unselected (avatar style). Use the `.fill` convention to ship a distinct selected asset if needed.
-- For *exact* original colors in app **content** (not tabs), the font pipeline's `<NanoIcon>` is lossless.
-- The flag participates in the build fingerprint (`:mcN`), so toggling it regenerates outputs.
-- **Name collision:** a monochrome set and a colored set must not share `prefix` + icon name — both compile to the same asset-catalog name. The linker's stale-cleanup spans both `.symbolset` and `.imageset`, so flipping a set's `multicolor` correctly replaces its assets.
+| Variant | Monochrome | Multicolor |
+|---|---|---|
+| Plate with the white details subtracted (holes only) | holes ✅ | holes, background shows through ❌ |
+| Plate with holes + white layer, `.monochrome-1 {opacity:0}` | solid block ❌ | white ✅ |
+| Plate with holes + white layer without a `monochrome-1` class | solid block ❌ | white ✅ |
+| Full plate + white layer, `.monochrome-1 {-sfsymbols-clear-behind:true; opacity:0}` | solid block ❌ | white ✅ |
+| **Full plate + white layer with reversed winding** | **holes ✅** | **white ✅** |
+
+- Monochrome ignores per-layer styling and class membership. SF Symbols.app contains the string `monochrome-path-concatenation`, and the reversed-winding result fits: monochrome concatenates every layer path and fills the result with nonzero winding. This is not documented by Apple.
+- The class grammar the app parses is `monochrome-N`, `multicolor-N:<name>`, `hierarchical-N:<name>` and `clearBehindLayer`. There is no per-mode erase class.
+- `opacity` inside a `.multicolor-N:custom` rule is honored (iOS 18.6, 26.5, 27 and macOS 26.5), contrary to an earlier assumption that only `#RRGGBB` survives.
+
+### Android: two drawables per icon
+
+A VectorDrawable fills each `<path>` separately and never joins them, and the bar's tint paints every drawn pixel. Reversed winding therefore cannot make a hole, and one drawable cannot be a hole when tinted and painted when not. Each icon ships two drawables:
+
+- `<prefix>_<icon>.xml` (monochrome): the silhouette as one solid black path. This also keeps translucent layers from showing at partial tint and avoids hairline seams where adjacent layers meet.
+- `<prefix>_<icon>_original.xml` (original): every layer with its `fillColor` and `fillAlpha`.
+
+### Runtime: `nativeNanoSymbol(name, renderingMode?, prefix?)`
+
+`renderingMode` is `'monochrome'` (default) or `'original'`. The helper returns `{ type: 'sfSymbol', name: '<prefix>.<name>', renderingMode }` on iOS and `{ type: 'image', source: { uri }, renderingMode }` on Android, where `uri` is `<prefix>_<name>` for monochrome and `<prefix>_<name>_original` for original. react-native-screens' `Tabs` (PR #4209) applies the mode per slot: on iOS `AlwaysTemplate` / `AlwaysOriginal` on the symbol image, on Android the bar tint or an untinted drawable. react-navigation forwards the field once its follow-up to #4209 lands.
 
 ### `Contents.json`
 
 **File:** `src/core/symbols/contents.ts`
 
-Symbol (`.symbolset`):
 ```json
 {
   "info": { "author": "xcode", "version": 1 },
   "properties": { "symbol-rendering-intent": "template" },
   "symbols": [{ "filename": "nano.home.svg", "idiom": "universal" }]
-}
-```
-
-Colored image (`.imageset`, `multicolor: true`):
-```json
-{
-  "images": [{ "filename": "nano.home.svg", "idiom": "universal" }],
-  "info": { "author": "xcode", "version": 1 },
-  "properties": { "preserves-vector-representation": true, "template-rendering-intent": "original" }
 }
 ```
 
@@ -318,7 +351,7 @@ A `withDangerousMod(['ios'])` writes the `.symbolset` folders into the **already
 
 ### Incremental builds
 
-`buildAllSymbols()` (**`cli/buildSymbols.ts`**) computes a SHA-256 input fingerprint (`fingerprintSymbolDirSync`: SVG names and contents, `prefix`, `multicolor`, package and toolchain versions) and stores it in `<name>.symbolmap.json` (`m.h`). If the hash matches and every output exists, generation is skipped and the previous result is reconstructed from the symbolmap.
+`buildAllSymbols()` (**`cli/buildSymbols.ts`**) computes a SHA-256 input fingerprint (`fingerprintSymbolDirSync`: SVG names and contents, `prefix`, package and toolchain versions) and stores it in `<name>.symbolmap.json` (`m.h`). If the hash matches and every output exists, generation is skipped and the previous result is reconstructed from the symbolmap.
 
 ---
 
@@ -331,7 +364,7 @@ A `withDangerousMod(['ios'])` writes the `.symbolset` folders into the **already
 | **react-navigation v8** (alpha) | default bottom tabs wrap RNScreens | ✅ |
 | **react-native-bottom-tabs** (Callstack) | SwiftUI `Image(systemName:)` only | ❌ — `systemName:` never resolves asset-catalog symbols; would need an upstream change |
 
-Both `.symbolset` (monochrome) and `.imageset` (colored, `multicolor: true`) are consumed identically via the `xcasset` icon type — `imageNamed:` resolves either by name.
+The `xcasset` icon type (`imageNamed:`) always renders the template (tinted) mode. The runtime rendering-mode switch needs the `sfSymbol` icon type with `renderingMode`, which `nativeNanoSymbol()` returns.
 
 Note there is **no automatic sf → xcasset fallback** in any library: the icon type is chosen explicitly in JS.
 
@@ -364,8 +397,19 @@ xcrun actool My.xcassets --compile /tmp/out \
 
 - 3-source duplicated variable template compiles with zero diagnostics; Regular-S-only is rejected
 - `NSImage/UIImage(named:)` loads the compiled symbol as a template image (`isTemplate == true`)
-- Monochrome tint, hierarchical tiers, and palette per-layer colors all render correctly from hand-authored class annotations
+- Monochrome tint and `multicolor-N:custom` per-layer colors render correctly from the emitted class annotations + `<style>` block
 - End-to-end in the Expo example (SDK 56): prebuild links symbolsets → app build compiles them → expo-router `NativeTabs` renders them tinted in the iOS 26 Liquid Glass tab bar, including the `heart`/`heart.fill` selected-state swap
+
+### Knockout and rendering-mode matrix (Bare example, 2026-10)
+
+Every symbol of the `tabicons` and `mcicon` sets in `monochrome`, `original`, the default and the `focused ? 'original' : 'monochrome'` switch, selected and unselected, against dark and green backgrounds:
+
+| Target | Surface | Result |
+|---|---|---|
+| iOS 27, 26.5, 18.6 simulators | `<SFSymbol>` (monochrome / multicolor configuration) and react-native-screens tab bar (`AlwaysTemplate` / `AlwaysOriginal`) | knockouts are holes when tinted and painted in their fill in original; translucent layers keep their opacity |
+| Android API 36 emulator | `<Image>` with each drawable and the native tab bar | monochrome drawable is a solid silhouette with holes (no partial tint, no seams); original drawable keeps fills, knockouts and alpha |
+
+The tab-bar runs used react-native-screens with PR #4209 and react-navigation's bottom tabs forwarding `renderingMode`.
 
 ### Quick macOS smoke harness (no app build)
 
@@ -386,7 +430,8 @@ Compile a catalog for `--platform macosx` into a minimal `.app` shell with a `sw
 
 - **iOS only** for now. The same `symbolSets` entries are designed to later emit Android vector drawables (Android tabs tint drawables monochrome — same mental model).
 - **Single weight** — all weights render the same design (interpolation needs hand-authored, point-compatible Ultralight/Black masters; not derivable from arbitrary SVGs).
-- **Monochrome symbols are tinted by the bar** (native convention). For original colors set `multicolor: true` → colored `.imageset`; colored icons don't tint per selected/unselected state.
+- **Knockouts rely on undocumented behavior**: monochrome joining layers with nonzero winding (see the findings above). Verified on iOS 18.6, 26.5 and 27.
+- **Hierarchical/palette modes are not annotated**; they fall back to monochrome.
 - Same input constraints as the font pipeline: no `<mask>`/`<filter>`, `.svg` only.
 - `react-native-bottom-tabs` unsupported (see Consumers).
 - Liquid Glass (iOS 26) works with plain recompile; SF Symbols 7 *draw* animations (template 6.0 guide points) are out of scope.
@@ -399,12 +444,16 @@ Compile a catalog for `--platform macosx` into a minimal `.app` shell with a `sw
 src/core/
 ├── pipeline/
 │   ├── prepare.ts        # Shared SVG stages (extracted from runFontPipeline.ts; used by both pipelines)
+├── pathkit/
+│   └── winding.ts        # Canonical / reversed contour winding
 │   ├── runSymbolPipeline.ts     # Symbol pipeline orchestrator + manifest/symbolmap emission
 │   └── runFontPipeline.ts            # Font pipeline (now consumes prepare.ts; behavior unchanged)
 ├── symbols/
-│   ├── template.ts       # Symbol template skeleton, placement math, hierarchical annotations
-│   ├── coloredSymbol.ts  # Colored symbol SVG emitter → .imageset (multicolor: true)
-│   └── contents.ts       # Contents.json emitters (symbolset + imageset + catalog root)
+│   ├── template.ts       # Symbol template skeleton, placement math, rendering-mode annotations
+│   ├── layers.ts         # Knockouts (reversed winding) + occlusion (PathKit)
+│   ├── knockout.ts       # data-nano-knockout marker for the second flatten
+│   ├── vectorDrawable.ts # Android VectorDrawable emitter
+│   └── contents.ts       # Contents.json emitters (symbolset + catalog root)
 cli/
 ├── buildSymbols.ts       # buildAllSymbols + fingerprint skip
 ├── config.ts             # .nanoicons.json: iconSets | symbolSets
@@ -413,7 +462,8 @@ plugin/src/
 ├── buildSymbols.ts       # Expo build-once cache
 └── withNanoIconsSymbolLinking.ts  # withDangerousMod → Images.xcassets
 __tests__/
-└── symbols.e2e.test.ts   # generation, annotations, manifest, skip, catalog copy, actool gate
+├── symbols.e2e.test.ts   # generation, annotations, manifest, skip, catalog copy, actool gate
+└── symbolKnockout.unit.test.ts  # snapshots of template + both drawables, monochrome join checks
 ```
 
 ---
