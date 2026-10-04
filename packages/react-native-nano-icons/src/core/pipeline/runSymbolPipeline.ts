@@ -8,7 +8,11 @@ import {
   prepareIconsWithCache,
   type PreparedSvgCache,
 } from './preparedSvgCache';
-import { toDrawableResourceName, manifestBaseName } from '../../utils/naming';
+import {
+  toDrawableResourceName,
+  toOriginalDrawableResourceName,
+  manifestBaseName,
+} from '../../utils/naming';
 import type { NanoLogger } from '../types';
 
 export type SymbolsPipelineConfig = {
@@ -91,7 +95,7 @@ declare module '@react-navigation/native' {
 /**
  * Run the symbol pipeline: prep each SVG, then emit one `.symbolset` per icon
  * carrying both the monochrome and the multicolor rendering mode, plus its
- * Android VectorDrawable. Also writes a typed manifest and a symbolmap JSON
+ * monochrome and original Android VectorDrawables. Also writes a typed manifest and a symbolmap JSON
  * (for build fingerprinting).
  */
 export async function runSymbolPipeline(
@@ -156,15 +160,20 @@ export async function runSymbolPipeline(
     // within the set — fail loudly rather than silently renaming, so the runtime
     // helper can derive the name purely from the filename.
     const resourceName = toDrawableResourceName(result.asset.assetName);
-    const clashingFile = resourceNameToFile.get(resourceName);
-    if (clashingFile) {
-      throw new Error(
-        `[react-native-nano-icons] "${config.name}": "${result.file}" and "${clashingFile}" ` +
-          `both map to the Android drawable name "${resourceName}". Rename one of the ` +
-          `SVGs so they differ by more than case or non-alphanumeric characters.`
-      );
+    for (const name of [
+      resourceName,
+      toOriginalDrawableResourceName(resourceName),
+    ]) {
+      const clashingFile = resourceNameToFile.get(name);
+      if (clashingFile) {
+        throw new Error(
+          `[react-native-nano-icons] "${config.name}": "${result.file}" and "${clashingFile}" ` +
+            `both map to the Android drawable name "${name}". Rename one of the ` +
+            `SVGs so they differ by more than case or non-alphanumeric characters.`
+        );
+      }
+      resourceNameToFile.set(name, result.file);
     }
-    resourceNameToFile.set(resourceName, result.file);
     assets.push({
       iconName: result.iconName,
       asset: result.asset,
@@ -202,11 +211,16 @@ export async function runSymbolPipeline(
     );
     const drawableFile = path.join(drawablesDir, `${resourceName}.xml`);
     await fsp.writeFile(drawableFile, asset.vdXml, 'utf8');
+    const originalDrawableFile = path.join(
+      drawablesDir,
+      `${toOriginalDrawableResourceName(resourceName)}.xml`
+    );
+    await fsp.writeFile(originalDrawableFile, asset.vdOriginalXml, 'utf8');
 
     symbols[iconName] = asset.assetName;
     drawables[iconName] = resourceName;
     assetDirs.push(assetDir);
-    drawableFiles.push(drawableFile);
+    drawableFiles.push(drawableFile, originalDrawableFile);
   }
 
   const symbolmapPath = path.join(

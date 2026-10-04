@@ -1,4 +1,7 @@
-import { toDrawableResourceName } from '../utils/naming';
+import {
+  toDrawableResourceName,
+  toOriginalDrawableResourceName,
+} from '../utils/naming';
 import type {
   NanoSymbolDescriptor,
   NanoSymbolRenderingMode,
@@ -32,8 +35,9 @@ type NanoSymbolName = [keyof NanoSymbolNames] extends [never]
  * colors — Apple's "multicolor" symbol rendering).
  *
  * Android — the drawable resource name is derived from `${prefix}.${name}` with
- * the same pure transform the build uses. `renderingMode` controls whether the
- * bar recolors the drawable (`monochrome`) or keeps its own colors (`original`).
+ * the same pure transform the build uses. Each icon ships two drawables;
+ * `renderingMode` picks the solid silhouette the bar recolors (`monochrome`)
+ * or the drawable that keeps its own colors (`original`, `_original` suffix).
  *
  *     tabBarIcon: () => nativeNanoSymbol('home')
  *     // tints only when unfocused, keeps the icon's own colors while focused
@@ -54,9 +58,15 @@ export function nativeNanoSymbol(
   renderingMode: NanoSymbolRenderingMode = 'monochrome',
   prefix: string = 'nano'
 ): NativeNanoSymbol {
+  const resourceName = toDrawableResourceName(`${prefix}.${name}`);
   return {
     type: 'image',
-    source: { uri: toDrawableResourceName(`${prefix}.${name}`) },
+    source: {
+      uri:
+        renderingMode === 'original'
+          ? toOriginalDrawableResourceName(resourceName)
+          : resourceName,
+    },
     renderingMode,
   };
 }

@@ -318,22 +318,26 @@ describe('Symbols E2E — .symbolset generation', () => {
           'utf8'
         )
       );
-      const [original = ''] = await Promise.all(
+      const [monochrome = '', original = ''] = await Promise.all(
         built[0]!.drawableFiles.map((f) => fsp.readFile(f, 'utf8'))
       );
+      const drawableNames = built[0]!.drawableFiles.map((f) =>
+        path.basename(f)
+      );
       await fsp.rm(root, { recursive: true, force: true });
-      return { built, svg, contents, original };
+      return { built, svg, contents, monochrome, original, drawableNames };
     }
 
     const fills = (xml: string) =>
       [...xml.matchAll(/android:fillColor="(#[0-9a-f]{6})"/g)].map((m) => m[1]);
 
     it('keeps white over ink as its own layer in one symbolset', async () => {
-      const { built, svg, contents, original } = await buildKnockout(
-        PLATE +
-          '<rect x="10" y="40" width="20" height="20" fill="#FFFFFF"/>' +
-          RED_DOT
-      );
+      const { built, svg, contents, monochrome, original, drawableNames } =
+        await buildKnockout(
+          PLATE +
+            '<rect x="10" y="40" width="20" height="20" fill="#FFFFFF"/>' +
+            RED_DOT
+        );
 
       expect(built[0]!.assetDirs[0]).toMatch(/\.symbolset$/);
       expect(contents.properties['symbol-rendering-intent']).toBe('template');
@@ -342,11 +346,16 @@ describe('Symbols E2E — .symbolset generation', () => {
       expect(svg).toContain('.multicolor-1:custom {fill:#FFFFFF}');
       expect(svg).toContain('.multicolor-2:custom {fill:#FF0000}');
 
+      expect(drawableNames).toEqual([
+        `${PREFIX}_plate.xml`,
+        `${PREFIX}_plate_original.xml`,
+      ]);
       expect(fills(original)).toEqual(['#001a72', '#ffffff', '#ff0000']);
+      expect(fills(monochrome)).toEqual(['#000000']);
     }, 120000);
 
     it('data-nano-knockout picks the knockout and leaves white drawn', async () => {
-      const { svg, original } = await buildKnockout(
+      const { svg, monochrome, original } = await buildKnockout(
         PLATE +
           '<rect x="10" y="10" width="20" height="20" fill="#FFFFFF"/>' +
           '<rect data-nano-knockout="true" x="10" y="60" width="20" height="20" fill="#FF0000"/>'
@@ -355,6 +364,7 @@ describe('Symbols E2E — .symbolset generation', () => {
       expect(svg).toContain('.multicolor-1:custom {fill:#FFFFFF}');
       expect(svg).toContain('.multicolor-2:custom {fill:#FF0000}');
       expect(fills(original)).toEqual(['#001a72', '#ffffff', '#ff0000']);
+      expect(fills(monochrome)).toEqual(['#000000']);
     }, 120000);
   });
 

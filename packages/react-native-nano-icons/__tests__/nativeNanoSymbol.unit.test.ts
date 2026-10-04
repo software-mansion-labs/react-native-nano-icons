@@ -17,7 +17,7 @@ describe('nativeNanoSymbol', () => {
     });
   });
 
-  test('Android returns the drawable image descriptor with renderingMode', () => {
+  test('Android picks the monochrome or original drawable by renderingMode', () => {
     expect(androidNanoSymbol('person-walking')).toEqual({
       type: 'image',
       source: { uri: 'nano_person_walking' },
@@ -25,7 +25,7 @@ describe('nativeNanoSymbol', () => {
     });
     expect(androidNanoSymbol('home', 'original', 'brand')).toEqual({
       type: 'image',
-      source: { uri: 'brand_home' },
+      source: { uri: 'brand_home_original' },
       renderingMode: 'original',
     });
   });

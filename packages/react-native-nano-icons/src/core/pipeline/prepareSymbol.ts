@@ -24,6 +24,7 @@ export type SymbolAsset = {
   svg: string;
   contents: string;
   vdXml: string;
+  vdOriginalXml: string;
 };
 
 export type SymbolResult = {
@@ -77,7 +78,7 @@ export async function prepareSymbol(
   const assetName = `${task.prefix}.${iconName}`;
   const svgFilename = `${assetName}.svg`;
 
-  const { layers } = resolveSymbolLayers(pathkit, drawable, {
+  const { layers, monochrome } = resolveSymbolLayers(pathkit, drawable, {
     onKnockoutLayer: () =>
       logger.info(
         `    ⊖ Knockout layer: hole in monochrome, own fill in original`
@@ -101,6 +102,11 @@ export async function prepareSymbol(
     }),
     contents: symbolsetContentsJson(svgFilename),
     vdXml: buildVectorDrawableXml({
+      layers: [{ d: monochrome, fill: null }],
+      viewBox: prepared.viewBox,
+      contentBounds: bounds,
+    }),
+    vdOriginalXml: buildVectorDrawableXml({
       layers,
       viewBox: prepared.viewBox,
       contentBounds: bounds,

@@ -28,6 +28,12 @@ export function toDrawableResourceName(assetName: string): string {
   return name;
 }
 
+const ORIGINAL_DRAWABLE_SUFFIX = '_original';
+
+export function toOriginalDrawableResourceName(resourceName: string): string {
+  return `${resourceName}${ORIGINAL_DRAWABLE_SUFFIX}`;
+}
+
 /** "my-tab icons" → "MyTabIcons" — PascalCase base for manifest identifiers. */
 export function manifestBaseName(setName: string): string {
   const pascal = setName

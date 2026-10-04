@@ -10,6 +10,7 @@ import type { SymbolTask } from '../src/core/pipeline/prepareSymbol';
 import type { PreparedSvgCache } from '../src/core/pipeline/preparedSvgCache';
 import type { NanoLogger } from './logger';
 import { fingerprintSymbolDirSync } from '../src/utils/fingerPrint';
+import { toOriginalDrawableResourceName } from '../src/utils/naming';
 import {
   fontToolchainVersions,
   packageVersion,
@@ -73,9 +74,13 @@ function shouldSkipGeneration(
   const assetDirs = Object.values(symbols).map((assetName) =>
     path.join(symbolsDir, `${assetName}.symbolset`)
   );
-  const drawableFiles = Object.values(drawables).map((resourceName) =>
-    path.join(drawablesDir, `${resourceName}.xml`)
-  );
+  const drawableFiles = Object.values(drawables).flatMap((resourceName) => [
+    path.join(drawablesDir, `${resourceName}.xml`),
+    path.join(
+      drawablesDir,
+      `${toOriginalDrawableResourceName(resourceName)}.xml`
+    ),
+  ]);
   if (!assetDirs.every((d) => fs.existsSync(d))) return null;
   if (!drawableFiles.every((f) => fs.existsSync(f))) return null;
 
