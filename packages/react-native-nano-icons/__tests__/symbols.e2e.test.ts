@@ -123,8 +123,10 @@ describe('Symbols E2E — .symbolset generation', () => {
     expect(layered).toMatch(/<svg[^>]*>\s*<style>/);
     expect(layered).toContain('.monochrome-0 {fill:#000000}');
     expect(layered).toContain('.monochrome-1 {fill:#000000}');
-    expect(layered).toMatch(/\.multicolor-0:custom \{fill:#[0-9A-F]{6}\}/);
-    expect(layered).toMatch(/\.multicolor-1:custom \{fill:#[0-9A-F]{6}\}/);
+    expect(layered).toContain(
+      '.multicolor-0:custom {fill:#000000;opacity:0.3}'
+    );
+    expect(layered).toContain('.multicolor-1:custom {fill:#000000}');
     expect(layered).toContain('class="monochrome-0 multicolor-0:custom"');
     expect(layered).toContain('class="monochrome-1 multicolor-1:custom"');
     expect(layered).not.toContain('hierarchical-');

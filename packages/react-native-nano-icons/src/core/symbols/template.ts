@@ -65,12 +65,18 @@ export function layerClass(layerIndex: number): string {
   return `monochrome-${layerIndex} multicolor-${layerIndex}:custom`;
 }
 
+function multicolorStyle(fill: string | null): string {
+  const alpha = fill === null ? 1 : parseColor(fill)[3];
+  const opacity = alpha < 1 ? `;opacity:${Number(alpha.toFixed(4))}` : '';
+  return `fill:${layerHexColor(fill)}${opacity}`;
+}
+
 function renderingModeStyles(layers: SymbolTemplateLayer[]): string {
   return layers
     .map(
       (layer, i) =>
         `    .monochrome-${i} {fill:#000000}\n` +
-        `    .multicolor-${i}:custom {fill:${layerHexColor(layer.fill)}}`
+        `    .multicolor-${i}:custom {${multicolorStyle(layer.fill)}}`
     )
     .join('\n');
 }
