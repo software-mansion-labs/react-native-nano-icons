@@ -29,10 +29,12 @@ describe('toDrawableResourceName', () => {
 describe('buildVectorDrawableXml', () => {
   const viewBox: [number, number, number, number] = [0, 0, 24, 24];
 
-  test('monochrome — black fills, regardless of source layer fills', () => {
+  test('null fills default to black', () => {
     const xml = buildVectorDrawableXml({
-      layers: [{ d: 'M0 0L10 0L10 10Z' }, { d: 'M2 2L8 2L8 8Z' }],
-      multicolor: false,
+      layers: [
+        { d: 'M0 0L10 0L10 10Z', fill: null },
+        { d: 'M2 2L8 2L8 8Z', fill: null },
+      ],
       viewBox,
     });
     expect(xml).toContain('<vector');
@@ -42,13 +44,12 @@ describe('buildVectorDrawableXml', () => {
     expect(xml).toContain('android:pathData="M0 0L10 0L10 10Z"');
   });
 
-  test('multicolor — keeps each layer fill (with alpha)', () => {
+  test('keeps each layer fill (with alpha)', () => {
     const xml = buildVectorDrawableXml({
       layers: [
         { d: 'M0 0L10 0L10 10Z', fill: '#ff0000' },
         { d: 'M2 2L8 2L8 8Z', fill: 'rgba(0,0,255,0.5)' },
       ],
-      multicolor: true,
       viewBox,
     });
     expect(xml).toContain('android:fillColor="#ff0000"');
@@ -58,8 +59,7 @@ describe('buildVectorDrawableXml', () => {
 
   test('content bounds with origin are absorbed by a translating group', () => {
     const xml = buildVectorDrawableXml({
-      layers: [{ d: 'M4 4L20 4L20 20Z' }],
-      multicolor: false,
+      layers: [{ d: 'M4 4L20 4L20 20Z', fill: null }],
       viewBox,
       contentBounds: [4, 4, 16, 16],
     });

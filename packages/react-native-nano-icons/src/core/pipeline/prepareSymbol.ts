@@ -2,11 +2,7 @@ import path from 'node:path';
 
 import { shouldSkipPath } from '../glyph/parse';
 import type { PathKitModule } from '../pathkit/types';
-import { buildColoredSymbolSvg } from '../symbols/coloredSymbol';
-import {
-  imagesetContentsJson,
-  symbolsetContentsJson,
-} from '../symbols/contents';
+import { symbolsetContentsJson } from '../symbols/contents';
 import { contentBounds, resolveSymbolLayers } from '../symbols/layers';
 import { buildSymbolTemplate } from '../symbols/template';
 import { buildVectorDrawableXml } from '../symbols/vectorDrawable';
@@ -19,7 +15,6 @@ export type SymbolTask = {
   filePath: string;
   setName: string;
   prefix: string;
-  multicolor: boolean;
 };
 
 export type SymbolAsset = {
@@ -81,63 +76,35 @@ export async function prepareSymbol(
   const assetName = `${task.prefix}.${iconName}`;
   const svgFilename = `${assetName}.svg`;
 
-  if (task.multicolor) {
-    // Colored symbol: original fills/z-order, no knockout.
-    const coloredLayers = drawable.map((p) => ({ d: p.d, fill: p.fill }));
-    const bounds =
-      contentBounds(
-        pathkit,
-        drawable.map((p) => p.d)
-      ) ?? undefined;
-    result.asset = {
-      assetName,
-      assetDirName: `${assetName}.imageset`,
-      svgFilename,
-      svg: buildColoredSymbolSvg({
-        layers: coloredLayers,
-        viewBox: prepared.viewBox,
-        contentBounds: bounds,
-      }),
-      contents: imagesetContentsJson(svgFilename),
-      vdXml: buildVectorDrawableXml({
-        layers: coloredLayers,
-        multicolor: true,
-        viewBox: prepared.viewBox,
-        contentBounds: bounds,
-      }),
-    };
-  } else {
-    // Monochrome SF Symbol: resolve stacked layers (bake knockouts, occlude)
-    // so plates with light details survive monochrome tinting.
-    const layers = resolveSymbolLayers(pathkit, drawable, {
-      onEraseLayer: () =>
-        logger.info(`    ⊖ Baked white knockout layer into lower layers`),
-    });
-    const bounds =
-      contentBounds(
-        pathkit,
-        layers.map((l) => l.d)
-      ) ?? undefined;
-    result.asset = {
-      assetName,
-      assetDirName: `${assetName}.symbolset`,
-      svgFilename,
-      svg: buildSymbolTemplate({
-        layers,
-        viewBox: prepared.viewBox,
-        contentBounds: bounds,
-        descriptiveName: assetName,
-        logger,
-      }),
-      contents: symbolsetContentsJson(svgFilename),
-      vdXml: buildVectorDrawableXml({
-        layers,
-        multicolor: false,
-        viewBox: prepared.viewBox,
-        contentBounds: bounds,
-      }),
-    };
-  }
+  // Resolve stacked layers (bake knockouts, occlude)
+  // so plates with light details survive monochrome tinting.
+  const layers = resolveSymbolLayers(pathkit, drawable, {
+    onEraseLayer: () =>
+      logger.info(`    ⊖ Baked white knockout layer into lower layers`),
+  });
+  const bounds =
+    contentBounds(
+      pathkit,
+      layers.map((l) => l.d)
+    ) ?? undefined;
+  result.asset = {
+    assetName,
+    assetDirName: `${assetName}.symbolset`,
+    svgFilename,
+    svg: buildSymbolTemplate({
+      layers,
+      viewBox: prepared.viewBox,
+      contentBounds: bounds,
+      descriptiveName: assetName,
+      logger,
+    }),
+    contents: symbolsetContentsJson(svgFilename),
+    vdXml: buildVectorDrawableXml({
+      layers,
+      viewBox: prepared.viewBox,
+      contentBounds: bounds,
+    }),
+  };
 
   return result;
 }

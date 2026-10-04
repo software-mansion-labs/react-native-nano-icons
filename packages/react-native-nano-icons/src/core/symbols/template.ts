@@ -1,3 +1,4 @@
+import { parseColor } from '../../utils/parse';
 import type { NanoLogger } from '../types';
 
 /**
@@ -46,23 +47,38 @@ function escapeXmlText(s: string): string {
 export type SymbolTemplateLayer = {
   /** Path data in source viewBox coordinates (nonzero winding). */
   d: string;
+  fill: string | null;
 };
 
-// Front-most layer = primary, next = secondary, rest = tertiary.
-export function hierarchicalTier(
-  layerIndex: number,
-  layerCount: number
-): 'primary' | 'secondary' | 'tertiary' {
-  const fromFront = layerCount - 1 - layerIndex;
-  if (fromFront === 0) return 'primary';
-  if (fromFront === 1) return 'secondary';
-  return 'tertiary';
+export function layerHexColor(fill: string | null): string {
+  if (fill === null) return '#000000';
+  const [r, g, b] = parseColor(fill);
+  const h = (v: number) =>
+    Math.max(0, Math.min(255, Math.round(v)))
+      .toString(16)
+      .padStart(2, '0')
+      .toUpperCase();
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
+export function layerClass(layerIndex: number): string {
+  return `monochrome-${layerIndex} multicolor-${layerIndex}:custom`;
+}
+
+function renderingModeStyles(layers: SymbolTemplateLayer[]): string {
+  return layers
+    .map(
+      (layer, i) =>
+        `    .monochrome-${i} {fill:#000000}\n` +
+        `    .multicolor-${i}:custom {fill:${layerHexColor(layer.fill)}}`
+    )
+    .join('\n');
 }
 
 /**
- * Build the template SVG for one symbol. Layers are back→front; multi-layer
- * symbols get `monochrome-N` + `hierarchical-N:<tier>` class annotations,
- * single-layer ones are emitted plain.
+ * Build the template SVG for one symbol. Layers are back→front; every layer
+ * gets `monochrome-N multicolor-N:custom` classes, with the layer fills
+ * declared in a `<style>` block.
  */
 export function buildSymbolTemplate(opts: {
   layers: SymbolTemplateLayer[];
@@ -94,15 +110,11 @@ export function buildSymbolTemplate(opts: {
   // Center on the cap-band midline.
   const yOff = CAP_CENTER - scaledH / 2;
 
-  const annotate = layers.length > 1;
-
   const pathsMarkup = (indent: string): string =>
     layers
-      .map((layer, i) => {
-        if (!annotate) return `${indent}<path d="${layer.d}"/>`;
-        const cls = `monochrome-${i} hierarchical-${i}:${hierarchicalTier(i, layers.length)}`;
-        return `${indent}<path class="${cls}" d="${layer.d}"/>`;
-      })
+      .map(
+        (layer, i) => `${indent}<path class="${layerClass(i)}" d="${layer.d}"/>`
+      )
       .join('\n');
 
   const groups: string[] = [];
@@ -130,6 +142,9 @@ export function buildSymbolTemplate(opts: {
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="800" height="600" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <style>
+${renderingModeStyles(layers)}
+  </style>
   <g id="Notes" font-family="'LucidaGrande', 'Lucida Grande', sans-serif" font-weight="500" font-size="13px">
     <rect x="0" y="0" width="800" height="600" fill="white"/>
     <g font-weight="500" font-size="13px">

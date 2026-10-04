@@ -27,7 +27,6 @@
       "inputDir": "./assets/mcicon",
       "name": "mcicon",
       "prefix": "nano",
-      "multicolor": true,
       "outputDir": "./assets/nanoicons"
     }
   ]

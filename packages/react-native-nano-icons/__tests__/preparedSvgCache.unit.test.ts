@@ -120,7 +120,7 @@ test('a different upm or safeZone does not hit the cache', async () => {
 
 describe('symbol pipeline', () => {
   const buildSymbols = (
-    config: { prefix: string; multicolor: boolean },
+    config: { prefix: string },
     outputDir: string,
     preparedSvgCache?: PreparedSvgCache<SymbolTask>
   ) =>
@@ -132,7 +132,7 @@ describe('symbol pipeline', () => {
 
   test('only changed files are prepared again', async () => {
     const cache: PreparedSvgCache<SymbolTask> = new Map();
-    const config = { prefix: 'nano', multicolor: false };
+    const config = { prefix: 'nano' };
     await buildSymbols(config, path.join(root, 'out'), cache);
     expect(preparedFiles(0)).toEqual(['a.svg', 'b.svg', 'c.svg']);
 
@@ -143,7 +143,7 @@ describe('symbol pipeline', () => {
 
   test('a cached build is identical to a cold build', async () => {
     const cache: PreparedSvgCache<SymbolTask> = new Map();
-    const config = { prefix: 'nano', multicolor: false };
+    const config = { prefix: 'nano' };
     const read = (dir: string) =>
       fs.readFileSync(
         path.join(dir, 'tabs.symbols', 'nano.a.symbolset', 'nano.a.svg'),
@@ -155,24 +155,10 @@ describe('symbol pipeline', () => {
     expect(read(path.join(root, 'warm'))).toBe(read(path.join(root, 'cold')));
   });
 
-  test('a different prefix or multicolor does not hit the cache', async () => {
+  test('a different prefix does not hit the cache', async () => {
     const cache: PreparedSvgCache<SymbolTask> = new Map();
-    await buildSymbols(
-      { prefix: 'nano', multicolor: false },
-      path.join(root, 'out'),
-      cache
-    );
-    await buildSymbols(
-      { prefix: 'other', multicolor: false },
-      path.join(root, 'out'),
-      cache
-    );
-    await buildSymbols(
-      { prefix: 'nano', multicolor: true },
-      path.join(root, 'out'),
-      cache
-    );
+    await buildSymbols({ prefix: 'nano' }, path.join(root, 'out'), cache);
+    await buildSymbols({ prefix: 'other' }, path.join(root, 'out'), cache);
     expect(preparedFiles(1)).toEqual(['a.svg', 'b.svg', 'c.svg']);
-    expect(preparedFiles(2)).toEqual(['a.svg', 'b.svg', 'c.svg']);
   });
 });

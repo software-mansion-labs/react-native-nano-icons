@@ -24,8 +24,6 @@ export type SymbolSetConfig = {
   prefix?: string;
   /** Output dir; defaults to a sibling nanoicons folder next to inputDir. */
   outputDir?: string;
-  /** Emit colored `.imageset` (original colors) instead of monochrome `.symbolset`. */
-  multicolor?: boolean;
 };
 
 export type BuiltSymbolSet = SymbolsPipelineResult;
@@ -45,7 +43,6 @@ function shouldSkipGeneration(
   inputHash: string,
   outputDir: string,
   name: string,
-  multicolor: boolean,
   logger?: NanoLogger
 ): BuiltSymbolSet | null {
   const symbolmapPath = path.join(outputDir, `${name}.symbolmap.json`);
@@ -71,11 +68,10 @@ function shouldSkipGeneration(
 
   if (!symbolmap?.m?.h || symbolmap.m.h !== inputHash) return null;
 
-  const suffix = multicolor ? 'imageset' : 'symbolset';
   const symbols = symbolmap.s ?? {};
   const drawables = symbolmap.d ?? {};
   const assetDirs = Object.values(symbols).map((assetName) =>
-    path.join(symbolsDir, `${assetName}.${suffix}`)
+    path.join(symbolsDir, `${assetName}.symbolset`)
   );
   const drawableFiles = Object.values(drawables).map((resourceName) =>
     path.join(drawablesDir, `${resourceName}.xml`)
@@ -132,24 +128,21 @@ export async function buildAllSymbols(
       ? path.resolve(projectRoot, set.outputDir)
       : path.join(path.dirname(inputDir), 'nanoicons');
 
-    const multicolor = set.multicolor === true;
+    if ('multicolor' in set) {
+      logger?.warn(
+        `${name}: "multicolor" is no longer needed — every symbol now carries both rendering modes; remove it from the config.`
+      );
+    }
     const { hash: inputHash, svgHashByFile } = fingerprintSymbolDirSync(
       inputDir,
       {
         prefix,
-        multicolor,
         version,
         toolchain,
       }
     );
 
-    const skipped = shouldSkipGeneration(
-      inputHash,
-      outputDir,
-      name,
-      multicolor,
-      logger
-    );
+    const skipped = shouldSkipGeneration(inputHash, outputDir, name, logger);
     if (skipped) {
       results.push(skipped);
       continue;
@@ -160,7 +153,7 @@ export async function buildAllSymbols(
     let out;
     try {
       out = await runSymbolPipeline(
-        { name, prefix, multicolor },
+        { name, prefix },
         { inputDir, outputDir },
         {
           logger,

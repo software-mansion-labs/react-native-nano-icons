@@ -21,7 +21,7 @@ export function preparedSvgCacheKey(
       .update(fs.readFileSync(task.filePath))
       .digest('hex');
   if (task.kind === 'symbol') {
-    return `symbol:${task.setName}:${task.file}:${task.prefix}:${task.multicolor}:${contentHash}`;
+    return `symbol:${task.setName}:${task.file}:${task.prefix}:${contentHash}`;
   }
   return `${task.file}:${task.upm}:${task.safeZone}:${contentHash}`;
 }

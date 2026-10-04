@@ -15,7 +15,6 @@ import { copySymbolsetsIntoCatalog } from '../cli/link';
 import { type NanoSymbolMap } from '../src/core/pipeline/runSymbolPipeline';
 import { manifestBaseName } from '../src/utils/naming';
 import { catalogRootContentsJson } from '../src/core/symbols/contents';
-import { buildColoredSymbolSvg } from '../src/core/symbols/coloredSymbol';
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const STROKE_ICON = path.join(
@@ -116,20 +115,44 @@ describe('Symbols E2E — .symbolset generation', () => {
     expect(svg).toContain('Template v.3.0');
   });
 
-  it('annotates multi-layer icons with monochrome + hierarchical classes', async () => {
+  it('annotates every layer with monochrome + multicolor classes and declares fills in a style block', async () => {
     const layered = await fsp.readFile(
       path.join(symbolsDir, `${PREFIX}.heart.symbolset`, `${PREFIX}.heart.svg`),
       'utf8'
     );
-    expect(layered).toContain('class="monochrome-0 hierarchical-0:secondary"');
-    expect(layered).toContain('class="monochrome-1 hierarchical-1:primary"');
+    expect(layered).toMatch(/<svg[^>]*>\s*<style>/);
+    expect(layered).toContain('.monochrome-0 {fill:#000000}');
+    expect(layered).toContain('.monochrome-1 {fill:#000000}');
+    expect(layered).toMatch(/\.multicolor-0:custom \{fill:#[0-9A-F]{6}\}/);
+    expect(layered).toMatch(/\.multicolor-1:custom \{fill:#[0-9A-F]{6}\}/);
+    expect(layered).toContain('class="monochrome-0 multicolor-0:custom"');
+    expect(layered).toContain('class="monochrome-1 multicolor-1:custom"');
+    expect(layered).not.toContain('hierarchical-');
 
-    // single-layer icons stay plain
     const mono = await fsp.readFile(
       path.join(symbolsDir, `${PREFIX}.home.symbolset`, `${PREFIX}.home.svg`),
       'utf8'
     );
-    expect(mono).not.toContain('class="monochrome');
+    expect(mono).toContain('class="monochrome-0 multicolor-0:custom"');
+    expect(mono).not.toContain('monochrome-1');
+  });
+
+  it('keeps layer paths flat and fill-free inside each weight group', async () => {
+    const svg = await fsp.readFile(
+      path.join(symbolsDir, `${PREFIX}.heart.symbolset`, `${PREFIX}.heart.svg`),
+      'utf8'
+    );
+    const symbols = svg.slice(svg.indexOf('<g id="Symbols">'));
+    for (const weight of ['Ultralight', 'Regular', 'Black']) {
+      const group = symbols.match(
+        new RegExp(`<g id="${weight}-S"[^>]*>([\\s\\S]*?)</g>`)
+      );
+      expect(group).not.toBeNull();
+      const body = group![1]!;
+      expect(body).not.toContain('<g');
+      expect(body).not.toContain('fill=');
+      expect((body.match(/<path /g) ?? []).length).toBe(2);
+    }
   });
 
   it('writes a types-only manifest and a fingerprinted symbolmap', async () => {
@@ -218,106 +241,92 @@ describe('Symbols E2E — .symbolset generation', () => {
     }
   });
 
-  it('buildColoredSymbolSvg preserves original fills and viewBox', () => {
-    const svg = buildColoredSymbolSvg({
-      viewBox: [0, 0, 24, 24],
-      layers: [
-        { d: 'M0 0H24V24H0Z', fill: '#001A72' },
-        { d: 'M4 4H20V20H4Z', fill: 'rgba(255,0,0,0.5)' },
-        { d: 'M8 8H16V16H8Z', fill: null },
-      ],
-    });
-    expect(svg).toContain('viewBox="0 0 24 24"');
-    // hex → rgb(), opaque (no fill-opacity)
-    expect(svg).toContain('fill="rgb(0,26,114)"');
-    expect(svg).not.toContain('rgba(');
-    // translucent → rgb() + fill-opacity
-    expect(svg).toContain('fill="rgb(255,0,0)" fill-opacity="0.5"');
-    // null fill → black default
-    expect(svg).toContain('fill="rgb(0,0,0)"');
-    expect((svg.match(/<path /g) ?? []).length).toBe(3);
-  });
-
-  it('emits colored .imageset assets (not symbolsets) when multicolor is set', async () => {
-    const mcRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-mc-'));
+  it('centers the glyph: margin guides equal the scaled glyph bounds in every weight group', async () => {
+    const wideRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-wide-'));
     try {
-      const mcInput = path.join(mcRoot, 'icons');
-      await fsp.mkdir(mcInput);
-      await fsp.copyFile(TWOTONE_ICON, path.join(mcInput, 'heart.svg'));
-
+      const wideInput = path.join(wideRoot, 'icons');
+      await fsp.mkdir(wideInput);
+      await fsp.writeFile(
+        path.join(wideInput, 'bar.svg'),
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><rect width="100" height="50" fill="#000"/></svg>'
+      );
       const built = await buildAllSymbols(
-        [{ inputDir: 'icons', name: 'mc', prefix: PREFIX, multicolor: true }],
-        mcRoot
+        [{ inputDir: 'icons', name: 'wide', prefix: PREFIX }],
+        wideRoot
       );
-      expect(built).toHaveLength(1);
-
-      const imagesetDir = path.join(
-        built[0]!.symbolsDir,
-        `${PREFIX}.heart.imageset`
-      );
-      // imageset, not symbolset
-      expect(fs.existsSync(imagesetDir)).toBe(true);
-      expect(
-        fs.existsSync(
-          path.join(built[0]!.symbolsDir, `${PREFIX}.heart.symbolset`)
-        )
-      ).toBe(false);
-      expect(built[0]!.assetDirs[0]).toBe(imagesetDir);
-
-      // imageset Contents.json: original render intent + vector preserved
-      const contents = JSON.parse(
-        await fsp.readFile(path.join(imagesetDir, 'Contents.json'), 'utf8')
-      );
-      expect(contents.images[0].filename).toBe(`${PREFIX}.heart.svg`);
-      expect(contents.properties['template-rendering-intent']).toBe('original');
-      expect(contents.properties['preserves-vector-representation']).toBe(true);
-
-      // the SVG keeps real colors (no symbol template scaffolding)
       const svg = await fsp.readFile(
-        path.join(imagesetDir, `${PREFIX}.heart.svg`),
+        path.join(
+          built[0]!.symbolsDir,
+          `${PREFIX}.bar.symbolset`,
+          `${PREFIX}.bar.svg`
+        ),
         'utf8'
       );
-      expect(svg).toContain('fill="rgb(');
-      expect(svg).not.toContain('id="Symbols"');
-      expect(svg).not.toContain('multicolor-');
+      for (const [weight, left, right] of [
+        ['Ultralight', 195, 335],
+        ['Regular', 395, 535],
+        ['Black', 595, 735],
+      ] as const) {
+        expect(svg).toContain(
+          `<path id="left-margin-${weight}-S" d="M${left},56 l0,110" />`
+        );
+        expect(svg).toContain(
+          `<path id="right-margin-${weight}-S" d="M${right},56 l0,110" />`
+        );
+        expect(svg).toContain(
+          `<g id="${weight}-S" transform="matrix(1.4,0,0,1.4,${left},76)">`
+        );
+      }
     } finally {
-      await fsp.rm(mcRoot, { recursive: true, force: true });
+      await fsp.rm(wideRoot, { recursive: true, force: true });
     }
   }, 120000);
 
-  it('copySymbolsetsIntoCatalog handles .imageset assets', async () => {
-    const mcRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-mc2-'));
-    try {
-      const mcInput = path.join(mcRoot, 'icons');
-      await fsp.mkdir(mcInput);
-      await fsp.copyFile(TWOTONE_ICON, path.join(mcInput, 'heart.svg'));
-
-      const catalog = path.join(mcRoot, 'Images.xcassets');
-      await fsp.mkdir(catalog);
+  describe('knockouts', () => {
+    it('cuts white out of the layers below and keeps the other fills in one symbolset', async () => {
+      const root = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-ko-'));
+      const input = path.join(root, 'icons');
+      await fsp.mkdir(input);
       await fsp.writeFile(
-        path.join(catalog, 'Contents.json'),
-        catalogRootContentsJson()
+        path.join(input, 'plate.svg'),
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+          '<rect x="0" y="0" width="60" height="100" fill="#001A72"/>' +
+          '<rect x="10" y="40" width="20" height="20" fill="#FFFFFF"/>' +
+          '<circle cx="70" cy="50" r="15" fill="#FF0000"/>' +
+          '</svg>'
       );
-      // stale symbolset from a previous (monochrome) run of the same prefix
-      await fsp.mkdir(path.join(catalog, `${PREFIX}.heart.symbolset`));
-
       const built = await buildAllSymbols(
-        [{ inputDir: 'icons', name: 'mc', prefix: PREFIX, multicolor: true }],
-        mcRoot
+        [{ inputDir: 'icons', name: 'ko', prefix: PREFIX }],
+        root
       );
-      copySymbolsetsIntoCatalog(catalog, built);
+      const symbolsetDir = path.join(
+        built[0]!.symbolsDir,
+        `${PREFIX}.plate.symbolset`
+      );
+      const svg = await fsp.readFile(
+        path.join(symbolsetDir, `${PREFIX}.plate.svg`),
+        'utf8'
+      );
+      const contents = JSON.parse(
+        await fsp.readFile(path.join(symbolsetDir, 'Contents.json'), 'utf8')
+      );
+      const drawable = await fsp.readFile(built[0]!.drawableFiles[0]!, 'utf8');
+      await fsp.rm(root, { recursive: true, force: true });
 
-      // mode switch cleaned the stale symbolset, copied the imageset
+      expect(built[0]!.assetDirs[0]).toMatch(/\.symbolset$/);
+      expect(contents.properties['symbol-rendering-intent']).toBe('template');
+      expect(svg).toContain('.multicolor-0:custom {fill:#001A72}');
+      expect(svg).toContain('.multicolor-1:custom {fill:#FF0000}');
+      expect(svg).not.toContain('#FFFFFF');
+      expect(svg).not.toContain('multicolor-2');
+      expect(built[0]!.drawableFiles).toHaveLength(1);
       expect(
-        fs.existsSync(path.join(catalog, `${PREFIX}.heart.symbolset`))
-      ).toBe(false);
-      expect(
-        fs.existsSync(path.join(catalog, `${PREFIX}.heart.imageset`))
-      ).toBe(true);
-    } finally {
-      await fsp.rm(mcRoot, { recursive: true, force: true });
-    }
-  }, 120000);
+        [...drawable.matchAll(/android:fillColor="(#[0-9a-f]{6})"/g)].map(
+          (m) => m[1]
+        )
+      ).toEqual(['#001a72', '#ff0000']);
+    }, 120000);
+  });
 
   (hasActool() ? it : it.skip)(
     'actool compiles the generated catalog without errors',

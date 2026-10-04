@@ -88,7 +88,6 @@ const config: ExpoConfig = {
             name: 'mcicons',
             prefix: 'nanomc',
             outputDir: './assets/nanoicons',
-            multicolor: true,
           },
         ],
       },

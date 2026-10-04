@@ -16,8 +16,6 @@ export type SymbolsPipelineConfig = {
   name: string;
   /** Symbol name prefix, e.g. "nano" → "nano.home". */
   prefix: string;
-  /** Emit colored `.imageset` (original colors) instead of monochrome `.symbolset`. */
-  multicolor?: boolean;
 };
 
 export type SymbolsPipelinePaths = {
@@ -36,9 +34,9 @@ export type NanoSymbolMap = {
 export type SymbolsPipelineResult = {
   name: string;
   prefix: string;
-  /** Directory containing the generated `.symbolset`/`.imageset` folders. */
+  /** Directory containing the generated `.symbolset` folders. */
   symbolsDir: string;
-  /** The generated asset folders (`.symbolset` for symbols, `.imageset` for colored symbols). */
+  /** The generated `.symbolset` folders. */
   assetDirs: string[];
   /** Directory containing the generated Android VectorDrawable `.xml` files. */
   drawablesDir: string;
@@ -91,9 +89,10 @@ declare module '@react-navigation/native' {
 }
 
 /**
- * Run the symbol pipeline: prep each SVG, then emit one asset per icon — a
- * monochrome `.symbolset`, or a colored `.imageset` when `multicolor` is set.
- * Also writes a typed manifest and a symbolmap JSON (for build fingerprinting).
+ * Run the symbol pipeline: prep each SVG, then emit one `.symbolset` per icon
+ * carrying both the monochrome and the multicolor rendering mode, plus its
+ * Android VectorDrawable. Also writes a typed manifest and a symbolmap JSON
+ * (for build fingerprinting).
  */
 export async function runSymbolPipeline(
   config: SymbolsPipelineConfig,
@@ -109,7 +108,7 @@ export async function runSymbolPipeline(
 ): Promise<SymbolsPipelineResult> {
   const startTime = Date.now();
   const logger = options?.logger;
-  const kind = config.multicolor ? 'colored symbol' : 'symbol';
+  const kind = 'symbol';
 
   logger?.update(`Building ${kind}s "${config.name}"…`);
 
@@ -129,7 +128,6 @@ export async function runSymbolPipeline(
       filePath: path.join(paths.inputDir, file),
       setName: config.name,
       prefix: config.prefix,
-      multicolor: config.multicolor === true,
     })),
     options?.concurrency ?? defaultConcurrency(),
     options?.preparedSvgCache,

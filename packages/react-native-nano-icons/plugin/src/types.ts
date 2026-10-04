@@ -32,8 +32,8 @@ export interface IconSetConfig {
 }
 
 /**
- * Config for one symbol set: input SVGs → `.symbolset` (or `.imageset` when
- * `multicolor`), linked into the iOS asset catalog for `UIImage(named:)`.
+ * Config for one symbol set: input SVGs → `.symbolset`, linked into the iOS
+ * asset catalog for `UIImage(named:)`.
  */
 export interface SymbolSetConfig {
   /** Folder of SVG files (relative to project root). */
@@ -44,8 +44,6 @@ export interface SymbolSetConfig {
   prefix?: string;
   /** Output dir; defaults to a sibling nanoicons folder next to inputDir. */
   outputDir?: string;
-  /** Emit colored `.imageset` (original colors) instead of monochrome `.symbolset`. */
-  multicolor?: boolean;
 }
 
 /** Result of building one symbol set. */
@@ -54,7 +52,7 @@ export interface BuiltSymbolSet {
   prefix: string;
   /** Directory containing the generated asset folders. */
   symbolsDir: string;
-  /** The generated `.symbolset`/`.imageset` folders. */
+  /** The generated `.symbolset` folders. */
   assetDirs: string[];
   /** Directory containing the generated Android VectorDrawable `.xml` files. */
   drawablesDir: string;

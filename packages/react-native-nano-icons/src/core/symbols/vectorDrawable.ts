@@ -1,20 +1,18 @@
 import { parseColor } from '../../utils/parse';
 import type { SymbolTemplateLayer } from './template';
-import type { ColoredSymbolLayer } from './coloredSymbol';
 
 /**
- * Android VectorDrawable emitter — the tab-bar counterpart to iOS
- * `.symbolset`/`.imageset`. `android:pathData` takes SVG path syntax verbatim
- * (nonzero winding by default), so prepared layers drop straight in.
- * Monochrome = solid-black fills, tinted by the bar (like symbolset `template`);
- * multicolor = keep each layer's fill.
+ * Android VectorDrawable emitter — the tab-bar counterpart to the iOS
+ * `.symbolset`. `android:pathData` takes SVG path syntax verbatim (nonzero
+ * winding by default), so prepared layers drop straight in. Each layer keeps
+ * its fill; the bar paints every path in its tint when the icon is tinted.
  *
  * VectorDrawable's viewport always starts at (0,0), so a non-zero content origin
  * is absorbed by a translating `<group>`.
  */
 
 // Intrinsic size (dp): height fixed to tab-icon size, width follows aspect
-// ratio (capped). Mirrors coloredSymbol.ts.
+// ratio (capped).
 const ICON_HEIGHT = 24;
 const MAX_WIDTH = ICON_HEIGHT * 3;
 
@@ -44,14 +42,12 @@ function fillAttrs(fill: string | null): string {
  * defaults to viewBox) sets the viewport so padding doesn't shrink the icon.
  */
 export function buildVectorDrawableXml(opts: {
-  /** Monochrome layers (solid black) or colored layers (original fills). */
-  layers: SymbolTemplateLayer[] | ColoredSymbolLayer[];
-  multicolor: boolean;
+  layers: SymbolTemplateLayer[];
   viewBox: [number, number, number, number];
   /** Tight content box `[x, y, w, h]`; used instead of the viewBox when given. */
   contentBounds?: [number, number, number, number];
 }): string {
-  const { layers, multicolor, viewBox, contentBounds } = opts;
+  const { layers, viewBox, contentBounds } = opts;
   const [bx, by, bw0, bh0] = contentBounds ?? viewBox;
   const bw = bw0 === 0 ? 1 : bw0;
   const bh = bh0 === 0 ? 1 : bh0;
@@ -65,12 +61,10 @@ export function buildVectorDrawableXml(opts: {
   }
 
   const paths = layers
-    .map((layer) => {
-      const fill = multicolor
-        ? fillAttrs((layer as ColoredSymbolLayer).fill)
-        : 'android:fillColor="#000000"';
-      return `    <path ${fill} android:pathData="${layer.d}"/>`;
-    })
+    .map(
+      (layer) =>
+        `    <path ${fillAttrs(layer.fill)} android:pathData="${layer.d}"/>`
+    )
     .join('\n');
 
   // Translate group absorbs the viewport origin (VectorDrawable has none).
