@@ -6,15 +6,18 @@
     "start": "expo start",
     "prebuild": "expo prebuild --clean",
     "ios": "expo run:ios",
-    "android": "expo run:android"
+    "android": "expo run:android",
+    "eas-build-post-install": "bash ./eas-build-post-install.sh"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
+    "expo-dev-client": "~6.0.21",
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
     "expo-splash-screen": "~31.0.13",
+    "expo-updates": "~29.0.18",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -26,6 +29,7 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@types/node": "^22.20.3",
     "@types/react": "~19.1.0",
     "@types/react-dom": "^19",
     "@types/react-native-web": "^0",

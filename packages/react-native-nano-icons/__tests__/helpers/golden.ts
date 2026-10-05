@@ -5,7 +5,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { runPipeline } from '../../src/core/pipeline/run';
+import { runFontPipeline } from '../../src/core/pipeline/index';
 import type { NanoGlyphMap, NanoLogger } from '../../src/core/types';
 
 const TEST_ICONS = path.resolve(__dirname, '../../test_icons');
@@ -49,6 +49,8 @@ export const CURATED: CorpusIcon[] = [
   icon('opacity', 'material_icons/twotone/10k.svg'),
   icon('clippath', 'clippath/teest.svg'),
   icon('sanitize', 'sanatize_examples/elephant.svg'),
+  icon('nested', 'nested/swm-walker.svg'),
+  icon('nested', 'nested/swm-walker-overlay.svg'),
 ];
 
 export const REJECTED: CorpusIcon[] = [icon('mask', 'mask/Avatar.svg', true)];
@@ -95,7 +97,7 @@ export async function runOnIcons(opts: {
       await fsp.copyFile(abs, path.join(inputDir, file));
     }
 
-    await runPipeline(
+    await runFontPipeline(
       { ...PIPELINE, fontFamily: opts.fontFamily },
       { inputDir, outputDir, tempDir },
       { logger: quietLogger(warnings) }

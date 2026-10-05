@@ -7,8 +7,9 @@ import {
 import type { InfoPlist } from '@expo/config-plugins';
 import fs from 'fs/promises';
 import path from 'path';
-import { getOrBuildFonts } from './buildFonts.js';
-import type { IconSetConfig } from './types.js';
+import { getOrBuildFonts } from './buildFonts';
+import { syncAndroidFontAssets } from '../../cli/index';
+import type { IconSetConfig } from './types';
 
 const ANDROID_ASSETS_FONTS_DIR = 'app/src/main/assets/fonts';
 const IOS_FONTS_GROUP = 'Resources';
@@ -107,17 +108,14 @@ export function withNanoIconsAndroid(
         iconSets
       );
       const bundled = built?.filter((b) => b.linking !== 'dynamic') ?? [];
-      if (!bundled.length) return config;
-      const fontsDir = path.join(
-        config.modRequest.platformProjectRoot,
-        ANDROID_ASSETS_FONTS_DIR
+      syncAndroidFontAssets(
+        path.join(
+          config.modRequest.platformProjectRoot,
+          ANDROID_ASSETS_FONTS_DIR
+        ),
+        bundled,
+        built?.map((b) => b.fontFamily) ?? []
       );
-      await fs.mkdir(fontsDir, { recursive: true });
-      for (const b of bundled) {
-        const filename = path.basename(b.ttfPath);
-        const dest = path.join(fontsDir, filename);
-        await fs.copyFile(b.ttfPath, dest);
-      }
       return config;
     },
   ]);

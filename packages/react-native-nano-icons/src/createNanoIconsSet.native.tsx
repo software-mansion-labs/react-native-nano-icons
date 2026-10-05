@@ -15,11 +15,30 @@ import {
   warnIfLinkingMismatch,
 } from './createNanoIconsSet.shared';
 import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
+import {
+  checkFontIntegrity,
+  isFontMismatch,
+  reportDynamicFontLoadFailure,
+  reportFontMismatch,
+} from './fontIntegrity';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
 
 const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
+
+async function loadFontFromDevServer(family: string): Promise<boolean> {
+  if (__DEV__) {
+    const dev = require('./devServerFont') as typeof import('./devServerFont');
+    return dev.loadFontFromDevServer(family);
+  }
+  return false;
+}
+
+async function ensureStaticFont(family: string): Promise<void> {
+  await loadFontFromDevServer(family);
+  await checkFontIntegrity(family, 'static');
+}
 
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
@@ -42,14 +61,21 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   // dynamically linked font - register and hide icons until ready
   const managed = glyphMap.m.l === 'd' && font != null;
+  const linking = glyphMap.m.l === 'd' ? 'dynamic' : 'static';
   if (managed) {
-    void loadDynamicFont(fontFamilyBasename, font).catch((err) => {
-      if (__DEV__)
-        console.warn(
-          `[react-native-nano-icons] Failed to load dynamic font "${fontFamilyBasename}".`,
-          err
-        );
-    });
+    void loadDynamicFont(fontFamilyBasename, font).then(
+      () => checkFontIntegrity(fontFamilyBasename, linking),
+      async (err) => {
+        if (await loadFontFromDevServer(fontFamilyBasename)) return;
+        if (isFontMismatch(err)) {
+          reportFontMismatch(fontFamilyBasename, linking);
+        } else {
+          void reportDynamicFontLoadFailure(fontFamilyBasename, err);
+        }
+      }
+    );
+  } else if (linking === 'static') {
+    void ensureStaticFont(fontFamilyBasename);
   }
 
   // Pre-compute per-icon static data (codepoints, default colors) once at set creation

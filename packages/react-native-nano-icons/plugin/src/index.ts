@@ -1,6 +1,6 @@
 import type { ConfigPlugin } from '@expo/config-plugins';
-import { withNanoIconsFontLinking } from './withNanoIconsFontLinking.js';
-import type { NanoIconsPluginOptions } from './types.js';
+import { withNanoIconsFontLinking } from './withNanoIconsFontLinking';
+import type { NanoIconsPluginOptions } from './types';
 
 const withNanoIcons: ConfigPlugin<NanoIconsPluginOptions> = (
   config,
@@ -14,8 +14,4 @@ const withNanoIcons: ConfigPlugin<NanoIconsPluginOptions> = (
 };
 
 export default withNanoIcons;
-export type {
-  NanoIconsPluginOptions,
-  IconSetConfig,
-  BuiltFont,
-} from './types.js';
+export type { NanoIconsPluginOptions, IconSetConfig, BuiltFont } from './types';

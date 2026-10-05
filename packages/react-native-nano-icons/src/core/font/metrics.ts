@@ -1,5 +1,7 @@
 import { Font } from 'fonteditor-core';
 
+const FIXED_TIMESTAMP_MS = Date.UTC(1970, 0, 1, 0, 0, 1);
+
 export function forceTtfMetrics(
   ttfBuffer: Buffer,
   upm: number,
@@ -36,6 +38,14 @@ export function forceTtfMetrics(
   // misaligned vertically. The bitwise OR preserves all other existing style flags
   // (italic, bold, etc.) while ensuring this bit is always on.
   data['OS/2'].fsSelection = (data['OS/2'].fsSelection || 0) | (1 << 7);
+
+  data.head.created = FIXED_TIMESTAMP_MS;
+  data.head.modified = FIXED_TIMESTAMP_MS;
+
+  data.post.format = 3;
+  for (const glyph of data.glyf) {
+    delete (glyph as { name?: string }).name;
+  }
 
   font.set(data);
 

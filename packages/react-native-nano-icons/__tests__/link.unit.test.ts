@@ -5,23 +5,101 @@ import os from 'node:os';
 import path from 'node:path';
 import * as plist from 'plist';
 
-jest.mock('xcode', () => ({
-  project: () => ({
-    parseSync() {
-      return this;
+const APP_TARGET_UUID = 'APP_TARGET';
+const FIRST_TARGET_UUID = 'FIRST_TARGET';
+const CONFIGURATION_LIST_UUID = 'APP_CONFIGURATION_LIST';
+
+type MockTarget = { name: string; buildConfigurationList: string };
+
+const mockPbxproj = {
+  appTarget: null as { uuid: string; target: MockTarget } | null,
+  firstTarget: { uuid: FIRST_TARGET_UUID, firstTarget: {} as MockTarget },
+  configurationLists: {} as Record<string, { buildConfigurations: unknown[] }>,
+  buildConfigurations: {} as Record<
+    string,
+    { buildSettings: Record<string, string> }
+  >,
+  objects: {} as Record<string, unknown>,
+  addedBuildPhaseTargets: [] as (string | undefined)[],
+};
+
+const mockXcodeProject = {
+  parseSync() {
+    return this;
+  },
+  getTarget: () => mockPbxproj.appTarget,
+  getFirstTarget: () => mockPbxproj.firstTarget,
+  pbxXCConfigurationList: () => mockPbxproj.configurationLists,
+  pbxXCBuildConfigurationSection: () => mockPbxproj.buildConfigurations,
+  addBuildPhase: (
+    _files: string[],
+    _phaseType: string,
+    _comment: string,
+    target?: string
+  ) => {
+    mockPbxproj.addedBuildPhaseTargets.push(target);
+  },
+  writeSync: () => '// fake pbxproj',
+  hash: {
+    project: {
+      get objects() {
+        return mockPbxproj.objects;
+      },
     },
-    getFirstTarget: () => ({ uuid: 'fake-target-uuid' }),
-    addBuildPhase: () => {},
-    writeSync: () => '// fake pbxproj',
-    hash: { project: { objects: {} } },
-  }),
+  },
+};
+
+jest.mock('xcode', () => ({
+  project: () => mockXcodeProject,
 }));
 
-import { linkBare } from '../cli/link';
+import { linkBare, syncAndroidFontAssets } from '../cli/link';
 import type { NanoLogger } from '../cli/logger';
 import type { BuiltFont } from '../cli/build';
 
 const MINIMAL_PLIST = plist.build({ CFBundleName: 'placeholder' });
+
+function setInfoPlistFiles(
+  infoPlistFiles: string[],
+  { resolvableAppTarget = true }: { resolvableAppTarget?: boolean } = {}
+): void {
+  const uuids = infoPlistFiles.map((_, index) => `CONFIGURATION_${index}`);
+  const target: MockTarget = {
+    name: 'MyApp',
+    buildConfigurationList: CONFIGURATION_LIST_UUID,
+  };
+
+  if (resolvableAppTarget) {
+    mockPbxproj.appTarget = { uuid: APP_TARGET_UUID, target };
+  } else {
+    mockPbxproj.appTarget = null;
+    mockPbxproj.firstTarget = { uuid: FIRST_TARGET_UUID, firstTarget: target };
+  }
+
+  mockPbxproj.configurationLists = {
+    [CONFIGURATION_LIST_UUID]: {
+      buildConfigurations: uuids.map((value) => ({ value })),
+    },
+  };
+  mockPbxproj.buildConfigurations = Object.fromEntries(
+    uuids.map((uuid, index) => [
+      uuid,
+      { buildSettings: { INFOPLIST_FILE: infoPlistFiles[index]! } },
+    ])
+  );
+}
+
+beforeEach(() => {
+  mockPbxproj.appTarget = null;
+  mockPbxproj.firstTarget = {
+    uuid: FIRST_TARGET_UUID,
+    firstTarget: { name: 'MyApp', buildConfigurationList: 'MISSING_LIST' },
+  };
+  mockPbxproj.configurationLists = {};
+  mockPbxproj.buildConfigurations = {};
+  mockPbxproj.objects = {};
+  mockPbxproj.addedBuildPhaseTargets = [];
+});
 
 function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'nano-link-'));
@@ -85,9 +163,10 @@ describe('linkBare — iOS Info.plist target selection', () => {
     fs.rmSync(fontDir, { recursive: true, force: true });
   });
 
-  test('updates the main app Info.plist, not the alphabetically-first sibling', async () => {
+  test('uses the conventional Info.plist path as a fallback, not the alphabetically-first sibling', async () => {
     const builtFont: BuiltFont = {
       fontFamily: 'TestFont',
+      family: 'TestFont-1a2b3c4d',
       ttfPath: path.join(fontDir, 'TestFont.ttf'),
       glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
       linking: 'static',
@@ -107,6 +186,103 @@ describe('linkBare — iOS Info.plist target selection', () => {
     expect(readUIAppFonts(decoyPlist)).not.toContain('TestFont.ttf');
     expect(readUIAppFonts(decoyPlist)).toEqual([]);
   });
+
+  test('uses INFOPLIST_FILE from the first app target build configuration', async () => {
+    const conventionalPlist = path.join(
+      projectRoot,
+      'ios',
+      'MyApp',
+      'Info.plist'
+    );
+    fs.rmSync(conventionalPlist);
+    const debugPlist = path.join(
+      projectRoot,
+      'ios',
+      'Resources',
+      'Debug-Info.plist'
+    );
+    const releasePlist = path.join(
+      projectRoot,
+      'ios',
+      'Resources',
+      'Release-Info.plist'
+    );
+    fs.mkdirSync(path.dirname(debugPlist));
+    fs.writeFileSync(debugPlist, MINIMAL_PLIST);
+    fs.writeFileSync(releasePlist, MINIMAL_PLIST);
+
+    setInfoPlistFiles([
+      'Resources/Debug-Info.plist',
+      '$(SRCROOT)/Resources/Release-Info.plist',
+    ]);
+
+    const builtFont: BuiltFont = {
+      fontFamily: 'TestFont',
+      family: 'TestFont-1a2b3c4d',
+      ttfPath: path.join(fontDir, 'TestFont.ttf'),
+      glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
+      linking: 'static',
+    };
+
+    await linkBare(projectRoot, [builtFont], makeLogger());
+
+    expect(readUIAppFonts(debugPlist)).toContain('TestFont.ttf');
+    expect(readUIAppFonts(releasePlist)).toContain('TestFont.ttf');
+    expect(
+      readUIAppFonts(
+        path.join(projectRoot, 'ios', 'AppExtension', 'Info.plist')
+      )
+    ).toEqual([]);
+  });
+
+  test('resolves INFOPLIST_FILE when only getFirstTarget() is available', async () => {
+    fs.rmSync(path.join(projectRoot, 'ios', 'MyApp', 'Info.plist'));
+    const customPlist = path.join(
+      projectRoot,
+      'ios',
+      'Resources',
+      'Info.plist'
+    );
+    fs.mkdirSync(path.dirname(customPlist));
+    fs.writeFileSync(customPlist, MINIMAL_PLIST);
+
+    setInfoPlistFiles(['$(PROJECT_DIR)/Resources/Info.plist'], {
+      resolvableAppTarget: false,
+    });
+
+    const builtFont: BuiltFont = {
+      fontFamily: 'TestFont',
+      family: 'TestFont-1a2b3c4d',
+      ttfPath: path.join(fontDir, 'TestFont.ttf'),
+      glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
+      linking: 'static',
+    };
+
+    await linkBare(projectRoot, [builtFont], makeLogger());
+
+    expect(readUIAppFonts(customPlist)).toContain('TestFont.ttf');
+    expect(mockPbxproj.addedBuildPhaseTargets).toEqual([FIRST_TARGET_UUID]);
+  });
+
+  test('adds the run script phase to the application target', async () => {
+    setInfoPlistFiles(['MyApp/Info.plist']);
+
+    await linkBare(
+      projectRoot,
+      [
+        {
+          fontFamily: 'TestFont',
+          family: 'TestFont-1a2b3c4d',
+          ttfPath: path.join(fontDir, 'TestFont.ttf'),
+          glyphmapPath: path.join(fontDir, 'TestFont.glyphmap.json'),
+          linking: 'static',
+        },
+      ],
+      makeLogger()
+    );
+
+    expect(mockPbxproj.addedBuildPhaseTargets).toEqual([APP_TARGET_UUID]);
+  });
 });
 
 const ANDROID_FONTS_DIR = 'android/app/src/main/assets/fonts';
@@ -123,6 +299,7 @@ describe('linkBare - dynamic fonts are excluded from native bundling', () => {
     fs.writeFileSync(ttfPath, 'fake-ttf');
     return {
       fontFamily,
+      family: `${fontFamily}-1a2b3c4d`,
       ttfPath,
       glyphmapPath: path.join(fontDir, `${fontFamily}.glyphmap.json`),
       linking,
@@ -167,8 +344,88 @@ describe('linkBare - dynamic fonts are excluded from native bundling', () => {
 
     // Android: only the static TTF is copied into assets/fonts.
     const androidFonts = path.join(projectRoot, ANDROID_FONTS_DIR);
-    expect(fs.existsSync(path.join(androidFonts, 'StaticFont.ttf'))).toBe(true);
-    expect(fs.existsSync(path.join(androidFonts, 'DynFont.ttf'))).toBe(false);
+    expect(
+      fs.existsSync(path.join(androidFonts, 'StaticFont-1a2b3c4d.ttf'))
+    ).toBe(true);
+    expect(fs.readdirSync(androidFonts)).toEqual(['StaticFont-1a2b3c4d.ttf']);
+  });
+
+  test('the linked line counts static, dynamic and failed sets against the total', async () => {
+    const logger = makeLogger();
+
+    await linkBare(
+      projectRoot,
+      [builtFont('StaticFont', 'static'), builtFont('DynFont', 'dynamic')],
+      logger,
+      3
+    );
+
+    expect(logger.succeed).toHaveBeenCalledWith(
+      'Linked [StaticFont] (1/3) → android, ios (1 dynamic font skipped)'
+    );
+  });
+
+  test('switching a set to dynamic removes its previously bundled copies', async () => {
+    const androidFonts = path.join(projectRoot, ANDROID_FONTS_DIR);
+    fs.mkdirSync(androidFonts, { recursive: true });
+    for (const stale of ['DynFont.ttf', 'DynFont-00000000.ttf', 'User.ttf']) {
+      fs.writeFileSync(path.join(androidFonts, stale), 'stale');
+    }
+    const staging = path.join(projectRoot, 'ios', 'nanoicons-fonts');
+    fs.mkdirSync(staging, { recursive: true });
+    fs.writeFileSync(path.join(staging, 'DynFont.ttf'), 'stale');
+    const plistPath = path.join(projectRoot, 'ios', 'MyApp', 'Info.plist');
+    fs.writeFileSync(
+      plistPath,
+      plist.build({ UIAppFonts: ['DynFont.ttf', 'User.ttf'] })
+    );
+
+    await linkBare(
+      projectRoot,
+      [builtFont('StaticFont', 'static'), builtFont('DynFont', 'dynamic')],
+      makeLogger()
+    );
+
+    expect(fs.readdirSync(androidFonts).sort()).toEqual([
+      'StaticFont-1a2b3c4d.ttf',
+      'User.ttf',
+    ]);
+    expect(fs.readdirSync(staging)).toEqual(['StaticFont.ttf']);
+    expect(readUIAppFonts(plistPath)).toEqual(['User.ttf', 'StaticFont.ttf']);
+  });
+
+  test('a set dropped from the config is removed from the ios staging dir and plist', async () => {
+    const staging = path.join(projectRoot, 'ios', 'nanoicons-fonts');
+    fs.mkdirSync(staging, { recursive: true });
+    fs.writeFileSync(path.join(staging, 'Gone.ttf'), 'stale');
+    const plistPath = path.join(projectRoot, 'ios', 'MyApp', 'Info.plist');
+    fs.writeFileSync(plistPath, plist.build({ UIAppFonts: ['Gone.ttf'] }));
+
+    await linkBare(
+      projectRoot,
+      [builtFont('StaticFont', 'static')],
+      makeLogger()
+    );
+
+    expect(fs.readdirSync(staging)).toEqual(['StaticFont.ttf']);
+    expect(readUIAppFonts(plistPath)).toEqual(['StaticFont.ttf']);
+  });
+
+  test('an all-dynamic config still cleans up previously bundled copies', async () => {
+    const androidFonts = path.join(projectRoot, ANDROID_FONTS_DIR);
+    fs.mkdirSync(androidFonts, { recursive: true });
+    fs.writeFileSync(path.join(androidFonts, 'DynA-00000000.ttf'), 'stale');
+    const staging = path.join(projectRoot, 'ios', 'nanoicons-fonts');
+    fs.mkdirSync(staging, { recursive: true });
+    fs.writeFileSync(path.join(staging, 'DynA.ttf'), 'stale');
+    const plistPath = path.join(projectRoot, 'ios', 'MyApp', 'Info.plist');
+    fs.writeFileSync(plistPath, plist.build({ UIAppFonts: ['DynA.ttf'] }));
+
+    await linkBare(projectRoot, [builtFont('DynA', 'dynamic')], makeLogger());
+
+    expect(fs.readdirSync(androidFonts)).toEqual([]);
+    expect(fs.readdirSync(staging)).toEqual([]);
+    expect(readUIAppFonts(plistPath)).toEqual([]);
   });
 
   test('all-dynamic set bundles nothing natively', async () => {
@@ -210,6 +467,7 @@ describe('linkBare - platform detection & edge cases', () => {
     fs.writeFileSync(ttfPath, 'fake-ttf');
     return {
       fontFamily,
+      family: `${fontFamily}-1a2b3c4d`,
       ttfPath,
       glyphmapPath: path.join(fontDir, `${fontFamily}.glyphmap.json`),
       linking,
@@ -276,7 +534,7 @@ describe('linkBare - platform detection & edge cases', () => {
 
     expect(
       fs.existsSync(
-        path.join(projectRoot, ANDROID_FONTS_DIR, 'OnlyAndroid.ttf')
+        path.join(projectRoot, ANDROID_FONTS_DIR, 'OnlyAndroid-1a2b3c4d.ttf')
       )
     ).toBe(true);
     expect(fs.existsSync(path.join(projectRoot, 'ios'))).toBe(false);
@@ -310,6 +568,67 @@ describe('linkBare - platform detection & edge cases', () => {
     ).toBe(true);
   });
 
+  test('warns and reports no platforms when no Info.plist can be resolved', async () => {
+    const iosDir = path.join(projectRoot, 'ios');
+    fs.mkdirSync(path.join(iosDir, 'MyApp.xcodeproj'), { recursive: true });
+    fs.writeFileSync(
+      path.join(iosDir, 'MyApp.xcodeproj', 'project.pbxproj'),
+      '// fake pbxproj'
+    );
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('UnlinkedIos')], logger);
+
+    expect(fs.existsSync(path.join(projectRoot, IOS_STAGING_DIR))).toBe(false);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('No Info.plist resolved for target "MyApp"')
+    );
+    expect(logger.succeed).not.toHaveBeenCalled();
+    expect(logger.fail).toHaveBeenCalledWith('No platforms linked.');
+  });
+
+  test('android still reports as linked when iOS cannot be resolved', async () => {
+    addAndroid();
+    const iosDir = path.join(projectRoot, 'ios');
+    fs.mkdirSync(path.join(iosDir, 'MyApp.xcodeproj'), { recursive: true });
+    fs.writeFileSync(
+      path.join(iosDir, 'MyApp.xcodeproj', 'project.pbxproj'),
+      '// fake pbxproj'
+    );
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('AndroidOnly')], logger);
+
+    expect(logger.succeed).toHaveBeenCalledWith(
+      'Linked [AndroidOnly] (1/1) → android'
+    );
+  });
+
+  test('the linked line counts against every configured set, not just the built ones', async () => {
+    addAndroid();
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('Good')], logger, 2);
+
+    expect(logger.succeed).toHaveBeenCalledWith(
+      'Linked [Good] (1/2) → android'
+    );
+  });
+
+  test('skips iOS when the .xcodeproj has no project.pbxproj', async () => {
+    fs.mkdirSync(path.join(projectRoot, 'ios', 'MyApp.xcodeproj'), {
+      recursive: true,
+    });
+    const logger = makeLogger();
+
+    await linkBare(projectRoot, [builtFont('NoPbxproj')], logger);
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('project.pbxproj not found')
+    );
+    expect(logger.fail).toHaveBeenCalledWith('No platforms linked.');
+  });
+
   test('UIAppFonts merges with pre-existing entries without clobbering them', async () => {
     const infoPlistPath = addIos(['PreExisting.ttf']);
 
@@ -329,5 +648,75 @@ describe('linkBare - platform detection & edge cases', () => {
 
     const entries = readUIAppFonts(infoPlistPath);
     expect(entries.filter((f) => f === 'Idem.ttf')).toHaveLength(1);
+  });
+});
+
+describe('syncAndroidFontAssets', () => {
+  let fontsDir: string;
+  let fontDir: string;
+
+  function builtFont(fontFamily: string, family: string): BuiltFont {
+    const ttfPath = path.join(fontDir, `${fontFamily}.ttf`);
+    fs.writeFileSync(ttfPath, 'fresh-ttf');
+    return {
+      fontFamily,
+      family,
+      ttfPath,
+      glyphmapPath: path.join(fontDir, `${fontFamily}.glyphmap.json`),
+      linking: 'static',
+    };
+  }
+
+  beforeEach(() => {
+    fontsDir = path.join(makeTmpDir(), 'fonts');
+    fontDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    fs.rmSync(path.dirname(fontsDir), { recursive: true, force: true });
+    fs.rmSync(fontDir, { recursive: true, force: true });
+  });
+
+  test('names the asset after the family and creates the folder', () => {
+    const font = builtFont('Icons', 'Icons-1a2b3c4d');
+    syncAndroidFontAssets(fontsDir, [font], ['Icons']);
+    expect(fs.readdirSync(fontsDir)).toEqual(['Icons-1a2b3c4d.ttf']);
+  });
+
+  test('leaves only current products plus fonts that are not ours', () => {
+    fs.mkdirSync(fontsDir, { recursive: true });
+    for (const stale of [
+      'Icons.ttf',
+      'Icons-00000000.ttf',
+      'Dropped-deadbeef.ttf',
+      'Dyn-cafebabe.ttf',
+      'Dyn.ttf',
+      'Legacy.ttf',
+      'User.ttf',
+    ]) {
+      fs.writeFileSync(path.join(fontsDir, stale), 'stale');
+    }
+    const font = builtFont('Icons', 'Icons-1a2b3c4d');
+    syncAndroidFontAssets(fontsDir, [font], ['Icons', 'Dyn']);
+    expect(fs.readdirSync(fontsDir).sort()).toEqual([
+      'Icons-1a2b3c4d.ttf',
+      'Legacy.ttf',
+      'User.ttf',
+    ]);
+  });
+
+  test('overwrites a same-named asset with the fresh bytes', () => {
+    fs.mkdirSync(fontsDir, { recursive: true });
+    fs.writeFileSync(path.join(fontsDir, 'Icons-1a2b3c4d.ttf'), 'stale');
+    const font = builtFont('Icons', 'Icons-1a2b3c4d');
+    syncAndroidFontAssets(fontsDir, [font], ['Icons']);
+    expect(
+      fs.readFileSync(path.join(fontsDir, 'Icons-1a2b3c4d.ttf'), 'utf8')
+    ).toBe('fresh-ttf');
+  });
+
+  test('with no static fonts it only cleans and never creates the folder', () => {
+    syncAndroidFontAssets(fontsDir, [], ['Icons']);
+    expect(fs.existsSync(fontsDir)).toBe(false);
   });
 });

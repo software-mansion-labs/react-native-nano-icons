@@ -3,18 +3,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
-import { picoFromFile, PathKitManager } from '../src/core/pipeline/managers';
-import { mergeSameColorPaths, type ParsedPath } from '../src/core/pipeline/run';
-import {
-  preprocessSvg,
-  parseFlattenedSvg,
-  validateSvg,
-  extractOriginalEvenoddDs,
-  restoreOriginalEvenoddDs,
-} from '../src/core/svg/svg_dom';
-import { convertEvenoddToWinding } from '../src/core/svg/svg_pathops';
+import { flattenSvg } from '../src/core/flatten/index';
+import { loadPathKit } from '../src/core/pathkit/load';
+import { mergeSameColorPaths } from '../src/core/glyph/merge';
+import { parseFlattenedSvg, type ParsedPath } from '../src/core/glyph/parse';
+import { preprocessSvg, validateSvg } from '../src/core/glyph/validate';
+import { convertEvenoddToWinding } from '../src/core/pathkit/evenodd';
 
 const TESTICONS_DIR = path.resolve(
   __dirname,
@@ -40,7 +34,6 @@ type StageOutputs = {
   preprocessed: string;
   flattened: string;
   parsed: PathsSnapshot;
-  restored: PathsSnapshot;
   converted: PathsSnapshot;
   merged: PathsSnapshot;
 };
@@ -67,23 +60,17 @@ async function computeStages(file: string): Promise<StageOutputs> {
     throw new Error(`validateSvg rejected ${file}: ${validation.reason}`);
   }
 
-  const PathKit = await PathKitManager.getInstance();
+  const PathKit = await loadPathKit();
 
   const preprocessed = preprocessSvg(raw);
-  const originalEvenoddDs = extractOriginalEvenoddDs(preprocessed);
 
-  const flattened = await picoFromFile(abs, preprocessed);
+  const flattened = flattenSvg(preprocessed, PathKit);
 
   const { viewBox, paths } = parseFlattenedSvg(flattened) as {
     viewBox: number[];
     paths: ParsedPath[];
   };
   const parsed = snapshotPaths(viewBox, paths);
-
-  if (originalEvenoddDs.length > 0) {
-    restoreOriginalEvenoddDs(paths, originalEvenoddDs);
-  }
-  const restored = snapshotPaths(viewBox, paths);
 
   for (const p of paths) {
     if (p.fillRule === 'evenodd') {
@@ -96,7 +83,7 @@ async function computeStages(file: string): Promise<StageOutputs> {
 
   const merged = snapshotPaths(viewBox, mergeSameColorPaths(paths));
 
-  return { preprocessed, flattened, parsed, restored, converted, merged };
+  return { preprocessed, flattened, parsed, converted, merged };
 }
 
 test('testicons corpus is present', () => {
@@ -114,16 +101,12 @@ describe.each(ICONS)('pipeline stages golden — %s', (file) => {
     expect(stages.preprocessed).toMatchSnapshot();
   });
 
-  test('after picoFromFile', () => {
+  test('after flattenSvg', () => {
     expect(stages.flattened).toMatchSnapshot();
   });
 
   test('after parseFlattenedSvg', () => {
     expect(stages.parsed).toMatchSnapshot();
-  });
-
-  test('after restoreOriginalEvenoddDs', () => {
-    expect(stages.restored).toMatchSnapshot();
   });
 
   test('after convertEvenoddToWinding', () => {

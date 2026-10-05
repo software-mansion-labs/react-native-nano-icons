@@ -1,11 +1,11 @@
 // reduce a path `d` to a shape fingerprint (area/bbox/contours)
 // tests compare shape rather than float formatting, as latter may differ between impl
 
-import { PathKitManager } from '../../src/core/pipeline/managers';
-import type { PathKitModule, Point } from '../../src/core/types';
+import { loadPathKit as loadPathKitModule } from '../../src/core/pathkit/load';
+import type { PathKitModule, Point } from '../../src/core/pathkit/types';
 
 export async function loadPathKit(): Promise<PathKitModule> {
-  return PathKitManager.getInstance();
+  return loadPathKitModule();
 }
 
 type Verbs = {

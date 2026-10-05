@@ -8,17 +8,29 @@ import {
   createCharCache,
   createLayerColorResolver,
 } from './utils/glyphRuntime';
+import { configuredFontFamily } from './utils/fontIdentity';
+import { useDynamicFontStatus } from './loadDynamicFont';
 
 export type { IconComponent, IconProps };
 export { shallowEqualColor };
+
+async function loadFontFromDevServer(family: string): Promise<boolean> {
+  if (__DEV__) {
+    const dev = require('./devServerFont') as typeof import('./devServerFont');
+    return dev.loadFontFromDevServer(family);
+  }
+  return false;
+}
 
 // Web renderer: uses inline <span> elements so icons flow out of the box (display: inline-block keeps width/height)
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
 ): IconComponent<GM> {
-  const fontBasename = glyphMap.m.f;
+  const family = glyphMap.m.f;
+  const fontBasename = configuredFontFamily(family);
   const unitsPerEm = glyphMap.m.u;
   const getChar = createCharCache();
+  void loadFontFromDevServer(family);
 
   const Icon = memo(
     ({
@@ -36,6 +48,8 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
     }: IconProps<keyof GM['i']>) => {
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
       const width = (adv / unitsPerEm) * size;
+      const fontFamily =
+        useDynamicFontStatus(family) === 'ready' ? family : fontBasename;
 
       const resolveColor = createLayerColorResolver(color);
 
@@ -57,14 +71,14 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           position: 'absolute',
           left: 0,
           bottom: 0,
-          fontFamily: fontBasename,
+          fontFamily,
           fontWeight: 'normal',
           fontStyle: 'normal',
           fontSize: size,
           lineHeight: 1,
           whiteSpace: 'pre',
         }),
-        [size]
+        [size, fontFamily]
       );
 
       const isHidden = accessible === false || accessibilityElementsHidden;
@@ -105,7 +119,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   Icon.displayName = `NanoIcon(${fontBasename})`;
 
-  // No-op on web: fonts come from CSS @font-face, nothing to load at runtime.
+  // No-op on web: the host app links the font under the configured family name, nothing to load at runtime.
   const IconComp = Icon as unknown as IconComponent<GM>;
   IconComp.loadFont = () => Promise.resolve();
   return IconComp;
