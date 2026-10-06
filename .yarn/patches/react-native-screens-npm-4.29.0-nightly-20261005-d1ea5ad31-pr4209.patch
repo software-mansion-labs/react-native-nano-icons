@@ -1,0 +1,2781 @@
+diff --git a/android/src/main/java/com/swmansion/rnscreens/helpers/IconTinting.kt b/android/src/main/java/com/swmansion/rnscreens/helpers/IconTinting.kt
+new file mode 100644
+index 0000000..f75f160
+--- /dev/null
++++ b/android/src/main/java/com/swmansion/rnscreens/helpers/IconTinting.kt
+@@ -0,0 +1,17 @@
++package com.swmansion.rnscreens.helpers
++
++internal enum class IconTinting {
++    DEFAULT,
++    TINTED,
++    ORIGINAL,
++    ;
++
++    companion object {
++        fun fromString(value: String?): IconTinting =
++            when (value) {
++                "tinted" -> TINTED
++                "original" -> ORIGINAL
++                else -> DEFAULT
++            }
++    }
++}
+diff --git a/android/src/main/java/com/swmansion/rnscreens/helpers/NoTintDrawable.kt b/android/src/main/java/com/swmansion/rnscreens/helpers/NoTintDrawable.kt
+new file mode 100644
+index 0000000..f7fa57c
+--- /dev/null
++++ b/android/src/main/java/com/swmansion/rnscreens/helpers/NoTintDrawable.kt
+@@ -0,0 +1,31 @@
++package com.swmansion.rnscreens.helpers
++
++import android.content.res.ColorStateList
++import android.content.res.Resources
++import android.graphics.PorterDuff
++import android.graphics.drawable.Drawable
++import androidx.appcompat.graphics.drawable.DrawableWrapperCompat
++
++// Ignores tinting so the wrapped icon keeps its own colors even when a host view
++// (e.g. BottomNavigationView) applies an itemIconTintList.
++internal class NoTintDrawable(
++    drawable: Drawable,
++) : DrawableWrapperCompat(drawable) {
++    override fun setTintList(tint: ColorStateList?) = Unit
++
++    override fun setTint(tintColor: Int) = Unit
++
++    override fun setTintMode(tintMode: PorterDuff.Mode?) = Unit
++
++    override fun getConstantState(): ConstantState? = drawable?.constantState?.let(::NoTintConstantState)
++
++    private class NoTintConstantState(
++        private val wrappedState: ConstantState,
++    ) : ConstantState() {
++        override fun newDrawable(): Drawable = NoTintDrawable(wrappedState.newDrawable())
++
++        override fun newDrawable(res: Resources?): Drawable = NoTintDrawable(wrappedState.newDrawable(res))
++
++        override fun getChangingConfigurations(): Int = wrappedState.changingConfigurations
++    }
++}
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/StackHeaderApplicator.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/StackHeaderApplicator.kt
+index 7c04420..0f27c24 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/StackHeaderApplicator.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/StackHeaderApplicator.kt
+@@ -31,6 +31,7 @@ import com.google.android.material.shape.MaterialShapeDrawable
+ import com.swmansion.rnscreens.common.text.TextAppearance
+ import com.swmansion.rnscreens.common.text.TextAppearanceDefaults
+ import com.swmansion.rnscreens.ext.detachFromCurrentParent
++import com.swmansion.rnscreens.helpers.IconTinting
+ import com.swmansion.rnscreens.stack.header.appbar.StackHeaderAppBarLayout
+ import com.swmansion.rnscreens.stack.header.appbar.StackHeaderContentScrimDrawable
+ import com.swmansion.rnscreens.stack.header.config.StackHeaderConfigurationProviding
+@@ -361,11 +362,15 @@ internal class StackHeaderApplicator(
+                 ?: resolveDefaultBackButtonIcon(toolbar)
+ 
+         val tintList =
+-            buildTintList(
+-                config.backButtonTintColorNormal,
+-                config.backButtonTintColorPressed,
+-                config.backButtonTintColorFocused,
+-            )
++            if (config.backButtonIconTinting == IconTinting.ORIGINAL) {
++                null
++            } else {
++                buildTintList(
++                    config.backButtonTintColorNormal,
++                    config.backButtonTintColorPressed,
++                    config.backButtonTintColorFocused,
++                )
++            }
+ 
+         toolbar.navigationIcon =
+             if (tintList != null && baseDrawable != null) {
+@@ -389,11 +394,15 @@ internal class StackHeaderApplicator(
+                 ?: resolveDefaultOverflowIcon(toolbar)
+ 
+         val tintList =
+-            buildTintList(
+-                config.overflowIconTintColorNormal,
+-                config.overflowIconTintColorPressed,
+-                config.overflowIconTintColorFocused,
+-            )
++            if (config.overflowIconTinting == IconTinting.ORIGINAL) {
++                null
++            } else {
++                buildTintList(
++                    config.overflowIconTintColorNormal,
++                    config.overflowIconTintColorPressed,
++                    config.overflowIconTintColorFocused,
++                )
++            }
+ 
+         toolbar.overflowIcon =
+             if (tintList != null && baseDrawable != null) {
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfig.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfig.kt
+index 1fdc681..a5109fb 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfig.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfig.kt
+@@ -8,6 +8,7 @@ import com.facebook.react.views.view.ReactViewGroup
+ import com.swmansion.rnscreens.common.ShadowStateProxy
+ import com.swmansion.rnscreens.common.text.ReactTextAppearance
+ import com.swmansion.rnscreens.helpers.IconResolution
++import com.swmansion.rnscreens.helpers.IconTinting
+ import com.swmansion.rnscreens.helpers.PropIconResolver
+ import com.swmansion.rnscreens.helpers.resolveImage
+ import com.swmansion.rnscreens.stack.header.subview.OnStackHeaderSubviewChangeListener
+@@ -79,6 +80,12 @@ internal class StackHeaderConfig(
+     override var backButtonIcon: Drawable? by invalidatingProperty(null, StackHeaderInvalidationFlags.BACK_BUTTON)
+         internal set
+ 
++    override var backButtonIconTinting: IconTinting by invalidatingProperty(
++        IconTinting.DEFAULT,
++        StackHeaderInvalidationFlags.BACK_BUTTON,
++    )
++        internal set
++
+     override var overflowIconTintColorNormal: Int? by invalidatingProperty(null, StackHeaderInvalidationFlags.OVERFLOW_ICON)
+         internal set
+ 
+@@ -91,6 +98,12 @@ internal class StackHeaderConfig(
+     override var overflowIcon: Drawable? by invalidatingProperty(null, StackHeaderInvalidationFlags.OVERFLOW_ICON)
+         internal set
+ 
++    override var overflowIconTinting: IconTinting by invalidatingProperty(
++        IconTinting.DEFAULT,
++        StackHeaderInvalidationFlags.OVERFLOW_ICON,
++    )
++        internal set
++
+     override var scrollFlagScroll: Boolean by invalidatingProperty(false, StackHeaderInvalidationFlags.SCROLL_FLAGS)
+         internal set
+ 
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfigViewManager.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfigViewManager.kt
+index 903b9ac..0332083 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfigViewManager.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfigViewManager.kt
+@@ -15,6 +15,7 @@ import com.facebook.react.uimanager.ViewGroupManager
+ import com.facebook.react.uimanager.ViewManagerDelegate
+ import com.facebook.react.viewmanagers.RNSStackHeaderConfigAndroidManagerDelegate
+ import com.facebook.react.viewmanagers.RNSStackHeaderConfigAndroidManagerInterface
++import com.swmansion.rnscreens.helpers.IconTinting
+ import com.swmansion.rnscreens.stack.header.subview.StackHeaderSubview
+ import com.swmansion.rnscreens.stack.header.toolbar.StackHeaderToolbarMenuMapper
+ import com.swmansion.rnscreens.stack.header.toolbar.update.StackHeaderToolbarMenuElementRawUpdate
+@@ -488,6 +489,13 @@ internal open class StackHeaderConfigViewManager :
+         view.backButtonImageIconUri = value?.getString("uri")
+     }
+ 
++    override fun setBackButtonIconTinting(
++        view: StackHeaderConfig,
++        value: String?,
++    ) {
++        view.backButtonIconTinting = IconTinting.fromString(value)
++    }
++
+     override fun setOverflowIconTintColorNormal(
+         view: StackHeaderConfig,
+         value: Int?,
+@@ -523,6 +531,13 @@ internal open class StackHeaderConfigViewManager :
+         view.overflowIconImageIconUri = value?.getString("uri")
+     }
+ 
++    override fun setOverflowIconTinting(
++        view: StackHeaderConfig,
++        value: String?,
++    ) {
++        view.overflowIconTinting = IconTinting.fromString(value)
++    }
++
+     override fun setScrollFlagScroll(
+         view: StackHeaderConfig,
+         value: Boolean,
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfigurationProviding.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfigurationProviding.kt
+index be8004d..f1f227e 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfigurationProviding.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/config/StackHeaderConfigurationProviding.kt
+@@ -2,6 +2,7 @@ package com.swmansion.rnscreens.stack.header.config
+ 
+ import android.graphics.drawable.Drawable
+ import com.swmansion.rnscreens.common.text.TextAppearance
++import com.swmansion.rnscreens.helpers.IconTinting
+ import com.swmansion.rnscreens.stack.header.subview.StackHeaderSubviewProviding
+ import com.swmansion.rnscreens.stack.header.toolbar.StackHeaderToolbarMenuController
+ 
+@@ -17,10 +18,12 @@ internal interface StackHeaderConfigurationProviding {
+     val backButtonTintColorPressed: Int?
+     val backButtonTintColorFocused: Int?
+     val backButtonIcon: Drawable?
++    val backButtonIconTinting: IconTinting
+     val overflowIconTintColorNormal: Int?
+     val overflowIconTintColorPressed: Int?
+     val overflowIconTintColorFocused: Int?
+     val overflowIcon: Drawable?
++    val overflowIconTinting: IconTinting
+     val scrollFlagScroll: Boolean
+     val scrollFlagEnterAlways: Boolean
+     val scrollFlagEnterAlwaysCollapsed: Boolean
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuApplicator.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuApplicator.kt
+index 028c046..336d938 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuApplicator.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuApplicator.kt
+@@ -8,6 +8,7 @@ import android.view.Menu
+ import android.view.MenuItem
+ import androidx.core.view.MenuItemCompat
+ import com.google.android.material.appbar.MaterialToolbar
++import com.swmansion.rnscreens.helpers.IconTinting
+ import com.swmansion.rnscreens.stack.header.getResizedDrawable
+ import com.swmansion.rnscreens.stack.header.toolbar.model.StackHeaderToolbarMenuConfig
+ import com.swmansion.rnscreens.stack.header.toolbar.model.StackHeaderToolbarMenuElementConfig
+@@ -159,6 +160,10 @@ internal object StackHeaderToolbarMenuApplicator {
+     // region Icon tint
+ 
+     private fun buildIconTintList(options: StackHeaderToolbarMenuElementOptions): ColorStateList? {
++        if (options.iconTinting == IconTinting.ORIGINAL) {
++            return null
++        }
++
+         val states = mutableListOf<IntArray>()
+         val colors = mutableListOf<Int>()
+ 
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuController.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuController.kt
+index f1cb7a6..6839f9c 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuController.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuController.kt
+@@ -424,6 +424,7 @@ internal class StackHeaderToolbarMenuController(
+                     iconTintColorPressed = effective.iconTintColorPressed,
+                     iconTintColorFocused = effective.iconTintColorFocused,
+                     iconTintColorDisabled = effective.iconTintColorDisabled,
++                    iconTinting = effective.iconTinting,
+                 )
+             if (delta.icon != null) {
+                 resolved = resolved.copy(showAsAction = effective.showAsAction)
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuMapper.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuMapper.kt
+index 4fc6328..7d1d5a6 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuMapper.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/StackHeaderToolbarMenuMapper.kt
+@@ -5,6 +5,7 @@ import com.facebook.react.bridge.Dynamic
+ import com.facebook.react.bridge.JSApplicationIllegalArgumentException
+ import com.facebook.react.bridge.ReadableMap
+ import com.facebook.react.bridge.ReadableType
++import com.swmansion.rnscreens.helpers.IconTinting
+ import com.swmansion.rnscreens.helpers.parseColor
+ import com.swmansion.rnscreens.helpers.readBoolean
+ import com.swmansion.rnscreens.helpers.readColor
+@@ -83,6 +84,7 @@ internal object StackHeaderToolbarMenuMapper {
+             iconTintColorPressed = map.readNullableColorUpdate(context, "iconTintColorPressed"),
+             iconTintColorFocused = map.readNullableColorUpdate(context, "iconTintColorFocused"),
+             iconTintColorDisabled = map.readNullableColorUpdate(context, "iconTintColorDisabled"),
++            iconTinting = map.readNullableIconTintingUpdate("iconTinting", StackHeaderToolbarMenuItemDefaults.ICON_TINTING),
+             menuTitle = map.readNullableStringUpdate("menuTitle"),
+         )
+ 
+@@ -204,6 +206,7 @@ internal object StackHeaderToolbarMenuMapper {
+                     "iconTintColorDisabled",
+                     StackHeaderToolbarMenuItemDefaults.ICON_TINT_COLOR_DISABLED,
+                 ),
++            iconTinting = map.readIconTinting("iconTinting", StackHeaderToolbarMenuItemDefaults.ICON_TINTING),
+             iconSource = parsePropIconSource(map),
+             groupId = map.readOptionalString("groupId"),
+             itemType = map.readItemTypeEnum("itemType", StackHeaderToolbarMenuItemDefaults.ITEM_TYPE),
+@@ -218,6 +221,14 @@ internal object StackHeaderToolbarMenuMapper {
+ 
+     // region Enum helpers
+ 
++    private fun ReadableMap.readIconTinting(
++        key: String,
++        default: IconTinting,
++    ): IconTinting {
++        val stringValue = readOptionalString(key) ?: return default
++        return IconTinting.fromString(stringValue)
++    }
++
+     private fun ReadableMap.readShowAsActionEnum(
+         key: String,
+         default: StackHeaderToolbarMenuItemShowAsAction,
+@@ -301,6 +312,16 @@ internal object StackHeaderToolbarMenuMapper {
+                 } ?: default
+         }
+ 
++    private fun ReadableMap.readNullableIconTintingUpdate(
++        key: String,
++        default: IconTinting,
++    ): IconTinting? =
++        when {
++            !this.hasKey(key) -> null
++            this.isNull(key) -> default
++            else -> IconTinting.fromString(this.getString(key))
++        }
++
+     private fun ReadableMap.readNullableColorUpdate(
+         context: Context,
+         key: String,
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/model/StackHeaderToolbarMenuItemConfig.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/model/StackHeaderToolbarMenuItemConfig.kt
+index 2477b35..bcfd5f5 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/model/StackHeaderToolbarMenuItemConfig.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/model/StackHeaderToolbarMenuItemConfig.kt
+@@ -1,5 +1,7 @@
+ package com.swmansion.rnscreens.stack.header.toolbar.model
+ 
++import com.swmansion.rnscreens.helpers.IconTinting
++
+ internal data class StackHeaderToolbarMenuItemConfig(
+     val id: String,
+     val title: String?,
+@@ -13,6 +15,7 @@ internal data class StackHeaderToolbarMenuItemConfig(
+     val iconTintColorPressed: Int?,
+     val iconTintColorFocused: Int?,
+     val iconTintColorDisabled: Int?,
++    val iconTinting: IconTinting,
+     val iconSource: StackHeaderToolbarMenuItemIconSource,
+     val groupId: String?,
+     val itemType: StackHeaderToolbarMenuItemType,
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/model/StackHeaderToolbarMenuItemDefaults.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/model/StackHeaderToolbarMenuItemDefaults.kt
+index b3e68cd..4858d94 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/model/StackHeaderToolbarMenuItemDefaults.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/model/StackHeaderToolbarMenuItemDefaults.kt
+@@ -1,5 +1,7 @@
+ package com.swmansion.rnscreens.stack.header.toolbar.model
+ 
++import com.swmansion.rnscreens.helpers.IconTinting
++
+ /**
+  * Defaults for toolbar menu item fields.
+  *
+@@ -19,6 +21,7 @@ internal object StackHeaderToolbarMenuItemDefaults {
+     val ICON_TINT_COLOR_PRESSED: Int? = null
+     val ICON_TINT_COLOR_FOCUSED: Int? = null
+     val ICON_TINT_COLOR_DISABLED: Int? = null
++    val ICON_TINTING: IconTinting = IconTinting.DEFAULT
+     val DRAWABLE_ICON_RESOURCE_NAME: String? = null
+     val IMAGE_ICON_URI: String? = null
+     val ITEM_TYPE: StackHeaderToolbarMenuItemType = StackHeaderToolbarMenuItemType.AUTOMATIC
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/update/StackHeaderToolbarMenuElementOptions.kt b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/update/StackHeaderToolbarMenuElementOptions.kt
+index eb08233..632d047 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/update/StackHeaderToolbarMenuElementOptions.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/header/toolbar/update/StackHeaderToolbarMenuElementOptions.kt
+@@ -1,6 +1,7 @@
+ package com.swmansion.rnscreens.stack.header.toolbar.update
+ 
+ import android.graphics.drawable.Drawable
++import com.swmansion.rnscreens.helpers.IconTinting
+ import com.swmansion.rnscreens.stack.header.toolbar.model.StackHeaderToolbarMenuElementConfig
+ import com.swmansion.rnscreens.stack.header.toolbar.model.StackHeaderToolbarMenuItemShowAsAction
+ 
+@@ -22,6 +23,7 @@ internal data class StackHeaderToolbarMenuElementOptions(
+     val iconTintColorPressed: StackHeaderToolbarFieldUpdate<Int>? = null,
+     val iconTintColorFocused: StackHeaderToolbarFieldUpdate<Int>? = null,
+     val iconTintColorDisabled: StackHeaderToolbarFieldUpdate<Int>? = null,
++    val iconTinting: IconTinting? = null,
+     val menuTitle: StackHeaderToolbarFieldUpdate<String>? = null,
+ ) {
+     val requiresIconTintColorUpdate: Boolean
+@@ -29,7 +31,8 @@ internal data class StackHeaderToolbarMenuElementOptions(
+             iconTintColorNormal != null ||
+                 iconTintColorPressed != null ||
+                 iconTintColorFocused != null ||
+-                iconTintColorDisabled != null
++                iconTintColorDisabled != null ||
++                iconTinting != null
+ 
+     val isEmpty: Boolean
+         get() = this == DEFAULT
+@@ -49,6 +52,7 @@ internal data class StackHeaderToolbarMenuElementOptions(
+             iconTintColorPressed = newer.iconTintColorPressed ?: iconTintColorPressed,
+             iconTintColorFocused = newer.iconTintColorFocused ?: iconTintColorFocused,
+             iconTintColorDisabled = newer.iconTintColorDisabled ?: iconTintColorDisabled,
++            iconTinting = newer.iconTinting ?: iconTinting,
+             menuTitle = newer.menuTitle ?: menuTitle,
+         )
+ 
+@@ -78,6 +82,7 @@ internal fun StackHeaderToolbarMenuElementConfig.toOptions() =
+         iconTintColorPressed = StackHeaderToolbarFieldUpdate.from(item.iconTintColorPressed),
+         iconTintColorFocused = StackHeaderToolbarFieldUpdate.from(item.iconTintColorFocused),
+         iconTintColorDisabled = StackHeaderToolbarFieldUpdate.from(item.iconTintColorDisabled),
++        iconTinting = item.iconTinting,
+         menuTitle =
+             (this as? StackHeaderToolbarMenuElementConfig.Submenu)
+                 ?.let { StackHeaderToolbarFieldUpdate.from(it.menuTitle) },
+diff --git a/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceApplicator.kt b/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceApplicator.kt
+index 790428e..4691088 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceApplicator.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceApplicator.kt
+@@ -3,6 +3,8 @@ package com.swmansion.rnscreens.tabs.appearance
+ import android.annotation.SuppressLint
+ import android.content.Context
+ import android.content.res.ColorStateList
++import android.graphics.drawable.Drawable
++import android.graphics.drawable.InsetDrawable
+ import android.graphics.drawable.StateListDrawable
+ import android.util.TypedValue
+ import android.view.MenuItem
+@@ -16,12 +18,92 @@ import com.google.android.material.R
+ import com.google.android.material.bottomnavigation.BottomNavigationView
+ import com.google.android.material.navigation.NavigationBarView
+ import com.swmansion.rnscreens.tabs.screen.TabsScreen
++import com.swmansion.rnscreens.utils.dpToPx
++import com.swmansion.rnscreens.utils.pxToDp
+ import com.swmansion.rnscreens.utils.resolveColorAttr
+ 
+ @SuppressLint("PrivateResource") // We want to use variables from material design for default values
+ internal class TabsAppearanceApplicator(
+     private val bottomNavigationView: BottomNavigationView,
+ ) {
++    // Resolved on each access: tracks the display density of the current configuration.
++    internal val defaultIconSizeDp: Float
++        get() =
++            bottomNavigationView.pxToDp(
++                bottomNavigationView.resources.getDimension(R.dimen.mtrl_navigation_bar_item_default_icon_size),
++            )
++
++    internal fun effectiveIconSizeDp(tabsScreen: TabsScreen): Float =
++        if (tabsScreen.iconSize > 0f) tabsScreen.iconSize else defaultIconSizeDp
++
++    // Material allows only one icon size for all items; iconBoxDp is the largest effective per-tab size.
++    fun applyIconBox(iconBoxDp: Float) {
++        val iconBoxPx = bottomNavigationView.dpToPx(iconBoxDp).toInt()
++        if (bottomNavigationView.itemIconSize != iconBoxPx) {
++            bottomNavigationView.itemIconSize = iconBoxPx
++        }
++    }
++
++    // Resolved on each access: tracks the material library version and the display density.
++    private val defaultIndicatorWidthPx: Int
++        get() = bottomNavigationView.resources.getDimensionPixelSize(R.dimen.m3_bottom_nav_item_active_indicator_width)
++
++    private val defaultIndicatorHeightPx: Int
++        get() = bottomNavigationView.resources.getDimensionPixelSize(R.dimen.m3_bottom_nav_item_active_indicator_height)
++
++    // Auto-scale preserves the themed default padding around the icon: default indicator minus default icon size.
++    private val autoIndicatorHorizontalPaddingDp: Float
++        get() = bottomNavigationView.pxToDp(defaultIndicatorWidthPx.toFloat()) - defaultIconSizeDp
++
++    private val autoIndicatorVerticalPaddingDp: Float
++        get() = bottomNavigationView.pxToDp(defaultIndicatorHeightPx.toFloat()) - defaultIconSizeDp
++
++    private fun applyActiveIndicatorSize(
++        widthDp: Float?,
++        heightDp: Float?,
++        iconBoxDp: Float,
++    ) {
++        val autoScale = iconBoxDp > defaultIconSizeDp
++        val widthPx =
++            resolveIndicatorDimensionPx(widthDp, iconBoxDp + autoIndicatorHorizontalPaddingDp, defaultIndicatorWidthPx, autoScale)
++        if (bottomNavigationView.itemActiveIndicatorWidth != widthPx) {
++            bottomNavigationView.itemActiveIndicatorWidth = widthPx
++        }
++        val heightPx =
++            resolveIndicatorDimensionPx(heightDp, iconBoxDp + autoIndicatorVerticalPaddingDp, defaultIndicatorHeightPx, autoScale)
++        if (bottomNavigationView.itemActiveIndicatorHeight != heightPx) {
++            bottomNavigationView.itemActiveIndicatorHeight = heightPx
++        }
++    }
++
++    // Explicit dp wins; else auto-scale to the enlarged icon box; else themed Material default.
++    private fun resolveIndicatorDimensionPx(
++        explicitDp: Float?,
++        autoScaledDp: Float,
++        defaultPx: Int,
++        autoScale: Boolean,
++    ): Int =
++        when {
++            explicitDp != null && explicitDp > 0f -> bottomNavigationView.dpToPx(explicitDp).toInt()
++            autoScale -> bottomNavigationView.dpToPx(autoScaledDp).toInt()
++            else -> defaultPx
++        }
++
++    // Inset the icon so it renders at effectiveDp, centered within iconBoxDp.
++    // Intrinsic-relative on purpose: Material FIT_CENTER-scales the drawable to the icon box,
++    // so the intrinsic factor cancels and the glyph lands at effectiveDp/iconBoxDp of the box.
++    private fun sizeIcon(
++        icon: Drawable?,
++        effectiveDp: Float,
++        iconBoxDp: Float,
++    ): Drawable? {
++        if (icon == null || effectiveDp >= iconBoxDp) return icon
++        val larger = maxOf(icon.intrinsicWidth, icon.intrinsicHeight)
++        if (larger <= 0) return icon
++        val insetPx = (larger * (iconBoxDp - effectiveDp) / (2f * effectiveDp)).toInt()
++        return if (insetPx > 0) InsetDrawable(icon, insetPx) else icon
++    }
++
+     private val states =
+         arrayOf(
+             intArrayOf(-android.R.attr.state_enabled), // disabled
+@@ -34,6 +116,7 @@ internal class TabsAppearanceApplicator(
+         context: Context,
+         tabBarAppearance: TabsAppearance?,
+         isTabBarHidden: Boolean,
++        iconBoxDp: Float,
+     ) {
+         bottomNavigationView.isVisible = !isTabBarHidden
+         bottomNavigationView.setBackgroundColor(
+@@ -109,6 +192,12 @@ internal class TabsAppearanceApplicator(
+         bottomNavigationView.isItemActiveIndicatorEnabled =
+             tabBarAppearance?.tabBarItemActiveIndicatorEnabled ?: true
+         bottomNavigationView.itemActiveIndicatorColor = ColorStateList.valueOf(activeIndicatorColor)
++
++        applyActiveIndicatorSize(
++            tabBarAppearance?.tabBarItemActiveIndicatorWidth,
++            tabBarAppearance?.tabBarItemActiveIndicatorHeight,
++            iconBoxDp,
++        )
+     }
+ 
+     fun updateFontStyles(
+@@ -174,23 +263,28 @@ internal class TabsAppearanceApplicator(
+     fun updateMenuItemAppearance(
+         menuItem: MenuItem,
+         tabsScreen: TabsScreen,
++        iconBoxDp: Float,
+     ) {
+         if (menuItem.title != tabsScreen.tabTitle) {
+             menuItem.title = tabsScreen.tabTitle
+         }
+ 
+-        val targetIcon =
+-            if (tabsScreen.selectedIcon != null && tabsScreen.icon != null) {
+-                StateListDrawable().apply {
+-                    addState(intArrayOf(android.R.attr.state_checked), tabsScreen.selectedIcon?.mutate())
+-                    addState(intArrayOf(), tabsScreen.icon?.mutate())
++        if (tabsScreen.isMenuItemIconInvalidated) {
++            tabsScreen.isMenuItemIconInvalidated = false
++            // Sized per slot: a StateListDrawable's intrinsic size follows its current state, so a
++            // single inset computed from one child would mis-size the other when their resolutions differ.
++            val effectiveDp = effectiveIconSizeDp(tabsScreen)
++            val iconDrawable = sizeIcon(tabsScreen.icon.drawable, effectiveDp, iconBoxDp)
++            val selectedIconDrawable = sizeIcon(tabsScreen.selectedIcon.drawable, effectiveDp, iconBoxDp)
++            menuItem.icon =
++                if (selectedIconDrawable != null && iconDrawable != null) {
++                    StateListDrawable().apply {
++                        addState(intArrayOf(android.R.attr.state_checked), selectedIconDrawable.mutate())
++                        addState(intArrayOf(), iconDrawable.mutate())
++                    }
++                } else {
++                    iconDrawable
+                 }
+-            } else {
+-                tabsScreen.icon
+-            }
+-
+-        if (menuItem.icon != targetIcon) {
+-            menuItem.icon = targetIcon
+         }
+     }
+ 
+diff --git a/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceCoordinator.kt b/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceCoordinator.kt
+index 6dd1d58..6811400 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceCoordinator.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceCoordinator.kt
+@@ -13,19 +13,37 @@ internal class TabsAppearanceCoordinator(
+ ) {
+     private val appearanceApplicator = TabsAppearanceApplicator(bottomNavigationView)
+ 
++    private var appliedIconBoxDp: Float? = null
++
++    // Icon box is bar-wide: the largest effective size across tabs.
++    internal fun resolveIconBoxDp(): Float =
++        tabsScreenFragments.maxOfOrNull { appearanceApplicator.effectiveIconSizeDp(it.tabsScreen) }
++            ?: appearanceApplicator.defaultIconSizeDp
++
++    internal fun invalidateMenuItemIcons() {
++        tabsScreenFragments.forEach { it.tabsScreen.isMenuItemIconInvalidated = true }
++    }
++
+     fun updateTabAppearance(
+         context: Context,
+         tabsContainer: TabsContainer,
+     ) {
+         val selectedTabAppearance = tabsContainer.selectedTab.tabsScreen.appearance
+-        appearanceApplicator.updateSharedAppearance(context, selectedTabAppearance, tabsContainer.tabBarHidden)
+-        updateMenuItems(context, selectedTabAppearance)
++        val iconBoxDp = resolveIconBoxDp()
++        if (iconBoxDp != appliedIconBoxDp) {
++            appliedIconBoxDp = iconBoxDp
++            invalidateMenuItemIcons()
++        }
++        appearanceApplicator.applyIconBox(iconBoxDp)
++        appearanceApplicator.updateSharedAppearance(context, selectedTabAppearance, tabsContainer.tabBarHidden, iconBoxDp)
++        updateMenuItems(context, selectedTabAppearance, iconBoxDp)
+         appearanceApplicator.updateFontStyles(context, selectedTabAppearance) // It needs to be updated after updateMenuItems
+     }
+ 
+     private fun updateMenuItems(
+         context: Context,
+         tabsAppearance: TabsAppearance?,
++        iconBoxDp: Float,
+     ) {
+         tabsScreenFragments.forEach { fragment ->
+             val menuItemId = fragment.menuItemId
+@@ -33,7 +51,7 @@ internal class TabsAppearanceCoordinator(
+                 checkNotNull(bottomNavigationView.menu.findItem(menuItemId)) {
+                     "[RNScreens] Missing MenuItem for id: $menuItemId"
+                 }
+-            updateMenuItemAppearance(context, menuItem, fragment.tabsScreen, tabsAppearance)
++            updateMenuItemAppearance(context, menuItem, fragment.tabsScreen, tabsAppearance, iconBoxDp)
+         }
+     }
+ 
+@@ -42,8 +60,9 @@ internal class TabsAppearanceCoordinator(
+         menuItem: MenuItem,
+         tabsScreen: TabsScreen,
+         appearance: TabsAppearance?,
++        iconBoxDp: Float,
+     ) {
+-        appearanceApplicator.updateMenuItemAppearance(menuItem, tabsScreen)
++        appearanceApplicator.updateMenuItemAppearance(menuItem, tabsScreen, iconBoxDp)
+         appearanceApplicator.updateBadgeAppearance(context, menuItem, tabsScreen, appearance)
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceModel.kt b/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceModel.kt
+index 7fd509f..a87f61f 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceModel.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/tabs/appearance/TabsAppearanceModel.kt
+@@ -10,6 +10,8 @@ internal data class TabsAppearance(
+     val disabled: ItemStateAppearance? = null,
+     val tabBarItemActiveIndicatorColor: Int? = null,
+     val tabBarItemActiveIndicatorEnabled: Boolean? = null,
++    val tabBarItemActiveIndicatorWidth: Float? = null,
++    val tabBarItemActiveIndicatorHeight: Float? = null,
+     val tabBarItemTitleFontFamily: String? = null,
+     val tabBarItemTitleSmallLabelFontSize: Float? = null,
+     val tabBarItemTitleLargeLabelFontSize: Float? = null,
+diff --git a/android/src/main/java/com/swmansion/rnscreens/tabs/container/TabsContainer.kt b/android/src/main/java/com/swmansion/rnscreens/tabs/container/TabsContainer.kt
+index 217c9a0..0c31538 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/tabs/container/TabsContainer.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/tabs/container/TabsContainer.kt
+@@ -417,11 +417,23 @@ class TabsContainer internal constructor(
+                 menuItem,
+                 tabsScreen,
+                 appearance,
++                appearanceCoordinator.resolveIconBoxDp(),
+             )
+             a11yCoordinator.setA11yPropertiesToTabItem(menuItem, tabsScreen)
+         }
+     }
+ 
++    override fun onIconSizeChange(tabsScreen: TabsScreen) {
++        // Icon box is bar-wide, so this must run even when the changed tab is not selected.
++        // Skip when detached; reattachment reapplies the full appearance anyway.
++        if (isAttachedToWindow) {
++            invalidationFlags.isNavigationMenuAppearanceInvalidated = true
++            post {
++                this.flushPendingUpdates()
++            }
++        }
++    }
++
+     override fun getFragmentForTabsScreen(tabsScreen: TabsScreen): TabsScreenFragment? =
+         tabsModel.find {
+             it.tabsScreen ===
+@@ -552,6 +564,7 @@ class TabsContainer internal constructor(
+         tabsModel.forEach { fragment ->
+             menu.getOrCreateMenuItemForFragment(fragment)
+         }
++        appearanceCoordinator.invalidateMenuItemIcons()
+     }
+ 
+     private fun updateBottomNavigationViewAppearance() {
+diff --git a/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreen.kt b/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreen.kt
+index 638e66e..f8bde4f 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreen.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreen.kt
+@@ -1,7 +1,6 @@
+ package com.swmansion.rnscreens.tabs.screen
+ 
+ import android.content.res.Configuration
+-import android.graphics.drawable.Drawable
+ import android.os.Parcelable
+ import android.util.SparseArray
+ import android.view.ViewGroup
+@@ -11,7 +10,6 @@ import com.swmansion.rnscreens.common.FragmentProviding
+ import com.swmansion.rnscreens.common.container.Container
+ import com.swmansion.rnscreens.common.container.ContainerItem
+ import com.swmansion.rnscreens.common.container.ContainerItemSupport
+-import com.swmansion.rnscreens.helpers.getSystemDrawableResource
+ import com.swmansion.rnscreens.scrollviewmarker.ScrollViewMarker
+ import com.swmansion.rnscreens.scrollviewmarker.ScrollViewSeeking
+ import com.swmansion.rnscreens.tabs.appearance.TabsAppearance
+@@ -80,24 +78,24 @@ class TabsScreen(
+     // endregion
+ 
+     // region Icon
+-    var drawableIconResourceName: String? by Delegates.observable(null) { _, oldValue, newValue ->
+-        if (newValue != oldValue) {
+-            icon = getSystemDrawableResource(reactContext, newValue)
+-        }
+-    }
+ 
+-    var selectedDrawableIconResourceName: String? by Delegates.observable(null) { _, oldValue, newValue ->
+-        if (newValue != oldValue) {
+-            selectedIcon = getSystemDrawableResource(reactContext, newValue)
+-        }
+-    }
++    internal val icon = TabsScreenIcon(reactContext, ::onIconChange)
++    internal val selectedIcon = TabsScreenIcon(reactContext, ::onIconChange)
+ 
+-    var icon: Drawable? by Delegates.observable(null) { _, oldValue, newValue ->
+-        updateMenuItemAttributesIfNeeded(oldValue, newValue)
++    internal var isMenuItemIconInvalidated = true
++
++    internal fun resolveIconsIfNeeded() {
++        icon.resolveIfNeeded()
++        selectedIcon.resolveIfNeeded()
+     }
+ 
+-    var selectedIcon: Drawable? by Delegates.observable(null) { _, oldValue, newValue ->
+-        updateMenuItemAttributesIfNeeded(oldValue, newValue)
++    // Per-tab icon size in dp; 0 means the system default.
++    // The icon box is bar-wide, so a change here invalidates the whole bar, not just this item.
++    var iconSize: Float by Delegates.observable(0f) { _, oldValue, newValue ->
++        if (newValue != oldValue) {
++            isMenuItemIconInvalidated = true
++            tabsScreenDelegate.get()?.onIconSizeChange(this)
++        }
+     }
+ 
+     // endregion
+@@ -150,6 +148,11 @@ class TabsScreen(
+         tabsScreenDelegate.get()?.onMenuItemAttributesChange(this)
+     }
+ 
++    private fun onIconChange() {
++        isMenuItemIconInvalidated = true
++        onMenuItemAttributesChange()
++    }
++
+     internal fun onViewManagerAddEventEmitters() {
+         // When this is called from View Manager the view tag is already set
+         check(id != NO_ID) { "[RNScreens] TabsScreen must have its tag set when registering event emitters" }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenDelegate.kt b/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenDelegate.kt
+index efc776c..567f65e 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenDelegate.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenDelegate.kt
+@@ -8,6 +8,12 @@ internal interface TabsScreenDelegate {
+ 
+     fun onMenuItemAttributesChange(tabsScreen: TabsScreen)
+ 
++    /**
++     * The icon box is bar-wide, so an icon size change requires a whole-bar appearance
++     * update regardless of tab selection.
++     */
++    fun onIconSizeChange(tabsScreen: TabsScreen)
++
+     /**
+      * **If a fragment is associated with the tab screen**, notify the delegate that the fragment
+      * got configuration update.
+diff --git a/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenIcon.kt b/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenIcon.kt
+new file mode 100644
+index 0000000..e567492
+--- /dev/null
++++ b/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenIcon.kt
+@@ -0,0 +1,83 @@
++package com.swmansion.rnscreens.tabs.screen
++
++import android.content.Context
++import android.graphics.drawable.Drawable
++import com.swmansion.rnscreens.helpers.IconResolution
++import com.swmansion.rnscreens.helpers.IconTinting
++import com.swmansion.rnscreens.helpers.NoTintDrawable
++import com.swmansion.rnscreens.helpers.PropIconResolver
++import com.swmansion.rnscreens.helpers.resolveImage
++import kotlin.properties.Delegates
++
++/**
++ * Single icon slot (normal or selected) of a tab bar item. Props stage here and may arrive
++ * in any order within a single update batch; resolution runs once per transaction via
++ * [resolveIfNeeded]. [onChanged] fires only when the resolved [drawable] actually changes.
++ */
++internal class TabsScreenIcon(
++    context: Context,
++    private val onChanged: () -> Unit,
++) {
++    var drawableResourceName: String? by Delegates.observable(null) { _, oldValue, newValue ->
++        if (newValue != oldValue) isInvalidated = true
++    }
++
++    var tinting: IconTinting by Delegates.observable(
++        IconTinting.DEFAULT,
++    ) { _, oldValue, newValue ->
++        if (newValue != oldValue) isInvalidated = true
++    }
++
++    var imageUri: String? by Delegates.observable(null) { _, oldValue, newValue ->
++        if (newValue != oldValue) isInvalidated = true
++    }
++
++    // Resolved output; read by the appearance applicator.
++    var drawable: Drawable? = null
++        private set
++
++    private var isInvalidated = false
++
++    // Handles source precedence (drawable name wins over uri), dedup, and stale async image drops.
++    private val resolver = createPropIconResolver(context)
++
++    // Kept unwrapped so a tint-only change re-wraps without reloading.
++    private var rawDrawable: Drawable? = null
++    private var appliedTinting = IconTinting.DEFAULT
++
++    fun resolveIfNeeded() {
++        if (!isInvalidated) {
++            return
++        }
++        isInvalidated = false
++        resolver.resolve(drawableResourceName, imageUri) { result ->
++            when (result) {
++                IconResolution.Unchanged -> if (tinting != appliedTinting) emit()
++                is IconResolution.Resolved -> {
++                    rawDrawable = result.drawable
++                    emit()
++                }
++            }
++        }
++    }
++
++    // Tint is read at emit time, so a toggle during an in-flight image load still applies.
++    private fun emit() {
++        appliedTinting = tinting
++        val next =
++            rawDrawable?.let {
++                if (tinting == IconTinting.ORIGINAL) NoTintDrawable(it) else it
++            }
++        if (next !== drawable) {
++            drawable = next
++            onChanged()
++        }
++    }
++
++    private companion object {
++        fun createPropIconResolver(context: Context) =
++            PropIconResolver { name, uri, onComplete ->
++                resolveImage(context, name, uri, onComplete)
++            }
++    }
++}
+diff --git a/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenViewManager.kt b/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenViewManager.kt
+index 41b023f..64a3be7 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenViewManager.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/tabs/screen/TabsScreenViewManager.kt
+@@ -8,7 +8,7 @@ import com.facebook.react.uimanager.ViewGroupManager
+ import com.facebook.react.uimanager.ViewManagerDelegate
+ import com.facebook.react.viewmanagers.RNSTabsScreenAndroidManagerDelegate
+ import com.facebook.react.viewmanagers.RNSTabsScreenAndroidManagerInterface
+-import com.swmansion.rnscreens.helpers.loadImage
++import com.swmansion.rnscreens.helpers.IconTinting
+ import com.swmansion.rnscreens.helpers.makeEventRegistrationInfo
+ import com.swmansion.rnscreens.helpers.readOptionalBoolean
+ import com.swmansion.rnscreens.helpers.readOptionalColor
+@@ -55,6 +55,11 @@ class TabsScreenViewManager :
+         view.onViewManagerAddEventEmitters()
+     }
+ 
++    override fun onAfterUpdateTransaction(view: TabsScreen) {
++        super.onAfterUpdateTransaction(view)
++        view.resolveIconsIfNeeded()
++    }
++
+     override fun setScreenKey(
+         view: TabsScreen,
+         value: String?,
+@@ -125,42 +130,49 @@ class TabsScreenViewManager :
+         view: TabsScreen,
+         value: String?,
+     ) {
+-        view.drawableIconResourceName = value
++        view.icon.drawableResourceName = value
+     }
+ 
+     override fun setSelectedDrawableIconResourceName(
+         view: TabsScreen,
+         value: String?,
+     ) {
+-        view.selectedDrawableIconResourceName = value
++        view.selectedIcon.drawableResourceName = value
++    }
++
++    override fun setIconTinting(
++        view: TabsScreen,
++        value: String?,
++    ) {
++        view.icon.tinting = IconTinting.fromString(value)
++    }
++
++    override fun setSelectedIconTinting(
++        view: TabsScreen,
++        value: String?,
++    ) {
++        view.selectedIcon.tinting = IconTinting.fromString(value)
++    }
++
++    override fun setIconSize(
++        view: TabsScreen,
++        value: Float,
++    ) {
++        view.iconSize = value
+     }
+ 
+     override fun setImageIconResource(
+         view: TabsScreen,
+         value: ReadableMap?,
+     ) {
+-        val uri = value?.getString("uri")
+-        if (uri != null) {
+-            loadImage(view.context, uri) { drawable ->
+-                if (drawable != null) {
+-                    view.icon = drawable
+-                }
+-            }
+-        }
++        view.icon.imageUri = value?.getString("uri")
+     }
+ 
+     override fun setSelectedImageIconResource(
+         view: TabsScreen,
+         value: ReadableMap?,
+     ) {
+-        val uri = value?.getString("uri")
+-        if (uri != null) {
+-            loadImage(view.context, uri) { drawable ->
+-                if (drawable != null) {
+-                    view.selectedIcon = drawable
+-                }
+-            }
+-        }
++        view.selectedIcon.imageUri = value?.getString("uri")
+     }
+ 
+     override fun setStandardAppearance(
+@@ -189,6 +201,8 @@ class TabsScreenViewManager :
+             disabled = if (appearance.hasKey("disabled")) parseItemStateAppearance(context, appearance.getMap("disabled")) else null,
+             tabBarItemActiveIndicatorColor = appearance.readOptionalColor(context, "tabBarItemActiveIndicatorColor"),
+             tabBarItemActiveIndicatorEnabled = appearance.readOptionalBoolean("tabBarItemActiveIndicatorEnabled"),
++            tabBarItemActiveIndicatorWidth = appearance.readOptionalFloat("tabBarItemActiveIndicatorWidth"),
++            tabBarItemActiveIndicatorHeight = appearance.readOptionalFloat("tabBarItemActiveIndicatorHeight"),
+             tabBarItemTitleFontFamily = appearance.readOptionalString("tabBarItemTitleFontFamily"),
+             tabBarItemTitleSmallLabelFontSize = appearance.readOptionalFloat("tabBarItemTitleSmallLabelFontSize"),
+             tabBarItemTitleLargeLabelFontSize = appearance.readOptionalFloat("tabBarItemTitleLargeLabelFontSize"),
+diff --git a/ios/RNSEnums.h b/ios/RNSEnums.h
+index ddbe58c..b990e5c 100644
+--- a/ios/RNSEnums.h
++++ b/ios/RNSEnums.h
+@@ -51,11 +51,22 @@ typedef NS_ENUM(NSInteger, RNSBlurEffectStyle) {
+ 
+ typedef NS_ENUM(NSInteger, RNSTabsIconType) {
+   RNSTabsIconTypeImage,
+-  RNSTabsIconTypeTemplate,
+   RNSTabsIconTypeSfSymbol,
+   RNSTabsIconTypeXcasset,
+ };
+ 
++typedef NS_ENUM(NSInteger, RNSIconImageRenderingMode) {
++  RNSIconImageRenderingModeDefault,
++  RNSIconImageRenderingModeTemplate,
++  RNSIconImageRenderingModeOriginal,
++};
++
++typedef NS_ENUM(NSInteger, RNSIconSymbolRenderingMode) {
++  RNSIconSymbolRenderingModeDefault,
++  RNSIconSymbolRenderingModeMonochrome,
++  RNSIconSymbolRenderingModeOriginal,
++};
++
+ typedef NS_ENUM(NSInteger, RNSOrientation) {
+   RNSOrientationInherit,
+   RNSOrientationAll,
+diff --git a/ios/conversion/RNSConversions.h b/ios/conversion/RNSConversions.h
+index bc0ade8..626c6b5 100644
+--- a/ios/conversion/RNSConversions.h
++++ b/ios/conversion/RNSConversions.h
+@@ -10,6 +10,10 @@ namespace rnscreens::conversion {
+ // copied from FollyConvert.mm
+ id RNSConvertFollyDynamicToId(const folly::dynamic &dyn);
+ 
++RNSIconImageRenderingMode RNSIconImageRenderingModeFromString(NSString *_Nullable renderingMode);
++
++RNSIconSymbolRenderingMode RNSIconSymbolRenderingModeFromString(NSString *_Nullable renderingMode);
++
+ #if !TARGET_OS_TV
+ UIInterfaceOrientationMask UIInterfaceOrientationMaskFromRNSOrientation(
+     RNSOrientation orientation);
+diff --git a/ios/conversion/RNSConversions.mm b/ios/conversion/RNSConversions.mm
+index 0a6a3f5..759221d 100644
+--- a/ios/conversion/RNSConversions.mm
++++ b/ios/conversion/RNSConversions.mm
+@@ -3,6 +3,28 @@
+ 
+ namespace rnscreens::conversion {
+ 
++RNSIconImageRenderingMode RNSIconImageRenderingModeFromString(NSString *_Nullable renderingMode)
++{
++  if ([renderingMode isEqualToString:@"template"]) {
++    return RNSIconImageRenderingModeTemplate;
++  }
++  if ([renderingMode isEqualToString:@"original"]) {
++    return RNSIconImageRenderingModeOriginal;
++  }
++  return RNSIconImageRenderingModeDefault;
++}
++
++RNSIconSymbolRenderingMode RNSIconSymbolRenderingModeFromString(NSString *_Nullable renderingMode)
++{
++  if ([renderingMode isEqualToString:@"monochrome"]) {
++    return RNSIconSymbolRenderingModeMonochrome;
++  }
++  if ([renderingMode isEqualToString:@"original"]) {
++    return RNSIconSymbolRenderingModeOriginal;
++  }
++  return RNSIconSymbolRenderingModeDefault;
++}
++
+ #if !TARGET_OS_TV
+ UIInterfaceOrientationMask UIInterfaceOrientationMaskFromRNSOrientation(RNSOrientation orientation)
+ {
+diff --git a/ios/helpers/image/RNSImageLoadingHelper.h b/ios/helpers/image/RNSImageLoadingHelper.h
+index 40dab5f..a518f95 100644
+--- a/ios/helpers/image/RNSImageLoadingHelper.h
++++ b/ios/helpers/image/RNSImageLoadingHelper.h
+@@ -4,6 +4,7 @@
+ 
+ #import <React/RCTImageLoader.h>
+ #import <React/RCTImageSource.h>
++#import "RNSEnums.h"
+ 
+ @interface RNSImageLoadingHelper : NSObject
+ 
+@@ -27,6 +28,15 @@
+                  asTemplate:(BOOL)isTemplate
+             completionBlock:(void (^_Nonnull)(UIImage *_Nullable image))imageLoadingCompletionBlock;
+ 
++/**
++ * Loads a symbol image by name: a built-in SF Symbol if one matches, otherwise a custom
++ * symbol from the app's asset catalog (custom symbols are semantically SF Symbols, but
++ * UIKit only resolves them via `imageNamed:`).
++ */
+++ (nullable UIImage *)symbolImageNamed:(nonnull NSString *)name;
++
+++ (nullable UIImage *)image:(nullable UIImage *)image withSymbolRenderingMode:(RNSIconSymbolRenderingMode)renderingMode;
++
+ @end
+ 
+ #endif // defined(__cplusplus)
+diff --git a/ios/helpers/image/RNSImageLoadingHelper.mm b/ios/helpers/image/RNSImageLoadingHelper.mm
+index 64beb49..896c1f7 100644
+--- a/ios/helpers/image/RNSImageLoadingHelper.mm
++++ b/ios/helpers/image/RNSImageLoadingHelper.mm
+@@ -59,6 +59,27 @@ + (void)loadImageFromSource:(nonnull RCTImageSource *)imageSource
+       }];
+ }
+ 
+++ (nullable UIImage *)symbolImageNamed:(nonnull NSString *)name
++{
++  UIImage *image = [UIImage systemImageNamed:name];
++  if (image == nil) {
++    image = [UIImage imageNamed:name];
++  }
++  return image;
++}
++
+++ (nullable UIImage *)image:(nullable UIImage *)image withSymbolRenderingMode:(RNSIconSymbolRenderingMode)renderingMode
++{
++  switch (renderingMode) {
++    case RNSIconSymbolRenderingModeMonochrome:
++      return [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
++    case RNSIconSymbolRenderingModeOriginal:
++      return [image imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
++    case RNSIconSymbolRenderingModeDefault:
++      return image;
++  }
++}
++
+ + (nullable UIImage *)handleRenderingModeForImage:(nullable UIImage *)image isTemplate:(BOOL)isTemplate
+ {
+   if (isTemplate) {
+diff --git a/ios/legacy/RNSBarButtonItem.mm b/ios/legacy/RNSBarButtonItem.mm
+index 76a39d4..91fabab 100644
+--- a/ios/legacy/RNSBarButtonItem.mm
++++ b/ios/legacy/RNSBarButtonItem.mm
+@@ -1,6 +1,7 @@
+ #import "RNSBarButtonItem.h"
+ #import <React/RCTConvert.h>
+ #import <React/RCTFont.h>
++#import "RNSConversions.h"
+ #import "RNSDefines.h"
+ #import "RNSImageLoadingHelper.h"
+ 
+@@ -136,7 +137,10 @@ + (void)resolveImageFromConfig:(NSDictionary *)dict
+ {
+   NSString *sfSymbolName = dict[@"sfSymbolName"];
+   if (sfSymbolName != nil) {
+-    completionBlock([UIImage systemImageNamed:sfSymbolName]);
++    UIImage *image = [RNSImageLoadingHelper symbolImageNamed:sfSymbolName];
++    completionBlock([RNSImageLoadingHelper image:image
++                         withSymbolRenderingMode:rnscreens::conversion::RNSIconSymbolRenderingModeFromString(
++                                                     dict[@"sfSymbolRenderingMode"])]);
+     return;
+   }
+ 
+diff --git a/ios/stack/header/RNSStackHeaderIconData.h b/ios/stack/header/RNSStackHeaderIconData.h
+index 7c3c5cc..33bfaa1 100644
+--- a/ios/stack/header/RNSStackHeaderIconData.h
++++ b/ios/stack/header/RNSStackHeaderIconData.h
+@@ -2,14 +2,13 @@
+ 
+ #import <Foundation/Foundation.h>
+ #import <UIKit/UIKit.h>
++#import "RNSEnums.h"
+ 
+ NS_ASSUME_NONNULL_BEGIN
+ 
+ typedef NS_ENUM(NSInteger, RNSStackHeaderIconType) {
+   RNSStackHeaderIconTypeSfSymbol,
+-  RNSStackHeaderIconTypeXcasset,
+   RNSStackHeaderIconTypeImageSource,
+-  RNSStackHeaderIconTypeTemplateSource,
+ };
+ 
+ @interface RNSStackHeaderIconData : NSObject
+@@ -17,11 +16,15 @@ typedef NS_ENUM(NSInteger, RNSStackHeaderIconType) {
+ @property (nonatomic, readonly) RNSStackHeaderIconType iconType;
+ @property (nonatomic, copy, readonly, nullable) NSString *resourceName;
+ @property (nonatomic, copy, readonly, nullable) NSDictionary *jsonSource;
++@property (nonatomic, readonly) RNSIconImageRenderingMode imageRenderingMode;
++@property (nonatomic, readonly) RNSIconSymbolRenderingMode symbolRenderingMode;
+ @property (nonatomic, strong, nullable) UIImage *resolvedImage;
+ 
+ - (instancetype)initWithType:(RNSStackHeaderIconType)iconType
+                 resourceName:(nullable NSString *)resourceName
+-                  jsonSource:(nullable NSDictionary *)jsonSource;
++                  jsonSource:(nullable NSDictionary *)jsonSource
++          imageRenderingMode:(RNSIconImageRenderingMode)imageRenderingMode
++         symbolRenderingMode:(RNSIconSymbolRenderingMode)symbolRenderingMode;
+ 
+ @end
+ 
+diff --git a/ios/stack/header/RNSStackHeaderIconData.mm b/ios/stack/header/RNSStackHeaderIconData.mm
+index 834a136..9cf01a9 100644
+--- a/ios/stack/header/RNSStackHeaderIconData.mm
++++ b/ios/stack/header/RNSStackHeaderIconData.mm
+@@ -5,11 +5,15 @@ @implementation RNSStackHeaderIconData
+ - (instancetype)initWithType:(RNSStackHeaderIconType)iconType
+                 resourceName:(nullable NSString *)resourceName
+                   jsonSource:(nullable NSDictionary *)jsonSource
++          imageRenderingMode:(RNSIconImageRenderingMode)imageRenderingMode
++         symbolRenderingMode:(RNSIconSymbolRenderingMode)symbolRenderingMode
+ {
+   if (self = [super init]) {
+     _iconType = iconType;
+     _resourceName = [resourceName copy];
+     _jsonSource = [jsonSource copy];
++    _imageRenderingMode = imageRenderingMode;
++    _symbolRenderingMode = symbolRenderingMode;
+   }
+   return self;
+ }
+diff --git a/ios/stack/header/RNSStackHeaderIconMapper.mm b/ios/stack/header/RNSStackHeaderIconMapper.mm
+index 9b7035b..dc43ba8 100644
+--- a/ios/stack/header/RNSStackHeaderIconMapper.mm
++++ b/ios/stack/header/RNSStackHeaderIconMapper.mm
+@@ -1,4 +1,5 @@
+ #import "RNSStackHeaderIconMapper.h"
++#import "RNSConversions.h"
+ 
+ @implementation RNSStackHeaderIconMapper
+ 
+@@ -15,15 +16,12 @@ + (nullable RNSStackHeaderIconData *)iconFromDictionary:(nullable id)dictionary
+   }
+ 
+   if ([type isEqualToString:@"sfSymbol"]) {
+-    return [[RNSStackHeaderIconData alloc] initWithType:RNSStackHeaderIconTypeSfSymbol
+-                                           resourceName:dict[@"name"]
+-                                             jsonSource:nil];
+-  }
+-
+-  if ([type isEqualToString:@"xcasset"]) {
+-    return [[RNSStackHeaderIconData alloc] initWithType:RNSStackHeaderIconTypeXcasset
+-                                           resourceName:dict[@"name"]
+-                                             jsonSource:nil];
++    return [[RNSStackHeaderIconData alloc]
++               initWithType:RNSStackHeaderIconTypeSfSymbol
++               resourceName:dict[@"name"]
++                 jsonSource:nil
++         imageRenderingMode:RNSIconImageRenderingModeDefault
++        symbolRenderingMode:rnscreens::conversion::RNSIconSymbolRenderingModeFromString(dict[@"renderingMode"])];
+   }
+ 
+   if ([type isEqualToString:@"imageSource"]) {
+@@ -31,19 +29,12 @@ + (nullable RNSStackHeaderIconData *)iconFromDictionary:(nullable id)dictionary
+     if (![source isKindOfClass:[NSDictionary class]]) {
+       return nil;
+     }
+-    return [[RNSStackHeaderIconData alloc] initWithType:RNSStackHeaderIconTypeImageSource
+-                                           resourceName:nil
+-                                             jsonSource:source];
+-  }
+-
+-  if ([type isEqualToString:@"templateSource"]) {
+-    NSDictionary *source = dict[@"templateSource"];
+-    if (![source isKindOfClass:[NSDictionary class]]) {
+-      return nil;
+-    }
+-    return [[RNSStackHeaderIconData alloc] initWithType:RNSStackHeaderIconTypeTemplateSource
+-                                           resourceName:nil
+-                                             jsonSource:source];
++    return [[RNSStackHeaderIconData alloc]
++               initWithType:RNSStackHeaderIconTypeImageSource
++               resourceName:nil
++                 jsonSource:source
++         imageRenderingMode:rnscreens::conversion::RNSIconImageRenderingModeFromString(dict[@"renderingMode"])
++        symbolRenderingMode:RNSIconSymbolRenderingModeDefault];
+   }
+ 
+   return nil;
+diff --git a/ios/stack/header/RNSStackHeaderIconResolver.h b/ios/stack/header/RNSStackHeaderIconResolver.h
+index 32e7c6b..74a78c2 100644
+--- a/ios/stack/header/RNSStackHeaderIconResolver.h
++++ b/ios/stack/header/RNSStackHeaderIconResolver.h
+@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
+ 
+ /**
+  Creates a transparent placeholder image matching the size declared in iconData's jsonSource.
+- Falls back to 1x1 if size info is missing and returns nil if jsonSource is nil (sfSymbols, xcassets).
++ Falls back to 1x1 if size info is missing and returns nil if jsonSource is nil (sfSymbols).
+  */
+ + (nullable UIImage *)placeholderImageForIcon:(RNSStackHeaderIconData *)iconData;
+ 
+diff --git a/ios/stack/header/RNSStackHeaderIconResolver.mm b/ios/stack/header/RNSStackHeaderIconResolver.mm
+index 93e1ec8..8f11828 100644
+--- a/ios/stack/header/RNSStackHeaderIconResolver.mm
++++ b/ios/stack/header/RNSStackHeaderIconResolver.mm
+@@ -1,5 +1,6 @@
+ #import "RNSStackHeaderIconResolver.h"
+ #import <React/RCTLog.h>
++#import "RNSImageLoadingHelper.h"
+ 
+ @implementation RNSStackHeaderIconResolver
+ 
+@@ -18,30 +19,23 @@ + (nullable UIImage *)resolveIcon:(RNSStackHeaderIconData *)iconData
+ 
+   switch (iconData.iconType) {
+     case RNSStackHeaderIconTypeSfSymbol: {
+-      UIImage *image = [UIImage systemImageNamed:iconData.resourceName];
++      UIImage *image =
++          iconData.resourceName != nil ? [RNSImageLoadingHelper symbolImageNamed:iconData.resourceName] : nil;
+       if (image == nil && iconData.resourceName != nil) {
+         RCTLogWarn(@"[RNScreens] Failed to load SF Symbol \"%@\" for header icon", iconData.resourceName);
+       }
++      image = [RNSImageLoadingHelper image:image withSymbolRenderingMode:iconData.symbolRenderingMode];
+       iconData.resolvedImage = image;
+       return image;
+     }
+-    case RNSStackHeaderIconTypeXcasset: {
+-      UIImage *image = [UIImage imageNamed:iconData.resourceName];
+-      if (image == nil && iconData.resourceName != nil) {
+-        RCTLogWarn(@"[RNScreens] Failed to load xcasset \"%@\" for header icon", iconData.resourceName);
+-      }
+-      iconData.resolvedImage = image;
+-      return image;
+-    }
+-    case RNSStackHeaderIconTypeImageSource:
+-    case RNSStackHeaderIconTypeTemplateSource: {
++    case RNSStackHeaderIconTypeImageSource: {
+       if (imageLoader == nil || iconData.jsonSource == nil) {
+         return nil;
+       }
+       // Weak ref to iconData to avoid retaining it if the item is removed before load completes
+       __weak RNSStackHeaderIconData *weakIconData = iconData;
+       [imageLoader loadImageFromJsonSource:iconData.jsonSource
+-                                asTemplate:iconData.iconType == RNSStackHeaderIconTypeTemplateSource
++                                asTemplate:iconData.imageRenderingMode == RNSIconImageRenderingModeTemplate
+                     withCompletionCallback:^(UIImage *_Nullable image) {
+                       weakIconData.resolvedImage = image;
+                       if (completionBlock) {
+diff --git a/ios/tabs/RNSTabBarAppearanceCoordinator.mm b/ios/tabs/RNSTabBarAppearanceCoordinator.mm
+index 6d459fb..b9e5cdf 100644
+--- a/ios/tabs/RNSTabBarAppearanceCoordinator.mm
++++ b/ios/tabs/RNSTabBarAppearanceCoordinator.mm
+@@ -77,19 +77,22 @@ - (void)setIconsForTabBarItem:(UITabBarItem *)tabBarItem
+ {
+   if (screenView.iconType == RNSTabsIconTypeSfSymbol || screenView.iconType == RNSTabsIconTypeXcasset) {
+     if (screenView.iconResourceName != nil) {
++      UIImage *image;
+       if (screenView.iconType == RNSTabsIconTypeSfSymbol) {
+-        UIImage *image = [UIImage systemImageNamed:screenView.iconResourceName];
++        image = [RNSImageLoadingHelper symbolImageNamed:screenView.iconResourceName];
+         if (image == nil) {
+           RCTLogWarn(@"[RNScreens] Failed to load SF Symbol \"%@\" for tab bar item", screenView.iconResourceName);
+         }
+-        [self setNormalImage:image forTabBarItem:tabBarItem ofScreenView:screenView];
+       } else {
+-        UIImage *image = [UIImage imageNamed:screenView.iconResourceName];
++        image = [UIImage imageNamed:screenView.iconResourceName];
+         if (image == nil) {
+           RCTLogWarn(@"[RNScreens] Failed to load xcasset \"%@\" for tab bar item", screenView.iconResourceName);
+         }
+-        [self setNormalImage:image forTabBarItem:tabBarItem ofScreenView:screenView];
+       }
++      [self setNormalImage:[RNSImageLoadingHelper image:image
++                                withSymbolRenderingMode:screenView.iconSymbolRenderingMode]
++             forTabBarItem:tabBarItem
++              ofScreenView:screenView];
+     } else if (screenView.systemItem != RNSTabsScreenSystemItemNone) {
+       // Restore default system item icon
+       std::optional<UITabBarSystemItem> systemItem =
+@@ -108,21 +111,22 @@ - (void)setIconsForTabBarItem:(UITabBarItem *)tabBarItem
+     }
+ 
+     if (screenView.selectedIconResourceName != nil) {
++      UIImage *selectedImage;
+       if (screenView.iconType == RNSTabsIconTypeSfSymbol) {
+-        UIImage *selectedImage = [UIImage systemImageNamed:screenView.selectedIconResourceName];
++        selectedImage = [RNSImageLoadingHelper symbolImageNamed:screenView.selectedIconResourceName];
+         if (selectedImage == nil) {
+           RCTLogWarn(@"[RNScreens] Failed to load SF Symbol \"%@\" for selected tab bar item",
+                      screenView.selectedIconResourceName);
+         }
+-        tabBarItem.selectedImage = selectedImage;
+       } else {
+-        UIImage *selectedImage = [UIImage imageNamed:screenView.selectedIconResourceName];
++        selectedImage = [UIImage imageNamed:screenView.selectedIconResourceName];
+         if (selectedImage == nil) {
+           RCTLogWarn(@"[RNScreens] Failed to load xcasset \"%@\" for selected tab bar item",
+                      screenView.selectedIconResourceName);
+         }
+-        tabBarItem.selectedImage = selectedImage;
+       }
++      tabBarItem.selectedImage = [RNSImageLoadingHelper image:selectedImage
++                                      withSymbolRenderingMode:screenView.selectedIconSymbolRenderingMode];
+     } else if (screenView.systemItem != RNSTabsScreenSystemItemNone) {
+       // Restore default system item icon
+       std::optional<UITabBarSystemItem> systemItem =
+@@ -138,7 +142,8 @@ - (void)setIconsForTabBarItem:(UITabBarItem *)tabBarItem
+       tabBarItem.selectedImage = nil;
+     }
+   } else if (imageLoader != nil) {
+-    bool isTemplate = screenView.iconType == RNSTabsIconTypeTemplate;
++    bool isTemplate = screenView.iconImageRenderingMode == RNSIconImageRenderingModeTemplate;
++    bool isSelectedTemplate = screenView.selectedIconImageRenderingMode == RNSIconImageRenderingModeTemplate;
+ 
+     // Weak-capture to avoid updating a tab bar item whose internal
+     // view hierarchy has been torn down (iOS 26 UIKit regression:
+@@ -165,7 +170,7 @@ - (void)setIconsForTabBarItem:(UITabBarItem *)tabBarItem
+     if (screenView.selectedIconImageSource != nil) {
+       [RNSImageLoadingHelper loadImageFromSource:screenView.selectedIconImageSource
+                                  withImageLoader:imageLoader
+-                                      asTemplate:isTemplate
++                                      asTemplate:isSelectedTemplate
+                                  completionBlock:^(UIImage *image) {
+                                    [self updateTabBarItem:weakTabBarItem
+                                                 withImage:image
+diff --git a/ios/tabs/conversion/RNSConversions-Tabs.h b/ios/tabs/conversion/RNSConversions-Tabs.h
+index 7239024..3c57654 100644
+--- a/ios/tabs/conversion/RNSConversions-Tabs.h
++++ b/ios/tabs/conversion/RNSConversions-Tabs.h
+@@ -52,6 +52,18 @@ react::RNSTabsHostIOSEventEmitter::OnTabSelectedActionOrigin RNSOnTabSelectedAct
+ 
+ RNSTabsIconType RNSTabsIconTypeFromIcon(react::RNSTabsScreenIOSIconType iconType);
+ 
++RNSIconImageRenderingMode RNSIconImageRenderingModeFromIconImageRenderingMode(
++    react::RNSTabsScreenIOSIconImageRenderingMode renderingMode);
++
++RNSIconImageRenderingMode RNSIconImageRenderingModeFromSelectedIconImageRenderingMode(
++    react::RNSTabsScreenIOSSelectedIconImageRenderingMode renderingMode);
++
++RNSIconSymbolRenderingMode RNSIconSymbolRenderingModeFromIconSymbolRenderingMode(
++    react::RNSTabsScreenIOSIconSymbolRenderingMode renderingMode);
++
++RNSIconSymbolRenderingMode RNSIconSymbolRenderingModeFromSelectedIconSymbolRenderingMode(
++    react::RNSTabsScreenIOSSelectedIconSymbolRenderingMode renderingMode);
++
+ RNSTabsScreenSystemItem RNSTabsScreenSystemItemFromReactRNSTabsScreenSystemItem(
+     react::RNSTabsScreenIOSSystemItem systemItem);
+ 
+diff --git a/ios/tabs/conversion/RNSConversions-Tabs.mm b/ios/tabs/conversion/RNSConversions-Tabs.mm
+index b69933f..6046377 100644
+--- a/ios/tabs/conversion/RNSConversions-Tabs.mm
++++ b/ios/tabs/conversion/RNSConversions-Tabs.mm
+@@ -182,8 +182,6 @@ RNSTabsIconType RNSTabsIconTypeFromIcon(react::RNSTabsScreenIOSIconType iconType
+   switch (iconType) {
+     case Image:
+       return RNSTabsIconTypeImage;
+-    case Template:
+-      return RNSTabsIconTypeTemplate;
+     case SfSymbol:
+       return RNSTabsIconTypeSfSymbol;
+     case Xcasset:
+@@ -191,6 +189,62 @@ RNSTabsIconType RNSTabsIconTypeFromIcon(react::RNSTabsScreenIOSIconType iconType
+   }
+ }
+ 
++RNSIconImageRenderingMode RNSIconImageRenderingModeFromIconImageRenderingMode(
++    react::RNSTabsScreenIOSIconImageRenderingMode renderingMode)
++{
++  using enum facebook::react::RNSTabsScreenIOSIconImageRenderingMode;
++  switch (renderingMode) {
++    case Default:
++      return RNSIconImageRenderingModeDefault;
++    case Template:
++      return RNSIconImageRenderingModeTemplate;
++    case Original:
++      return RNSIconImageRenderingModeOriginal;
++  }
++}
++
++RNSIconImageRenderingMode RNSIconImageRenderingModeFromSelectedIconImageRenderingMode(
++    react::RNSTabsScreenIOSSelectedIconImageRenderingMode renderingMode)
++{
++  using enum facebook::react::RNSTabsScreenIOSSelectedIconImageRenderingMode;
++  switch (renderingMode) {
++    case Default:
++      return RNSIconImageRenderingModeDefault;
++    case Template:
++      return RNSIconImageRenderingModeTemplate;
++    case Original:
++      return RNSIconImageRenderingModeOriginal;
++  }
++}
++
++RNSIconSymbolRenderingMode RNSIconSymbolRenderingModeFromIconSymbolRenderingMode(
++    react::RNSTabsScreenIOSIconSymbolRenderingMode renderingMode)
++{
++  using enum facebook::react::RNSTabsScreenIOSIconSymbolRenderingMode;
++  switch (renderingMode) {
++    case Default:
++      return RNSIconSymbolRenderingModeDefault;
++    case Monochrome:
++      return RNSIconSymbolRenderingModeMonochrome;
++    case Original:
++      return RNSIconSymbolRenderingModeOriginal;
++  }
++}
++
++RNSIconSymbolRenderingMode RNSIconSymbolRenderingModeFromSelectedIconSymbolRenderingMode(
++    react::RNSTabsScreenIOSSelectedIconSymbolRenderingMode renderingMode)
++{
++  using enum facebook::react::RNSTabsScreenIOSSelectedIconSymbolRenderingMode;
++  switch (renderingMode) {
++    case Default:
++      return RNSIconSymbolRenderingModeDefault;
++    case Monochrome:
++      return RNSIconSymbolRenderingModeMonochrome;
++    case Original:
++      return RNSIconSymbolRenderingModeOriginal;
++  }
++}
++
+ RCTImageSource *RCTImageSourceFromImageSourceAndIconType(const facebook::react::ImageSource *imageSource,
+                                                          RNSTabsIconType iconType)
+ {
+@@ -202,7 +256,6 @@ RNSTabsIconType RNSTabsIconTypeFromIcon(react::RNSTabsScreenIOSIconType iconType
+       break;
+ 
+     case RNSTabsIconTypeImage:
+-    case RNSTabsIconTypeTemplate:
+       iconImageSource =
+           [[RCTImageSource alloc] initWithURLRequest:NSURLRequestFromImageSource(*imageSource)
+                                                 size:CGSizeMake(imageSource->size.width, imageSource->size.height)
+diff --git a/ios/tabs/screen/RNSTabsScreenComponentView.h b/ios/tabs/screen/RNSTabsScreenComponentView.h
+index 830a7d9..31efc22 100644
+--- a/ios/tabs/screen/RNSTabsScreenComponentView.h
++++ b/ios/tabs/screen/RNSTabsScreenComponentView.h
+@@ -47,11 +47,15 @@ NS_ASSUME_NONNULL_BEGIN
+ 
+ @property (nonatomic, readonly) RNSTabsIconType iconType;
+ 
++@property (nonatomic, readonly) RNSIconImageRenderingMode iconImageRenderingMode;
++@property (nonatomic, readonly) RNSIconSymbolRenderingMode iconSymbolRenderingMode;
+ #if defined(__cplusplus)
+ @property (nonatomic, strong, readonly, nullable) RCTImageSource *iconImageSource;
+ #endif // defined(__cplusplus)
+ @property (nonatomic, strong, readonly, nullable) NSString *iconResourceName;
+ 
++@property (nonatomic, readonly) RNSIconImageRenderingMode selectedIconImageRenderingMode;
++@property (nonatomic, readonly) RNSIconSymbolRenderingMode selectedIconSymbolRenderingMode;
+ #if defined(__cplusplus)
+ @property (nonatomic, strong, readonly, nullable) RCTImageSource *selectedIconImageSource;
+ #endif // defined(__cplusplus)
+diff --git a/ios/tabs/screen/RNSTabsScreenComponentView.mm b/ios/tabs/screen/RNSTabsScreenComponentView.mm
+index ea6ba0c..13f8460 100644
+--- a/ios/tabs/screen/RNSTabsScreenComponentView.mm
++++ b/ios/tabs/screen/RNSTabsScreenComponentView.mm
+@@ -86,9 +86,13 @@ - (void)resetProps
+ 
+   _iconType = RNSTabsIconTypeSfSymbol;
+ 
++  _iconImageRenderingMode = RNSIconImageRenderingModeDefault;
++  _iconSymbolRenderingMode = RNSIconSymbolRenderingModeDefault;
+   _iconImageSource = nil;
+   _iconResourceName = nil;
+ 
++  _selectedIconImageRenderingMode = RNSIconImageRenderingModeDefault;
++  _selectedIconSymbolRenderingMode = RNSIconSymbolRenderingModeDefault;
+   _selectedIconImageSource = nil;
+   _selectedIconResourceName = nil;
+ 
+@@ -255,6 +259,32 @@ - (void)updateProps:(const facebook::react::Props::Shared &)props
+     tabItemNeedsAppearanceUpdate = YES;
+   }
+ 
++  if (newComponentProps.iconImageRenderingMode != oldComponentProps.iconImageRenderingMode) {
++    _iconImageRenderingMode = rnscreens::conversion::RNSIconImageRenderingModeFromIconImageRenderingMode(
++        newComponentProps.iconImageRenderingMode);
++    tabItemNeedsAppearanceUpdate = YES;
++  }
++
++  if (newComponentProps.iconSymbolRenderingMode != oldComponentProps.iconSymbolRenderingMode) {
++    _iconSymbolRenderingMode = rnscreens::conversion::RNSIconSymbolRenderingModeFromIconSymbolRenderingMode(
++        newComponentProps.iconSymbolRenderingMode);
++    tabItemNeedsAppearanceUpdate = YES;
++  }
++
++  if (newComponentProps.selectedIconImageRenderingMode != oldComponentProps.selectedIconImageRenderingMode) {
++    _selectedIconImageRenderingMode =
++        rnscreens::conversion::RNSIconImageRenderingModeFromSelectedIconImageRenderingMode(
++            newComponentProps.selectedIconImageRenderingMode);
++    tabItemNeedsAppearanceUpdate = YES;
++  }
++
++  if (newComponentProps.selectedIconSymbolRenderingMode != oldComponentProps.selectedIconSymbolRenderingMode) {
++    _selectedIconSymbolRenderingMode =
++        rnscreens::conversion::RNSIconSymbolRenderingModeFromSelectedIconSymbolRenderingMode(
++            newComponentProps.selectedIconSymbolRenderingMode);
++    tabItemNeedsAppearanceUpdate = YES;
++  }
++
+   if (newComponentProps.iconImageSource != oldComponentProps.iconImageSource) {
+     _iconImageSource =
+         rnscreens::conversion::RCTImageSourceFromImageSourceAndIconType(&newComponentProps.iconImageSource, _iconType);
+diff --git a/src/components/shared/index.ts b/src/components/shared/index.ts
+index f2ea073..621a797 100644
+--- a/src/components/shared/index.ts
++++ b/src/components/shared/index.ts
+@@ -1,11 +1,15 @@
+ import { Image, type ImageResolvedAssetSource } from 'react-native';
+-import type { PlatformIconAndroid } from '../shared/types';
++import type {
++  PlatformIconAndroid,
++  PlatformIconAndroidTinting,
++} from '../shared/types';
+ 
+ export function parseAndroidIconToNativeProps(
+   icon: PlatformIconAndroid | undefined,
+ ): {
+   imageIconResource?: ImageResolvedAssetSource | undefined;
+   drawableIconResourceName?: string | undefined;
++  iconTinting?: PlatformIconAndroidTinting | undefined;
+ } {
+   if (!icon) {
+     return {};
+@@ -24,10 +28,12 @@ export function parseAndroidIconToNativeProps(
+       // ReadableMap. Passing `iconResource` directly will result in crash, because `require` API is returning
+       // double as a value.
+       imageIconResource: parsedIconResource || undefined,
++      iconTinting: icon.tinting,
+     };
+   } else if (icon.type === 'drawableResource') {
+     return {
+       drawableIconResourceName: icon.name,
++      iconTinting: icon.tinting,
+     };
+   } else {
+     throw new Error(
+diff --git a/src/components/shared/types.ts b/src/components/shared/types.ts
+index a49f1df..aa6be8d 100644
+--- a/src/components/shared/types.ts
++++ b/src/components/shared/types.ts
+@@ -41,6 +41,43 @@ export type ScrollEdgeEffect = 'automatic' | 'hard' | 'soft' | 'hidden';
+ 
+ export type UserInterfaceStyle = 'unspecified' | 'light' | 'dark';
+ 
++export type PlatformIconIOSImageRenderingMode =
++  | 'default'
++  | 'template'
++  | 'original';
++
++export type PlatformIconIOSSymbolRenderingMode =
++  | 'default'
++  | 'monochrome'
++  | 'original';
++
++export type PlatformIconAndroidTinting = 'default' | 'tinted' | 'original';
++
++type WithImageRenderingMode<Icon> = Icon & {
++  /**
++   * @summary How the image is rendered: `template` draws its shape in the
++   * container's icon color, `original` keeps the image's own colors.
++   *
++   * `default`, also used when unset, keeps the image's own colors, as in
++   * previous versions. This is not UIKit's automatic mode, in which tab bars
++   * and bar button items would draw the image as a template image.
++   */
++  renderingMode?: PlatformIconIOSImageRenderingMode | undefined;
++};
++
++type WithTinting<Icon> = Icon & {
++  /**
++   * @summary How the icon is tinted: `tinted` lets the container tint it (the
++   * tab bar with its item icon color, a header with the tint colors configured
++   * for the icon), `original` keeps the icon's own colors even when a tint
++   * color is set.
++   *
++   * `default`, also used when unset, keeps the container's default: the tab
++   * bar tints the icon, a header tints it only when a tint color is configured.
++   */
++  tinting?: PlatformIconAndroidTinting | undefined;
++};
++
+ export type PlatformIconShared = {
+   type: 'imageSource';
+   imageSource: ImageSourcePropType;
+@@ -49,8 +86,21 @@ export type PlatformIconShared = {
+ export type PlatformIconAndroidDrawableResource = {
+   type: 'drawableResource';
+   name: string;
++  /**
++   * @summary How the icon is tinted: `tinted` lets the container tint it (the
++   * tab bar with its item icon color, a header with the tint colors configured
++   * for the icon), `original` keeps the icon's own colors even when a tint
++   * color is set.
++   *
++   * `default`, also used when unset, keeps the container's default: the tab
++   * bar tints the icon, a header tints it only when a tint color is configured.
++   */
++  tinting?: PlatformIconAndroidTinting | undefined;
+ };
+ 
++/**
++ * @deprecated Use `{ type: 'imageSource', imageSource, renderingMode: 'template' }` instead.
++ */
+ export type PlatformIconIOSTemplate = {
+   type: 'templateSource';
+   templateSource: ImageSourcePropType;
+@@ -59,8 +109,23 @@ export type PlatformIconIOSTemplate = {
+ export type PlatformIconIOSSfSymbol = {
+   type: 'sfSymbol';
+   name: string;
++  /**
++   * @summary How the symbol is rendered: `monochrome` draws it in the
++   * container's icon color, `original` keeps its own colors (Apple's
++   * "multicolor" rendering).
++   *
++   * `default`, also used when unset, keeps the system behavior.
++   */
++  renderingMode?: PlatformIconIOSSymbolRenderingMode | undefined;
+ };
+ 
++/**
++ * @deprecated Use `{ type: 'sfSymbol', name }` for custom symbols from the asset
++ * catalog, or `{ type: 'imageSource', imageSource: { uri: 'name' } }` for asset
++ * catalog images (append `.png` to names containing a dot). `imageSource` keeps
++ * the image's own colors by default, so for an asset whose "Render As" is not
++ * `Original Image`, add `renderingMode: 'template'`.
++ */
+ export type PlatformIconIOSXcasset = {
+   type: 'xcasset';
+   name: string;
+@@ -70,8 +135,8 @@ export type PlatformIconIOS =
+   | PlatformIconIOSSfSymbol
+   | PlatformIconIOSXcasset
+   | PlatformIconIOSTemplate
+-  | PlatformIconShared;
++  | WithImageRenderingMode<PlatformIconShared>;
+ 
+ export type PlatformIconAndroid =
+   | PlatformIconAndroidDrawableResource
+-  | PlatformIconShared;
++  | WithTinting<PlatformIconShared>;
+diff --git a/src/components/stack/header/StackHeaderConfig.android.tsx b/src/components/stack/header/StackHeaderConfig.android.tsx
+index 3d3061c..6d921c7 100644
+--- a/src/components/stack/header/StackHeaderConfig.android.tsx
++++ b/src/components/stack/header/StackHeaderConfig.android.tsx
+@@ -174,13 +174,16 @@ function parseBackButtonIconToNativeProps(
+   icon: StackHeaderConfigPropsAndroid['backButtonIcon'],
+ ): Pick<
+   StackHeaderConfigAndroidNativeComponentProps,
+-  'backButtonImageIconResource' | 'backButtonDrawableIconResourceName'
++  | 'backButtonImageIconResource'
++  | 'backButtonDrawableIconResourceName'
++  | 'backButtonIconTinting'
+ > {
+   const parsed = parseAndroidIconToNativeProps(icon);
+ 
+   return {
+     backButtonImageIconResource: parsed.imageIconResource,
+     backButtonDrawableIconResourceName: parsed.drawableIconResourceName,
++    backButtonIconTinting: parsed.iconTinting,
+   };
+ }
+ 
+@@ -188,13 +191,16 @@ function parseOverflowIconToNativeProps(
+   icon: StackHeaderConfigPropsAndroid['overflowIcon'],
+ ): Pick<
+   StackHeaderConfigAndroidNativeComponentProps,
+-  'overflowIconImageIconResource' | 'overflowIconDrawableIconResourceName'
++  | 'overflowIconImageIconResource'
++  | 'overflowIconDrawableIconResourceName'
++  | 'overflowIconTinting'
+ > {
+   const parsed = parseAndroidIconToNativeProps(icon);
+ 
+   return {
+     overflowIconImageIconResource: parsed.imageIconResource,
+     overflowIconDrawableIconResourceName: parsed.drawableIconResourceName,
++    overflowIconTinting: parsed.iconTinting,
+   };
+ }
+ 
+@@ -580,15 +586,21 @@ function parseToolbarMenuElementOptionsToNativeProps(
+             if (iconValue === undefined) {
+               const noIcon: Pick<
+                 NativeToolbarMenuElementOptionsAndroid,
+-                'imageIconResource' | 'drawableIconResourceName'
++                'imageIconResource' | 'drawableIconResourceName' | 'iconTinting'
+               > = {
+                 imageIconResource: null,
+                 drawableIconResourceName: null,
++                iconTinting: null,
+               };
+               return Object.entries(noIcon);
+             }
+ 
+-            return Object.entries(parseAndroidIconToNativeProps(iconValue));
++            const { iconTinting, ...iconProps } =
++              parseAndroidIconToNativeProps(iconValue);
++            return Object.entries({
++              ...iconProps,
++              iconTinting: iconTinting ?? null,
++            });
+           }
+         }
+ 
+diff --git a/src/components/stack/header/StackHeaderConfig.android.types.ts b/src/components/stack/header/StackHeaderConfig.android.types.ts
+index 84659f1..83e5319 100644
+--- a/src/components/stack/header/StackHeaderConfig.android.types.ts
++++ b/src/components/stack/header/StackHeaderConfig.android.types.ts
+@@ -1,7 +1,7 @@
+ import type { ReactElement } from 'react';
+ import type { ColorValue, TextStyle } from 'react-native';
+ import type { StackHeaderSubviewCollapseModeAndroid } from './android/StackHeaderSubview.android.types';
+-import type { PlatformIconAndroid } from '../../shared/types';
++import type { StackHeaderIconAndroid } from './StackHeaderIcon.types';
+ 
+ export type StackHeaderTypeAndroid = 'small' | 'medium' | 'large';
+ 
+@@ -187,17 +187,19 @@ export interface StackHeaderToolbarMenuItemBaseAndroid {
+    *
+    * @description
+    * Supported values:
+-   * - `{ type: 'imageSource', imageSource }`
++   * - `{ type: 'imageSource', imageSource, tinting? }`
+    *   Uses an image from the provided resource.
+    *
+    *   Remarks: `imageSource` type doesn't support SVGs on Android.
+    *   For loading SVGs use `drawableResource` type.
+    *
+-   * - `{ type: 'drawableResource', name }`
++   * - `{ type: 'drawableResource', name, tinting? }`
+    *   Uses a drawable resource with the given name.
+    *
+    *   Remarks: Requires passing a drawable to resources via Android Studio.
+    *
++   * See `StackHeaderIconAndroidTinting` for the meaning of `tinting`.
++   *
+    * @remarks
+    * The icon will be visible only if the menu element is shown in the
+    * Toolbar.
+@@ -207,7 +209,7 @@ export interface StackHeaderToolbarMenuItemBaseAndroid {
+    *
+    * @platform android
+    */
+-  icon?: PlatformIconAndroid | undefined;
++  icon?: StackHeaderIconAndroid | undefined;
+   /**
+    * @summary Specifies the tint color to apply to the menu element icon.
+    *
+@@ -589,20 +591,22 @@ export interface StackHeaderConfigPropsAndroid {
+    * When `undefined`, the native back arrow (`homeAsUpIndicator`) is used.
+    *
+    * Supported values:
+-   * - `{ type: 'imageSource', imageSource }`
++   * - `{ type: 'imageSource', imageSource, tinting? }`
+    *   Uses an image from the provided resource.
+    *
+    *   Remarks: `imageSource` type doesn't support SVGs on Android.
+    *   For loading SVGs use `drawableResource` type.
+    *
+-   * - `{ type: 'drawableResource', name }`
++   * - `{ type: 'drawableResource', name, tinting? }`
+    *   Uses a drawable resource with the given name.
+    *
+    *   Remarks: Requires passing a drawable to resources via Android Studio.
+    *
++   * See `StackHeaderIconAndroidTinting` for the meaning of `tinting`.
++   *
+    * @platform android
+    */
+-  backButtonIcon?: PlatformIconAndroid | undefined;
++  backButtonIcon?: StackHeaderIconAndroid | undefined;
+   /**
+    * @summary Custom icon for the overflow menu button (the three-dots button
+    * that opens the toolbar menu's overflow popup).
+@@ -611,20 +615,22 @@ export interface StackHeaderConfigPropsAndroid {
+    * When `undefined`, the Material 3 Expressive default overflow icon is used.
+    *
+    * Supported values:
+-   * - `{ type: 'imageSource', imageSource }`
++   * - `{ type: 'imageSource', imageSource, tinting? }`
+    *   Uses an image from the provided resource.
+    *
+    *   Remarks: `imageSource` type doesn't support SVGs on Android.
+    *   For loading SVGs use `drawableResource` type.
+    *
+-   * - `{ type: 'drawableResource', name }`
++   * - `{ type: 'drawableResource', name, tinting? }`
+    *   Uses a drawable resource with the given name.
+    *
+    *   Remarks: Requires passing a drawable to resources via Android Studio.
+    *
++   * See `StackHeaderIconAndroidTinting` for the meaning of `tinting`.
++   *
+    * @platform android
+    */
+-  overflowIcon?: PlatformIconAndroid | undefined;
++  overflowIcon?: StackHeaderIconAndroid | undefined;
+   /**
+    * @summary Tint color applied to the overflow menu icon in its normal state.
+    *
+diff --git a/src/components/stack/header/StackHeaderConfig.ios.types.ts b/src/components/stack/header/StackHeaderConfig.ios.types.ts
+index cdcba4e..c9b59fd 100644
+--- a/src/components/stack/header/StackHeaderConfig.ios.types.ts
++++ b/src/components/stack/header/StackHeaderConfig.ios.types.ts
+@@ -1,6 +1,6 @@
+ import type { ReactElement } from 'react';
+ import type { TextStyle } from 'react-native';
+-import type { PlatformIconIOS } from '../../shared/types';
++import type { StackHeaderIconIOS } from './StackHeaderIcon.types';
+ import type { StackHeaderMenuIOS } from './ios/StackHeaderMenu.ios.types';
+ 
+ /**
+@@ -23,7 +23,7 @@ export interface StackHeaderMenuItemOptionsIOS {
+    *
+    * @platform ios
+    */
+-  icon?: PlatformIconIOS | undefined;
++  icon?: StackHeaderIconIOS | undefined;
+   /**
+    * @summary Sets the toggle state of the menu item.
+    *
+@@ -57,7 +57,7 @@ export interface StackHeaderMenuOptionsIOS {
+    *
+    * @platform ios
+    */
+-  icon?: PlatformIconIOS | undefined;
++  icon?: StackHeaderIconIOS | undefined;
+ }
+ 
+ export interface StackHeaderBaseItemIOS {
+@@ -77,13 +77,15 @@ export interface StackHeaderBaseItemIOS {
+    * @summary Icon displayed for the header item.
+    *
+    * @description
+-   * Supports SF Symbols, xcassets, and image sources. For async image sources,
++   * Supports SF Symbols and image sources, each with an optional
++   * `renderingMode` (see `StackHeaderIconIOSSymbolRenderingMode` and
++   * `StackHeaderIconIOSImageRenderingMode`). For async image sources,
+    * the item renders without an icon first and updates when loaded.
+    * Ignored when custom view ({@link StackHeaderInlineCustomItemIOS.render | render}) is set.
+    *
+    * @platform iOS
+    */
+-  icon?: PlatformIconIOS | undefined;
++  icon?: StackHeaderIconIOS | undefined;
+ }
+ 
+ export interface SupportsMenuIOS {
+diff --git a/src/components/stack/header/StackHeaderIcon.types.ts b/src/components/stack/header/StackHeaderIcon.types.ts
+new file mode 100644
+index 0000000..881f0de
+--- /dev/null
++++ b/src/components/stack/header/StackHeaderIcon.types.ts
+@@ -0,0 +1,61 @@
++import type {
++  PlatformIconAndroid,
++  PlatformIconAndroidTinting,
++  PlatformIconIOS,
++  PlatformIconIOSImageRenderingMode,
++  PlatformIconIOSSymbolRenderingMode,
++  PlatformIconIOSTemplate,
++  PlatformIconIOSXcasset,
++} from '../../shared/types';
++
++/**
++ * How a header item renders an `imageSource` icon on iOS. The names follow
++ * `UIImage.RenderingMode`.
++ *
++ * - `default` - the header's default for images, also used when
++ *   `renderingMode` is unset: the image keeps its own colors, as with
++ *   `original`.
++ * - `template` - the image is used as a template image: its shape is drawn in
++ *   the item's tint color.
++ * - `original` - the image keeps its own colors and ignores the tint color.
++ */
++export type StackHeaderIconIOSImageRenderingMode =
++  PlatformIconIOSImageRenderingMode;
++
++/**
++ * How a header item renders an `sfSymbol` icon on iOS. The names follow the
++ * SF Symbols rendering modes.
++ *
++ * - `default` - the system behavior (UIKit's automatic mode), also used when
++ *   `renderingMode` is unset: system symbols are drawn in the item's tint
++ *   color; for custom symbols the rendering mode set in the asset catalog may
++ *   change it.
++ * - `monochrome` - the symbol is drawn in a single color: the item's tint
++ *   color.
++ * - `original` - the symbol keeps its own colors (Apple's "multicolor"
++ *   rendering) and ignores the tint color. A symbol without color layers is
++ *   drawn as authored.
++ */
++export type StackHeaderIconIOSSymbolRenderingMode =
++  PlatformIconIOSSymbolRenderingMode;
++
++export type StackHeaderIconIOS = Exclude<
++  PlatformIconIOS,
++  PlatformIconIOSTemplate | PlatformIconIOSXcasset
++>;
++
++/**
++ * How a header icon is tinted on Android.
++ *
++ * - `default` - the header's default, also used when `tinting` is unset: the
++ *   icon is tinted with the tint colors configured for it (e.g.
++ *   `iconTintColorNormal`, `backButtonTintColorNormal`,
++ *   `overflowIconTintColorNormal`). Without a configured tint color it keeps
++ *   its own colors.
++ * - `tinted` - same as `default`.
++ * - `original` - the icon keeps its own colors and ignores the configured tint
++ *   colors, e.g. a multicolor VectorDrawable.
++ */
++export type StackHeaderIconAndroidTinting = PlatformIconAndroidTinting;
++
++export type StackHeaderIconAndroid = PlatformIconAndroid;
+diff --git a/src/components/stack/header/index.ts b/src/components/stack/header/index.ts
+index 554d199..94e2435 100644
+--- a/src/components/stack/header/index.ts
++++ b/src/components/stack/header/index.ts
+@@ -4,5 +4,6 @@ export type * from './StackHeaderConfig.types';
+ 
+ export type * from './StackHeaderConfig.android.types';
+ export type * from './StackHeaderConfig.ios.types';
++export type * from './StackHeaderIcon.types';
+ 
+ export type * from './ios/StackHeaderMenu.ios.types';
+diff --git a/src/components/stack/header/ios/StackHeaderItem.ios.types.ts b/src/components/stack/header/ios/StackHeaderItem.ios.types.ts
+index 05cfde6..670fecb 100644
+--- a/src/components/stack/header/ios/StackHeaderItem.ios.types.ts
++++ b/src/components/stack/header/ios/StackHeaderItem.ios.types.ts
+@@ -1,5 +1,5 @@
+ import type { ReactElement } from 'react';
+-import type { PlatformIconIOS } from '../../../shared/types';
++import type { StackHeaderIconIOS } from '../StackHeaderIcon.types';
+ import type { StackHeaderMenuIOS } from './StackHeaderMenu.ios.types';
+ 
+ export type StackHeaderItemPlacement =
+@@ -15,7 +15,7 @@ export type StackHeaderItemProps = {
+   identifier?: string | undefined;
+   hidesSharedBackground?: boolean | undefined;
+   title?: string | undefined;
+-  icon?: PlatformIconIOS | undefined;
++  icon?: StackHeaderIconIOS | undefined;
+   render?: (() => ReactElement) | undefined;
+   menu?: StackHeaderMenuIOS | undefined;
+   onPress?: (() => void) | undefined;
+diff --git a/src/components/stack/header/ios/StackHeaderMenu.ios.types.ts b/src/components/stack/header/ios/StackHeaderMenu.ios.types.ts
+index a23a3d5..470d42f 100644
+--- a/src/components/stack/header/ios/StackHeaderMenu.ios.types.ts
++++ b/src/components/stack/header/ios/StackHeaderMenu.ios.types.ts
+@@ -8,7 +8,7 @@
+  *
+  * @platform ios
+  */
+-import type { PlatformIconIOS } from '../../../shared/types';
++import type { StackHeaderIconIOS } from '../StackHeaderIcon.types';
+ 
+ export interface StackHeaderMenuItemIOS {
+   /**
+@@ -69,12 +69,14 @@ export interface StackHeaderMenuItemIOS {
+    * @summary Icon displayed for the menu item.
+    *
+    * @description
+-   * Supports SF Symbols, xcassets, and image sources. For async image sources,
++   * Supports SF Symbols and image sources, each with an optional
++   * `renderingMode` (see `StackHeaderIconIOSSymbolRenderingMode` and
++   * `StackHeaderIconIOSImageRenderingMode`). For async image sources,
+    * the menu item renders without an icon first and updates when loaded.
+    *
+    * @platform ios
+    */
+-  icon?: PlatformIconIOS | undefined;
++  icon?: StackHeaderIconIOS | undefined;
+   /**
+    * @summary Callback invoked when the menu item is pressed.
+    *
+@@ -165,12 +167,14 @@ export interface StackHeaderMenuIOS {
+    * @summary Icon displayed for the submenu.
+    *
+    * @description
+-   * Supports SF Symbols, xcassets, and image sources. For async image sources,
++   * Supports SF Symbols and image sources, each with an optional
++   * `renderingMode` (see `StackHeaderIconIOSSymbolRenderingMode` and
++   * `StackHeaderIconIOSImageRenderingMode`). For async image sources,
+    * the menu renders without an icon first and updates when loaded.
+    *
+    * @platform ios
+    */
+-  icon?: PlatformIconIOS | undefined;
++  icon?: StackHeaderIconIOS | undefined;
+   /**
+    * @summary Displays the menu inline with parent menu instead of as a submenu.
+    *
+diff --git a/src/components/stack/header/ios/iconUtils.ios.ts b/src/components/stack/header/ios/iconUtils.ios.ts
+index 6501118..ba08436 100644
+--- a/src/components/stack/header/ios/iconUtils.ios.ts
++++ b/src/components/stack/header/ios/iconUtils.ios.ts
+@@ -1,5 +1,5 @@
+ import type { PlatformIconIOS as ResolvedPlatformIconIOS } from '../../../../fabric/stack/StackHeaderItemIOSNativeComponent';
+-import type { PlatformIconIOS } from '../../../shared/types';
++import type { StackHeaderIconIOS } from '../StackHeaderIcon.types';
+ import type {
+   StackHeaderMenuIOS,
+   StackHeaderMenuElementIOS,
+@@ -7,7 +7,7 @@ import type {
+ import { Image } from 'react-native';
+ 
+ export function resolveIconAssetSources(
+-  icon: PlatformIconIOS | undefined,
++  icon: StackHeaderIconIOS | undefined,
+ ): ResolvedPlatformIconIOS | undefined {
+   if (icon == null) {
+     return undefined;
+@@ -22,20 +22,7 @@ export function resolveIconAssetSources(
+     return {
+       type: 'imageSource',
+       imageSource: resolvedImageSource,
+-    };
+-  }
+-  if (icon.type === 'templateSource') {
+-    const resolvedTemplateSource = Image.resolveAssetSource(
+-      icon.templateSource,
+-    );
+-
+-    if (!resolvedTemplateSource) {
+-      return undefined;
+-    }
+-
+-    return {
+-      type: 'templateSource',
+-      templateSource: resolvedTemplateSource,
++      renderingMode: icon.renderingMode,
+     };
+   }
+   return icon;
+diff --git a/src/components/stack/index.ts b/src/components/stack/index.ts
+index 5b7af06..e52d7ad 100644
+--- a/src/components/stack/index.ts
++++ b/src/components/stack/index.ts
+@@ -22,6 +22,8 @@ export type {
+   StackHeaderConfigProps,
+   StackHeaderConfigRef,
+   // Android
++  StackHeaderIconAndroid,
++  StackHeaderIconAndroidTinting,
+   StackHeaderTypeAndroid,
+   StackHeaderTitleHorizontalGravityAndroid,
+   StackHeaderTitleVerticalGravityAndroid,
+@@ -43,6 +45,9 @@ export type {
+   StackHeaderToolbarMenuItemTypeAndroid,
+   // iOS
+   StackHeaderBackButtonDisplayModeIOS,
++  StackHeaderIconIOS,
++  StackHeaderIconIOSImageRenderingMode,
++  StackHeaderIconIOSSymbolRenderingMode,
+   StackHeaderConfigPropsIOS,
+   StackHeaderAppearanceIOS,
+   StackHeaderInlineItemIOS,
+diff --git a/src/components/tabs/index.ts b/src/components/tabs/index.ts
+index bee2bed..c7ab858 100644
+--- a/src/components/tabs/index.ts
++++ b/src/components/tabs/index.ts
+@@ -29,11 +29,17 @@ export type {
+   TabsScreenPropsBase,
+   TabsScreenProps,
+   // Android
++  TabsScreenIconAndroid,
++  TabsScreenIconAndroidTinting,
+   TabBarItemLabelVisibilityMode,
+   TabsScreenItemStateAppearanceAndroid,
+   TabsScreenAppearanceAndroid,
+   TabsScreenPropsAndroid,
+   // iOS
++  TabsScreenIconIOS,
++  TabsScreenIconIOSImageRenderingMode,
++  TabsScreenIconIOSSymbolRenderingMode,
++  TabsScreenIconIOSTemplate,
+   TabsScreenBlurEffect,
+   TabsScreenSystemItem,
+   TabsScreenAppearanceIOS,
+diff --git a/src/components/tabs/screen/TabsScreen.android.tsx b/src/components/tabs/screen/TabsScreen.android.tsx
+index 0aab02f..c3cc576 100644
+--- a/src/components/tabs/screen/TabsScreen.android.tsx
++++ b/src/components/tabs/screen/TabsScreen.android.tsx
+@@ -8,6 +8,7 @@ import {
+ } from 'react-native';
+ import TabsScreenAndroidNativeComponent, {
+   type Appearance,
++  type IconTinting,
+   type ItemStateAppearance,
+   type NativeProps as TabsScreenAndroidNativeComponentProps,
+ } from '../../../fabric/tabs/TabsScreenAndroidNativeComponent';
+@@ -16,7 +17,7 @@ import type {
+   TabsScreenItemStateAppearanceAndroid,
+ } from './TabsScreen.android.types';
+ import type { TabsScreenProps } from '../screen/TabsScreen.types';
+-import type { PlatformIconAndroid } from '../../shared/types';
++import type { TabsScreenIconAndroid } from './TabsScreen.icon.types';
+ import { useTabsScreen } from './useTabsScreen';
+ import { parseAndroidIconToNativeProps } from '../../shared';
+ 
+@@ -63,6 +64,7 @@ function TabsScreen(props: TabsScreenProps) {
+       {...iconProps}
+       {...filteredBaseProps}
+       // Android-specific
++      iconSize={android?.iconSize}
+       standardAppearance={mapAppearanceToNativeProps(
+         android?.standardAppearance,
+       )}>
+@@ -128,13 +130,15 @@ function mapItemStateAppearanceToNativeProp(
+ }
+ 
+ function parseIconsToNativeProps(
+-  icon: PlatformIconAndroid | undefined,
+-  selectedIcon: PlatformIconAndroid | undefined,
++  icon: TabsScreenIconAndroid | undefined,
++  selectedIcon: TabsScreenIconAndroid | undefined,
+ ): {
+   imageIconResource?: ImageResolvedAssetSource | undefined;
+   drawableIconResourceName?: string | undefined;
++  iconTinting?: IconTinting | undefined;
+   selectedImageIconResource?: ImageResolvedAssetSource | undefined;
+   selectedDrawableIconResourceName?: string | undefined;
++  selectedIconTinting?: IconTinting | undefined;
+ } {
+   const parsedIcon = parseAndroidIconToNativeProps(icon);
+   const parsedSelectedIcon = parseAndroidIconToNativeProps(selectedIcon);
+@@ -142,9 +146,11 @@ function parseIconsToNativeProps(
+   return {
+     imageIconResource: parsedIcon.imageIconResource,
+     drawableIconResourceName: parsedIcon.drawableIconResourceName,
++    iconTinting: icon?.tinting,
+     selectedImageIconResource: parsedSelectedIcon.imageIconResource,
+     selectedDrawableIconResourceName:
+       parsedSelectedIcon.drawableIconResourceName,
++    selectedIconTinting: selectedIcon?.tinting,
+   };
+ }
+ 
+diff --git a/src/components/tabs/screen/TabsScreen.android.types.ts b/src/components/tabs/screen/TabsScreen.android.types.ts
+index 876cbde..4f4d9ce 100644
+--- a/src/components/tabs/screen/TabsScreen.android.types.ts
++++ b/src/components/tabs/screen/TabsScreen.android.types.ts
+@@ -1,5 +1,5 @@
+ import type { ColorValue, TextStyle } from 'react-native';
+-import type { PlatformIconAndroid } from '../../shared/types';
++import type { TabsScreenIconAndroid } from './TabsScreen.icon.types';
+ 
+ export type TabBarItemLabelVisibilityMode =
+   | 'auto'
+@@ -99,6 +99,26 @@ export interface TabsScreenAppearanceAndroid {
+    * @platform android
+    */
+   tabBarItemActiveIndicatorEnabled?: boolean | undefined;
++  /**
++   * @summary Active-indicator pill width in dp. If unset, it auto-scales to wrap
++   * the icon box when icons are enlarged via `iconSize`.
++   *
++   * The active indicator is shared by the whole tab bar and is read from the
++   * appearance of the currently selected tab.
++   *
++   * @platform android
++   */
++  tabBarItemActiveIndicatorWidth?: number | undefined;
++  /**
++   * @summary Active-indicator pill height in dp. If unset, it auto-scales to wrap
++   * the icon box when icons are enlarged via `iconSize`.
++   *
++   * The active indicator is shared by the whole tab bar and is read from the
++   * appearance of the currently selected tab.
++   *
++   * @platform android
++   */
++  tabBarItemActiveIndicatorHeight?: number | undefined;
+   /**
+    * @summary Specifies the font family used for the title of each tab bar item.
+    *
+@@ -162,28 +182,47 @@ export interface TabsScreenPropsAndroid {
+    * @summary Specifies the icon for the tab bar item.
+    *
+    * Supported values:
+-   * - `{ type: 'imageSource', imageSource }`
+-   *   Uses an image from the provided resource.
++   * - `{ type: 'imageSource', imageSource, tinting? }`
++   *   Uses an image from the provided resource. `tinting` defaults to
++   *   `default`: the tab bar tints the image with the item icon color.
++   *   `original` keeps the image's own colors.
+    *
+    *   Remarks: `imageSource` type doesn't support SVGs on Android.
+    *   For loading SVGs use `drawableResource` type.
+    *
+-   * - `{ type: 'drawableResource', name }`
+-   *   Uses a drawable resource with the given name.
++   * - `{ type: 'drawableResource', name, tinting? }`
++   *   Uses a drawable resource with the given name. `tinting` defaults to
++   *   `default`: the tab bar tints the drawable with the item icon color.
++   *   `original` keeps the drawable's own colors, e.g. of a multicolor
++   *   VectorDrawable.
+    *
+    *   Remarks: Requires passing a drawable to resources via Android Studio.
+    *
++   * See `TabsScreenIconAndroidTinting` for the meaning of each value.
++   *
+    * @platform android
+    */
+-  icon?: PlatformIconAndroid | undefined;
++  icon?: TabsScreenIconAndroid | undefined;
+   /**
+    * @summary Specifies the icon for tab bar item when it is selected.
+    *
+    * Supports the same values as `icon` property for given platform.
++   * `tinting` may differ from the one of `icon`, e.g. a drawable that is
++   * tinted while unselected and shows its own colors while selected.
+    *
+    * To use `selectedIcon`, `icon` must also be provided.
+    *
+    * @platform android
+    */
+-  selectedIcon?: PlatformIconAndroid | undefined;
++  selectedIcon?: TabsScreenIconAndroid | undefined;
++  /**
++   * @summary Per-tab icon size in dp.
++   *
++   * The bottom bar's icon box is the largest `iconSize` across all tabs;
++   * each tab's icon is inset to its own size within that box. Tabs without a value
++   * use the system default.
++   *
++   * @platform android
++   */
++  iconSize?: number | undefined;
+ }
+diff --git a/src/components/tabs/screen/TabsScreen.icon.types.ts b/src/components/tabs/screen/TabsScreen.icon.types.ts
+new file mode 100644
+index 0000000..872df2b
+--- /dev/null
++++ b/src/components/tabs/screen/TabsScreen.icon.types.ts
+@@ -0,0 +1,62 @@
++import type {
++  PlatformIconAndroid,
++  PlatformIconAndroidTinting,
++  PlatformIconIOS,
++  PlatformIconIOSImageRenderingMode,
++  PlatformIconIOSSymbolRenderingMode,
++  PlatformIconIOSTemplate,
++} from '../../shared/types';
++
++/**
++ * How the tab bar renders an `imageSource` icon on iOS. The names follow
++ * `UIImage.RenderingMode`.
++ *
++ * - `default` - the tab bar's default for images, also used when
++ *   `renderingMode` is unset: the image keeps its own colors, as with
++ *   `original`. This is not UIKit's automatic mode, in which the tab bar would
++ *   draw the image as a template image.
++ * - `template` - the image is used as a template image: its shape is drawn in
++ *   the state-dependent item icon color (`tabBarItemIconColor`,
++ *   `tabBarTintColor`).
++ * - `original` - the image keeps its own colors and ignores the item icon color.
++ */
++export type TabsScreenIconIOSImageRenderingMode =
++  PlatformIconIOSImageRenderingMode;
++
++/**
++ * How the tab bar renders an `sfSymbol` icon on iOS. The names follow the
++ * SF Symbols rendering modes.
++ *
++ * - `default` - the system behavior (UIKit's automatic mode), also used when
++ *   `renderingMode` is unset: system symbols are rendered in a single color,
++ *   the state-dependent item icon color; for custom symbols the rendering mode
++ *   set in the asset catalog may change it.
++ * - `monochrome` - the symbol is rendered in a single color: the
++ *   state-dependent item icon color (`tabBarItemIconColor`, `tabBarTintColor`).
++ * - `original` - the symbol keeps its own colors (Apple's "multicolor"
++ *   rendering) and ignores the item icon color. A symbol without color layers
++ *   is drawn as authored.
++ */
++export type TabsScreenIconIOSSymbolRenderingMode =
++  PlatformIconIOSSymbolRenderingMode;
++
++/**
++ * How the tab bar tints an `imageSource` or `drawableResource` icon on Android.
++ *
++ * - `default` - the tab bar's default, also used when `tinting` is unset: the
++ *   icon is tinted, as with `tinted`.
++ * - `tinted` - the icon is drawn in the state-dependent item icon color
++ *   (`tabBarItemIconColor`).
++ * - `original` - the icon keeps its own colors and ignores the item icon color,
++ *   e.g. a multicolor VectorDrawable.
++ */
++export type TabsScreenIconAndroidTinting = PlatformIconAndroidTinting;
++
++/**
++ * @deprecated Use `{ type: 'imageSource', imageSource, renderingMode: 'template' }` instead.
++ */
++export type TabsScreenIconIOSTemplate = PlatformIconIOSTemplate;
++
++export type TabsScreenIconIOS = PlatformIconIOS;
++
++export type TabsScreenIconAndroid = PlatformIconAndroid;
+diff --git a/src/components/tabs/screen/TabsScreen.ios.tsx b/src/components/tabs/screen/TabsScreen.ios.tsx
+index 209fdcd..5dbdc5f 100644
+--- a/src/components/tabs/screen/TabsScreen.ios.tsx
++++ b/src/components/tabs/screen/TabsScreen.ios.tsx
+@@ -9,6 +9,8 @@ import {
+ } from 'react-native';
+ import TabsScreenIOSNativeComponent, {
+   type IconType,
++  type IconImageRenderingMode,
++  type IconSymbolRenderingMode,
+   type NativeProps as TabsScreenIOSNativeComponentProps,
+   type Appearance,
+   type ItemAppearance,
+@@ -20,7 +22,7 @@ import type {
+   TabsScreenItemStateAppearanceIOS,
+ } from './TabsScreen.ios.types';
+ import type { TabsScreenProps } from './TabsScreen.types';
+-import type { PlatformIconIOS } from '../../shared/types';
++import type { TabsScreenIconIOS } from './TabsScreen.icon.types';
+ import { useTabsScreen } from './useTabsScreen';
+ 
+ function TabsScreen(props: TabsScreenProps) {
+@@ -146,14 +148,18 @@ function mapItemStateAppearanceToNativeProp(
+ }
+ 
+ function parseIconsToNativeProps(
+-  icon: PlatformIconIOS | undefined,
+-  selectedIcon: PlatformIconIOS | undefined,
++  icon: TabsScreenIconIOS | undefined,
++  selectedIcon: TabsScreenIconIOS | undefined,
+ ): {
+   imageIconResource?: ImageResolvedAssetSource | undefined;
+   drawableIconResourceName?: string | undefined;
+   iconType?: IconType | undefined;
++  iconImageRenderingMode?: IconImageRenderingMode | undefined;
++  iconSymbolRenderingMode?: IconSymbolRenderingMode | undefined;
+   iconImageSource?: ImageSourcePropType | undefined;
+   iconResourceName?: string | undefined;
++  selectedIconImageRenderingMode?: IconImageRenderingMode | undefined;
++  selectedIconSymbolRenderingMode?: IconSymbolRenderingMode | undefined;
+   selectedIconImageSource?: ImageSourcePropType | undefined;
+   selectedIconResourceName?: string | undefined;
+ } {
+@@ -177,15 +183,21 @@ function parseIconsToNativeProps(
+ 
+   return {
+     iconType: parsedIcon.iconType,
++    iconImageRenderingMode: parsedIcon.iconImageRenderingMode,
++    iconSymbolRenderingMode: parsedIcon.iconSymbolRenderingMode,
+     iconImageSource: parsedIcon.iconImageSource,
+     iconResourceName: parsedIcon.iconResourceName,
++    selectedIconImageRenderingMode: parsedSelectedIcon.iconImageRenderingMode,
++    selectedIconSymbolRenderingMode: parsedSelectedIcon.iconSymbolRenderingMode,
+     selectedIconImageSource: parsedSelectedIcon.iconImageSource,
+     selectedIconResourceName: parsedSelectedIcon.iconResourceName,
+   };
+ }
+ 
+-function parseIconToNativeProps(icon: PlatformIconIOS | undefined): {
++function parseIconToNativeProps(icon: TabsScreenIconIOS | undefined): {
+   iconType?: IconType | undefined;
++  iconImageRenderingMode?: IconImageRenderingMode | undefined;
++  iconSymbolRenderingMode?: IconSymbolRenderingMode | undefined;
+   iconImageSource?: ImageSourcePropType | undefined;
+   iconResourceName?: string | undefined;
+ } {
+@@ -196,16 +208,19 @@ function parseIconToNativeProps(icon: PlatformIconIOS | undefined): {
+   if (icon.type === 'sfSymbol') {
+     return {
+       iconType: 'sfSymbol',
++      iconSymbolRenderingMode: icon.renderingMode,
+       iconResourceName: icon.name,
+     };
+   } else if (icon.type === 'imageSource') {
+     return {
+       iconType: 'image',
++      iconImageRenderingMode: icon.renderingMode,
+       iconImageSource: icon.imageSource,
+     };
+   } else if (icon.type === 'templateSource') {
+     return {
+-      iconType: 'template',
++      iconType: 'image',
++      iconImageRenderingMode: 'template',
+       iconImageSource: icon.templateSource,
+     };
+   } else if (icon.type === 'xcasset') {
+diff --git a/src/components/tabs/screen/TabsScreen.ios.types.ts b/src/components/tabs/screen/TabsScreen.ios.types.ts
+index d2153eb..faadcc2 100644
+--- a/src/components/tabs/screen/TabsScreen.ios.types.ts
++++ b/src/components/tabs/screen/TabsScreen.ios.types.ts
+@@ -1,9 +1,6 @@
+ import type { ColorValue, TextStyle } from 'react-native';
+-import type {
+-  UserInterfaceStyle,
+-  BlurEffect,
+-  PlatformIconIOS,
+-} from '../../shared/types';
++import type { UserInterfaceStyle, BlurEffect } from '../../shared/types';
++import type { TabsScreenIconIOS } from './TabsScreen.icon.types';
+ 
+ export type TabsScreenBlurEffect = BlurEffect | 'systemDefault';
+ 
+@@ -233,33 +230,52 @@ export interface TabsScreenPropsIOS {
+    * @summary Specifies the icon for the tab bar item.
+    *
+    * Supported values:
+-   * - `{ type: 'imageSource', imageSource }`
+-   *   Uses an image from the provided resource.
+-   * - `{ type: 'sfSymbol', name }`
+-   *   Uses an SF Symbol with the specified name.
++   * - `{ type: 'imageSource', imageSource, renderingMode? }`
++   *   Uses an image from the provided resource. `renderingMode` defaults to
++   *   `default`, which keeps the image's own colors. With `template` it is
++   *   used as a template image and follows the state-dependent icon color.
++   * - `{ type: 'sfSymbol', name, renderingMode? }`
++   *   Uses an SF Symbol with the specified name. If no system symbol
++   *   matches, falls back to a custom symbol with that name from the app's
++   *   asset catalog. `renderingMode` defaults to `default`, the system
++   *   behavior: a single color for system symbols, while for custom symbols
++   *   the rendering intent set in the asset catalog may change it. `original`
++   *   shows the symbol's own color layers (Apple's "multicolor" rendering).
+    * - `{ type: 'xcasset', name }`
+-   *   Uses asset from Xcassets.
++   *   Deprecated: use `sfSymbol` for custom symbols from the asset catalog, or
++   *   `imageSource` with `{ uri: 'name' }` for asset catalog images (append
++   *   `.png` to names containing a dot; add `renderingMode: 'template'` for an
++   *   asset whose "Render As" is not `Original Image`).
++   *   Uses an image from the asset catalog. Its colors follow the asset's
++   *   "Render As" setting in the catalog: `Original Image` keeps its own colors,
++   *   `Default` and `Template Image` follow the state-dependent icon color.
+    * - `{ type: 'templateSource', templateSource }`
+-   *   Uses the provided image as a template image.
+-   *   The icon color will depend on the current state
+-   *   of the tab bar item and icon color-related props.
++   *   Deprecated: use `{ type: 'imageSource', imageSource, renderingMode: 'template' }`
++   *   instead. Uses the provided image as a template image.
++   *
++   * See `TabsScreenIconIOSImageRenderingMode` and
++   * `TabsScreenIconIOSSymbolRenderingMode` for the meaning of each rendering mode.
+    *
+    * If no `selectedIcon` is provided, this icon will also
+    * be used as the selected state icon.
+    *
+    * @platform ios
+    */
+-  icon?: PlatformIconIOS | undefined;
++  icon?: TabsScreenIconIOS | undefined;
+   /**
+    * @summary Specifies the icon for tab bar item when it is selected.
+    *
+-   * Supports the same values as `icon` property.
++   * Supports the same values as `icon` property. It must use the same icon
++   * `type` as `icon`; `renderingMode` may differ, e.g.
++   * `icon: { type: 'sfSymbol', name }` with
++   * `selectedIcon: { type: 'sfSymbol', name, renderingMode: 'original' }`
++   * shows the symbol tinted while unselected and in its own colors while selected.
+    *
+    * To use `selectedIcon`, `icon` must also be provided.
+    *
+    * @platform ios
+    */
+-  selectedIcon?: PlatformIconIOS | undefined;
++  selectedIcon?: TabsScreenIconIOS | undefined;
+   /**
+    * @summary System-provided tab bar item with predefined icon and title
+    *
+diff --git a/src/components/tabs/screen/index.ts b/src/components/tabs/screen/index.ts
+index 8c6cc60..3290f23 100644
+--- a/src/components/tabs/screen/index.ts
++++ b/src/components/tabs/screen/index.ts
+@@ -1,6 +1,7 @@
+ export { default as TabsScreen } from './TabsScreen';
+ 
+ export type * from './TabsScreen.types';
++export type * from './TabsScreen.icon.types';
+ 
+ export type * from './TabsScreen.android.types';
+ export type * from './TabsScreen.ios.types';
+diff --git a/src/fabric/stack/StackHeaderConfigAndroidNativeComponent.ts b/src/fabric/stack/StackHeaderConfigAndroidNativeComponent.ts
+index 3b39068..8f4954f 100644
+--- a/src/fabric/stack/StackHeaderConfigAndroidNativeComponent.ts
++++ b/src/fabric/stack/StackHeaderConfigAndroidNativeComponent.ts
+@@ -39,6 +39,8 @@ type StackHeaderToolbarMenuItemShowAsActionAndroid =
+ 
+ type StackHeaderToolbarMenuItemTypeAndroid = 'action' | 'toggle' | 'automatic';
+ 
++export type IconTinting = 'default' | 'tinted' | 'original';
++
+ export interface StackHeaderToolbarMenuItemBaseAndroid {
+   id: string;
+   title?: string | undefined;
+@@ -57,6 +59,7 @@ export interface StackHeaderToolbarMenuItemBaseAndroid {
+   iconTintColorPressed?: ProcessedColorValue | null | undefined;
+   iconTintColorFocused?: ProcessedColorValue | null | undefined;
+   iconTintColorDisabled?: ProcessedColorValue | null | undefined;
++  iconTinting?: IconTinting | null | undefined;
+ }
+ 
+ type StackHeaderToolbarMenuItemAndroid =
+@@ -164,12 +167,14 @@ export interface NativeProps extends ViewProps {
+   backButtonTintColorFocused?: ColorValue | undefined;
+   backButtonDrawableIconResourceName?: string | undefined;
+   backButtonImageIconResource?: ImageSource | undefined;
++  backButtonIconTinting?: CT.WithDefault<IconTinting, 'default'>;
+ 
+   overflowIconTintColorNormal?: ColorValue | undefined;
+   overflowIconTintColorPressed?: ColorValue | undefined;
+   overflowIconTintColorFocused?: ColorValue | undefined;
+   overflowIconDrawableIconResourceName?: string | undefined;
+   overflowIconImageIconResource?: ImageSource | undefined;
++  overflowIconTinting?: CT.WithDefault<IconTinting, 'default'>;
+ 
+   scrollFlagScroll?: CT.WithDefault<boolean, false>;
+   scrollFlagEnterAlways?: CT.WithDefault<boolean, false>;
+diff --git a/src/fabric/stack/StackHeaderItemIOSNativeComponent.ts b/src/fabric/stack/StackHeaderItemIOSNativeComponent.ts
+index eab6f28..6fb468a 100644
+--- a/src/fabric/stack/StackHeaderItemIOSNativeComponent.ts
++++ b/src/fabric/stack/StackHeaderItemIOSNativeComponent.ts
+@@ -44,28 +44,16 @@ export type HeaderItemPressEvent = Readonly<{}>;
+ export type PlatformIconShared = {
+   type: 'imageSource';
+   imageSource: ImageResolvedAssetSource;
+-};
+-
+-export type PlatformIconIOSTemplate = {
+-  type: 'templateSource';
+-  templateSource: ImageResolvedAssetSource;
++  renderingMode?: 'default' | 'template' | 'original' | undefined;
+ };
+ 
+ export type PlatformIconIOSSfSymbol = {
+   type: 'sfSymbol';
+   name: string;
++  renderingMode?: 'default' | 'monochrome' | 'original' | undefined;
+ };
+ 
+-export type PlatformIconIOSXcasset = {
+-  type: 'xcasset';
+-  name: string;
+-};
+-
+-export type PlatformIconIOS =
+-  | PlatformIconIOSSfSymbol
+-  | PlatformIconIOSXcasset
+-  | PlatformIconIOSTemplate
+-  | PlatformIconShared;
++export type PlatformIconIOS = PlatformIconIOSSfSymbol | PlatformIconShared;
+ 
+ export interface NativeProps extends ViewProps {
+   placement?: CT.WithDefault<Placement, 'trailing'>;
+diff --git a/src/fabric/tabs/TabsScreenAndroidNativeComponent.ts b/src/fabric/tabs/TabsScreenAndroidNativeComponent.ts
+index e973bd7..496f0f5 100644
+--- a/src/fabric/tabs/TabsScreenAndroidNativeComponent.ts
++++ b/src/fabric/tabs/TabsScreenAndroidNativeComponent.ts
+@@ -24,6 +24,8 @@ type TabBarItemLabelVisibilityMode =
+   | 'labeled'
+   | 'unlabeled';
+ 
++export type IconTinting = 'default' | 'tinted' | 'original';
++
+ export type ItemStateAppearance = {
+   tabBarItemTitleFontColor?: ProcessedColorValue | null | undefined;
+   tabBarItemIconColor?: ProcessedColorValue | null | undefined;
+@@ -51,6 +53,9 @@ export type Appearance = {
+   // TabBarItem - Active Indicator
+   tabBarItemActiveIndicatorColor?: ProcessedColorValue | null | undefined;
+   tabBarItemActiveIndicatorEnabled?: CT.WithDefault<boolean, true>;
++  // Indicator size (dp); unset = auto-scale to the icon box.
++  tabBarItemActiveIndicatorWidth?: CT.Float | undefined;
++  tabBarItemActiveIndicatorHeight?: CT.Float | undefined;
+ 
+   // TabBarItem - Label
+   tabBarItemTitleFontFamily?: string | undefined;
+@@ -103,6 +108,10 @@ export interface NativeProps extends ViewProps {
+   imageIconResource?: ImageSource | undefined;
+   selectedDrawableIconResourceName?: string | undefined;
+   selectedImageIconResource?: ImageSource | undefined;
++  iconTinting?: CT.WithDefault<IconTinting, 'default'>;
++  selectedIconTinting?: CT.WithDefault<IconTinting, 'default'>;
++  // Per-tab icon size (dp); 0/unset = system default.
++  iconSize?: CT.Float | undefined;
+ 
+   // Appearance
+   standardAppearance?: Appearance | undefined;
+diff --git a/src/fabric/tabs/TabsScreenIOSNativeComponent.ts b/src/fabric/tabs/TabsScreenIOSNativeComponent.ts
+index 80a2fec..bc63c55 100644
+--- a/src/fabric/tabs/TabsScreenIOSNativeComponent.ts
++++ b/src/fabric/tabs/TabsScreenIOSNativeComponent.ts
+@@ -20,8 +20,12 @@ type GenericEmptyEvent = Readonly<{}>;
+ 
+ // #region iOS-specific helpers
+ 
+-// iOS-specific: SFSymbol, image as a template usage
+-export type IconType = 'image' | 'template' | 'sfSymbol' | 'xcasset';
++// iOS-specific: SFSymbol, xcasset usage
++export type IconType = 'image' | 'sfSymbol' | 'xcasset';
++
++export type IconImageRenderingMode = 'default' | 'template' | 'original';
++
++export type IconSymbolRenderingMode = 'default' | 'monochrome' | 'original';
+ 
+ export type ItemStateAppearance = {
+   tabBarItemTitleFontFamily?: string | undefined;
+@@ -153,8 +157,18 @@ export interface NativeProps extends ViewProps {
+ 
+   // Icons
+   iconType?: CT.WithDefault<IconType, 'sfSymbol'>;
++  iconImageRenderingMode?: CT.WithDefault<IconImageRenderingMode, 'default'>;
++  iconSymbolRenderingMode?: CT.WithDefault<IconSymbolRenderingMode, 'default'>;
+   iconImageSource?: ImageSource | undefined;
+   iconResourceName?: string | undefined;
++  selectedIconImageRenderingMode?: CT.WithDefault<
++    IconImageRenderingMode,
++    'default'
++  >;
++  selectedIconSymbolRenderingMode?: CT.WithDefault<
++    IconSymbolRenderingMode,
++    'default'
++  >;
+   selectedIconImageSource?: ImageSource | undefined;
+   selectedIconResourceName?: string | undefined;
+ 
+diff --git a/src/legacy/components/helpers/prepareHeaderBarButtonItems.ts b/src/legacy/components/helpers/prepareHeaderBarButtonItems.ts
+index 19ab7bc..51d08c1 100644
+--- a/src/legacy/components/helpers/prepareHeaderBarButtonItems.ts
++++ b/src/legacy/components/helpers/prepareHeaderBarButtonItems.ts
+@@ -4,11 +4,42 @@ import type {
+   HeaderBarButtonItem,
+   HeaderBarButtonItemWithMenu,
+ } from '../../types';
++import type { PlatformIconIOS } from '../../../components/shared/types';
+ 
+ // Local nominal type so declaration emit doesn't resolve the RN alias down to
+ // the non-public `types_generated/.../AssetSourceResolver#ResolvedAssetSource`.
+ export interface ResolvedImageAsset extends ImageResolvedAssetSource {}
+ 
++const prepareIcon = (
++  icon: PlatformIconIOS | undefined,
++): {
++  sfSymbolName?: string | undefined;
++  sfSymbolRenderingMode?: string | undefined;
++  xcassetName?: string | undefined;
++  imageSource?: ResolvedImageAsset | undefined;
++  templateSource?: ResolvedImageAsset | undefined;
++} => {
++  switch (icon?.type) {
++    case 'sfSymbol':
++      return {
++        sfSymbolName: icon.name,
++        sfSymbolRenderingMode: icon.renderingMode,
++      };
++    case 'xcasset':
++      return { xcassetName: icon.name };
++    case 'imageSource': {
++      const source = Image.resolveAssetSource(icon.imageSource);
++      return icon.renderingMode === 'template'
++        ? { templateSource: source }
++        : { imageSource: source };
++    }
++    case 'templateSource':
++      return { templateSource: Image.resolveAssetSource(icon.templateSource) };
++    default:
++      return {};
++  }
++};
++
+ const prepareMenu = (
+   menu: HeaderBarButtonItemWithMenu['menu'],
+   index: number,
+@@ -19,35 +50,18 @@ const prepareMenu = (
+     ...menu,
+     items: menu.items.map((menuItem, menuIndex) => {
+       const currentPath = path ? `${path}.${menuIndex}` : `${menuIndex}`;
+-      const iconType = menuItem.icon?.type;
+-      const sfSymbolName =
+-        iconType === 'sfSymbol' ? menuItem.icon?.name : undefined;
+-      const xcassetName =
+-        iconType === 'xcasset' ? menuItem.icon?.name : undefined;
+-
+-      let imageSource, templateSource;
+-      if (menuItem.icon?.type === 'imageSource') {
+-        imageSource = Image.resolveAssetSource(menuItem.icon.imageSource);
+-      } else if (menuItem.icon?.type === 'templateSource') {
+-        templateSource = Image.resolveAssetSource(menuItem.icon.templateSource);
+-      }
++      const icon = prepareIcon(menuItem.icon);
+ 
+       if (menuItem.type === 'submenu') {
+         return {
+           ...menuItem,
+-          sfSymbolName,
+-          xcassetName,
+-          imageSource,
+-          templateSource,
++          ...icon,
+           ...prepareMenu(menuItem, index, side, currentPath),
+         };
+       }
+       return {
+         ...menuItem,
+-        sfSymbolName,
+-        xcassetName,
+-        imageSource,
+-        templateSource,
++        ...icon,
+         menuId: `${currentPath}-${index}-${side}`,
+       };
+     }),
+@@ -62,14 +76,6 @@ export const prepareHeaderBarButtonItems = (
+     if (item.type === 'spacing') {
+       return item;
+     }
+-    let imageSource: ResolvedImageAsset | undefined,
+-      templateSource: ResolvedImageAsset | undefined;
+-    if (item.icon?.type === 'imageSource') {
+-      imageSource = Image.resolveAssetSource(item.icon.imageSource);
+-    } else if (item.icon?.type === 'templateSource') {
+-      templateSource = Image.resolveAssetSource(item.icon.templateSource);
+-    }
+-
+     const titleStyle = item.titleStyle
+       ? { ...item.titleStyle, color: processColor(item.titleStyle.color) }
+       : undefined;
+@@ -86,10 +92,7 @@ export const prepareHeaderBarButtonItems = (
+       : undefined;
+     const processedItem = {
+       ...item,
+-      imageSource,
+-      templateSource,
+-      sfSymbolName: item.icon?.type === 'sfSymbol' ? item.icon.name : undefined,
+-      xcassetName: item.icon?.type === 'xcasset' ? item.icon.name : undefined,
++      ...prepareIcon(item.icon),
+       titleStyle,
+       tintColor,
+       badge,

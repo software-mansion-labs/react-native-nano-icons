@@ -430,7 +430,7 @@ Names are fully typed, so filenames autocomplete and type-check with no manual g
 <summary><u><code>nativeNanoSymbol(name, renderingMode?, prefix?)</code> Arguments</u></summary>
 
 - `name` — the SVG filename.
-- `renderingMode` — `'monochrome'` (default) renders the silhouette in the bar's tint; `'original'` renders the icon's own colors (Apple's "multicolor" symbol rendering on iOS). Forwarded as `renderingMode` on the returned react-navigation icon on both platforms.
+- `renderingMode` — `'monochrome'` (default) renders the silhouette in the bar's tint; `'original'` renders the icon's own colors (Apple's "multicolor" symbol rendering on iOS). Returned as the symbol's `renderingMode` on iOS and as `tinted` on the Android image icon.
 - `prefix` — matches the set's `prefix` (defaults to `nano`).
 
 </details>

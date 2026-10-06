@@ -17,16 +17,16 @@ describe('nativeNanoSymbol', () => {
     });
   });
 
-  test('Android picks the monochrome or original drawable by renderingMode', () => {
+  test('Android picks the drawable by renderingMode and sets tinted', () => {
     expect(androidNanoSymbol('person-walking')).toEqual({
       type: 'image',
       source: { uri: 'nano_person_walking' },
-      renderingMode: 'monochrome',
+      tinted: true,
     });
     expect(androidNanoSymbol('home', 'original', 'brand')).toEqual({
       type: 'image',
       source: { uri: 'brand_home_original' },
-      renderingMode: 'original',
+      tinted: false,
     });
   });
 });

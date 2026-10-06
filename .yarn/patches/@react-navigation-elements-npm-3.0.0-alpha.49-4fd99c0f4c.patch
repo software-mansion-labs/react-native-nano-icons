@@ -1,8 +1,16 @@
 diff --git a/lib/module/PlatformIcon.js b/lib/module/PlatformIcon.js
-index 3a3e6979f21b36584eaaad2a6849105524544638..50cd5dd50f309129c755eb0facde9f942628bc1a 100644
+index 3a3e697..2b3b0c6 100644
 --- a/lib/module/PlatformIcon.js
 +++ b/lib/module/PlatformIcon.js
-@@ -36,7 +36,7 @@ export function PlatformIcon({
+@@ -14,6 +14,7 @@ export function PlatformIcon({
+     case 'sfSymbol':
+       return /*#__PURE__*/_jsx(SFSymbol, {
+         name: icon.name,
++        renderingMode: icon.renderingMode,
+         color: color,
+         size: size,
+         style: StyleSheet.flatten(style),
+@@ -36,7 +37,7 @@ export function PlatformIcon({
          fadeDuration: 0,
          tintColor: icon.tinted === false ? undefined : color,
          style: [{
@@ -12,7 +20,7 @@ index 3a3e6979f21b36584eaaad2a6849105524544638..50cd5dd50f309129c755eb0facde9f94
          }, style],
          ...rest
 diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
-index 0d0e9082021ade2ecdbd7fadadfa4d9211561e13..baf68021462d7443100af5d83c71952b66ac81cf 100644
+index 0d0e908..4b354ad 100644
 --- a/lib/typescript/src/types.d.ts
 +++ b/lib/typescript/src/types.d.ts
 @@ -26,6 +26,13 @@ type IconImage = {
@@ -29,12 +37,20 @@ index 0d0e9082021ade2ecdbd7fadadfa4d9211561e13..baf68021462d7443100af5d83c71952b
  };
  type IconSfSymbol = {
      /**
-@@ -35,7 +42,7 @@ type IconSfSymbol = {
+@@ -35,7 +42,15 @@ type IconSfSymbol = {
      /**
       * Name of the SF Symbol to use as the icon.
       */
 -    name: SFSymbol;
 +    name: SFSymbol | keyof import('@react-navigation/native').SFSymbolNames;
++    /**
++     * How to color the symbol.
++     * - `monochrome`: Single color, using the tint color.
++     * - `original`: Keeps the symbol's own colors (Apple's multicolor rendering).
++     *
++     * Defaults to a single color for system symbols.
++     */
++    renderingMode?: 'monochrome' | 'original';
  };
  type IconMaterialSymbol = {
      /**

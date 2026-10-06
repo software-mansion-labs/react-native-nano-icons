@@ -26,7 +26,7 @@
     "react-native-nano-icons": "workspace:*",
     "react-native-release-profiler": "^0.4.4",
     "react-native-safe-area-context": "~5.6.2",
-    "react-native-screens": "patch:react-native-screens@npm%3A4.28.0-nightly-20260911-458c12fee#~/.yarn/patches/react-native-screens-npm-4.28.0-nightly-20260911-458c12fee-f458f8d7a2.patch",
+    "react-native-screens": "patch:react-native-screens@npm%3A4.29.0-nightly-20261005-d1ea5ad31#~/.yarn/patches/react-native-screens-npm-4.29.0-nightly-20261005-d1ea5ad31-pr4209.patch",
     "react-native-svg": "15.15.3"
   },
   "devDependencies": {

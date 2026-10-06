@@ -36,8 +36,9 @@ type NanoSymbolName = [keyof NanoSymbolNames] extends [never]
  *
  * Android — the drawable resource name is derived from `${prefix}.${name}` with
  * the same pure transform the build uses. Each icon ships two drawables;
- * `renderingMode` picks the solid silhouette the bar recolors (`monochrome`)
- * or the drawable that keeps its own colors (`original`, `_original` suffix).
+ * `renderingMode` picks the solid silhouette the bar tints (`monochrome`) or
+ * the untinted drawable that keeps its own colors (`original`, `_original`
+ * suffix), forwarded as react-navigation's `tinted`.
  *
  *     tabBarIcon: () => nativeNanoSymbol('home')
  *     // tints only when unfocused, keeps the icon's own colors while focused
@@ -67,6 +68,6 @@ export function nativeNanoSymbol(
           ? toOriginalDrawableResourceName(resourceName)
           : resourceName,
     },
-    renderingMode,
+    tinted: renderingMode === 'monochrome',
   };
 }

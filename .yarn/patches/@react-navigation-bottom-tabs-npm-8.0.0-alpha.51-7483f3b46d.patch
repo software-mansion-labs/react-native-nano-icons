@@ -1,5 +1,5 @@
 diff --git a/lib/module/views/BottomTabBar.js b/lib/module/views/BottomTabBar.js
-index f826295b9ada304ac7bd39082eb3bdb11ed7f5d9..46cf84a81a7cf6329173e76f568c00a6be06cdf1 100644
+index f826295..46cf84a 100644
 --- a/lib/module/views/BottomTabBar.js
 +++ b/lib/module/views/BottomTabBar.js
 @@ -334,6 +334,7 @@ export function BottomTabBar({
@@ -11,7 +11,7 @@ index f826295b9ada304ac7bd39082eb3bdb11ed7f5d9..46cf84a81a7cf6329173e76f568c00a6
              style: [sidebar ? {
                marginVertical: hasHorizontalLabels ? tabBarVariant === 'material' ? 0 : 1 : spacing / 2
 diff --git a/lib/module/views/BottomTabItem.js b/lib/module/views/BottomTabItem.js
-index 225702141e9589c607d9bcdc49d4e71da23e3524..64357c9494af649304dfaafd4f70eebd8a322cd5 100644
+index 2257021..64357c9 100644
 --- a/lib/module/views/BottomTabItem.js
 +++ b/lib/module/views/BottomTabItem.js
 @@ -40,6 +40,7 @@ export function BottomTabItem({
@@ -31,7 +31,7 @@ index 225702141e9589c607d9bcdc49d4e71da23e3524..64357c9494af649304dfaafd4f70eebd
        badgeStyle: badgeStyle,
        activeOpacity: activeOpacity,
 diff --git a/lib/module/views/BottomTabViewNativeImpl.js b/lib/module/views/BottomTabViewNativeImpl.js
-index bc22c0002a1839f87da723eb8362fb8a14def0df..e7cc3e6b8ea509856e0502f5cbbe9bca9a794404 100644
+index bc22c00..28fa429 100644
 --- a/lib/module/views/BottomTabViewNativeImpl.js
 +++ b/lib/module/views/BottomTabViewNativeImpl.js
 @@ -315,6 +315,7 @@ export function BottomTabViewNative({
@@ -46,7 +46,7 @@ index bc22c0002a1839f87da723eb8362fb8a14def0df..e7cc3e6b8ea509856e0502f5cbbe9bca
            android: {
              icon: icon?.android ?? icon?.shared,
              selectedIcon: selectedIcon?.android ?? selectedIcon?.shared,
-+            drawableIconSize: tabBarIconSize,
++            iconSize: tabBarIconSize,
              standardAppearance: {
                tabBarBackgroundColor: tabBarBackgroundColor ?? backgroundColor,
                tabBarItemRippleColor: currentOptions?.tabBarRippleColor,
@@ -80,30 +80,30 @@ index bc22c0002a1839f87da723eb8362fb8a14def0df..e7cc3e6b8ea509856e0502f5cbbe9bca
 +      {
 +        // A `{ uri: 'name' }` source maps to an Android drawable by name.
 +        const drawableName = typeof icon.source === 'object' && icon.source != null && !Array.isArray(icon.source) && typeof icon.source.uri === 'string' ? icon.source.uri : undefined;
++        const tinted = icon.tinted !== false;
 +        return {
-+          ios: icon.tinted === false ? {
++          ios: {
 +            type: 'imageSource',
-+            imageSource: icon.source
-+          } : {
-+            type: 'templateSource',
-+            templateSource: icon.source
++            imageSource: icon.source,
++            renderingMode: tinted ? 'template' : 'original'
 +          },
 +          android: drawableName != null ? {
 +            type: 'drawableResource',
 +            name: drawableName,
-+            tinted: icon.tinted
-+          } : undefined,
-+          shared: {
++            tinting: tinted ? 'tinted' : 'original'
++          } : {
 +            type: 'imageSource',
-+            imageSource: icon.source
-+          }
++            imageSource: icon.source,
++            tinting: tinted ? 'tinted' : 'original'
++          },
++          shared: undefined
 +        };
 +      }
      default:
        {
          const _exhaustiveCheck = icon;
 diff --git a/lib/module/views/TabBarIcon.js b/lib/module/views/TabBarIcon.js
-index 53c24dd5bf69aa21da76b04990229e002b6be798..2d217d8ae01ae4cbb59294d6371ae738cb4ba069 100644
+index 53c24dd..2d217d8 100644
 --- a/lib/module/views/TabBarIcon.js
 +++ b/lib/module/views/TabBarIcon.js
 @@ -20,6 +20,7 @@ export function TabBarIcon({
@@ -137,7 +137,7 @@ index 53c24dd5bf69aa21da76b04990229e002b6be798..2d217d8ae01ae4cbb59294d6371ae738
        style: [styles.icon, {
          opacity: activeOpacity,
 diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
-index 5d4d79d01d7c9434d7097c8195bac3625e6fbc42..0a99e201a791bd2a4cc4f7a54732db2c6cbec6c7 100644
+index 5d4d79d..ee7e357 100644
 --- a/lib/typescript/src/types.d.ts
 +++ b/lib/typescript/src/types.d.ts
 @@ -111,7 +111,7 @@ type BottomTabCustomOptions = {
@@ -187,3 +187,12 @@ index 5d4d79d01d7c9434d7097c8195bac3625e6fbc42..0a99e201a791bd2a4cc4f7a54732db2c
      /**
       * Style object for the tab label.
       */
+@@ -332,8 +363,6 @@ export type BottomTabNavigationOptions = {
+      * - on all platforms with `custom` implementation
+      * - on iOS with `native` implementation
+      *
+-     * With `native` implementation, `tinted` for `image` can only be disabled on iOS.
+-     *
+      * A React element is only supported with `custom` implementation.
+      */
+     tabBarIcon?: Icon | ((props: {

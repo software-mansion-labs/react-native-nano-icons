@@ -311,7 +311,7 @@ A VectorDrawable fills each `<path>` separately and never joins them, and the ba
 
 ### Runtime: `nativeNanoSymbol(name, renderingMode?, prefix?)`
 
-`renderingMode` is `'monochrome'` (default) or `'original'`. The helper returns `{ type: 'sfSymbol', name: '<prefix>.<name>', renderingMode }` on iOS and `{ type: 'image', source: { uri }, renderingMode }` on Android, where `uri` is `<prefix>_<name>` for monochrome and `<prefix>_<name>_original` for original. react-native-screens' `Tabs` (PR #4209) applies the mode per slot: on iOS `AlwaysTemplate` / `AlwaysOriginal` on the symbol image, on Android the bar tint or an untinted drawable. react-navigation forwards the field once its follow-up to #4209 lands.
+`renderingMode` is `'monochrome'` (default) or `'original'`. The helper returns react-navigation's `Icon` shapes: `{ type: 'sfSymbol', name: '<prefix>.<name>', renderingMode }` on iOS and `{ type: 'image', source: { uri }, tinted }` on Android, where `uri` is `<prefix>_<name>` and `tinted: true` for monochrome, `<prefix>_<name>_original` and `tinted: false` for original. react-navigation's native bottom tabs pass the symbol's `renderingMode` to react-native-screens' `Tabs` (PR #4209), which applies `AlwaysTemplate` / `AlwaysOriginal` per slot on iOS, and map `tinted` to screens' Android `tinting` (`'tinted'` / `'original'`).
 
 ### `Contents.json`
 
@@ -409,7 +409,7 @@ Every symbol of the `tabicons` and `mcicon` sets in `monochrome`, `original`, th
 | iOS 27, 26.5, 18.6 simulators | `<SFSymbol>` (monochrome / multicolor configuration) and react-native-screens tab bar (`AlwaysTemplate` / `AlwaysOriginal`) | knockouts are holes when tinted and painted in their fill in original; translucent layers keep their opacity |
 | Android API 36 emulator | `<Image>` with each drawable and the native tab bar | monochrome drawable is a solid silhouette with holes (no partial tint, no seams); original drawable keeps fills, knockouts and alpha |
 
-The tab-bar runs used react-native-screens with PR #4209 and react-navigation's bottom tabs forwarding `renderingMode`.
+The tab-bar runs used react-native-screens with PR #4209 and react-navigation's bottom tabs mapping the icon fields to it.
 
 ### Quick macOS smoke harness (no app build)
 
