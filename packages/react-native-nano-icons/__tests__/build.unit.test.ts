@@ -26,7 +26,7 @@ const BUILT_FAMILY = `${FONT_FAMILY}-0123abcd`;
 const STORED_FAMILY = `${FONT_FAMILY}-89efdcba`;
 const DEFAULT_INPUTS = {
   upm: 1024,
-  safeZone: 1020,
+  safeZone: 1024,
   startUnicode: 0xe900,
   version: packageVersion(),
   toolchain: fontToolchainVersions(),
@@ -55,7 +55,7 @@ function writeFakeOutputs(
   const m = {
     f: STORED_FAMILY,
     u: 1024,
-    z: 1020,
+    z: 1024,
     s: 0xe900,
     ...(hash !== undefined && { h: hash }),
     // only dynamic sets have l field, static have none
@@ -632,22 +632,22 @@ describe('buildAllFonts — safeZone follows upm', () => {
     return mockRunPipeline.mock.calls[0]![0];
   }
 
-  test('the default upm keeps the default safeZone of 1020', async () => {
+  test('the default safeZone is the full em', async () => {
     expect(await pipelineConfigFor({})).toMatchObject({
       upm: 1024,
-      safeZone: 1020,
+      safeZone: 1024,
     });
   });
 
   test('a custom upm scales the default safeZone', async () => {
     expect(await pipelineConfigFor({ upm: 512 })).toMatchObject({
       upm: 512,
-      safeZone: 510,
+      safeZone: 512,
     });
     mockRunPipeline.mockClear();
     expect(await pipelineConfigFor({ upm: 2048 })).toMatchObject({
       upm: 2048,
-      safeZone: 2040,
+      safeZone: 2048,
     });
   });
 
