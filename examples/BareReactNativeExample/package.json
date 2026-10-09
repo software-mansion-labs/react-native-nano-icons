@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
+    "@react-native-community/slider": "^5.2.1",
     "@react-native/new-app-screen": "0.84.0",
     "@react-navigation/elements": "^2.9.12",
     "@react-navigation/native": "^7.2.0",
