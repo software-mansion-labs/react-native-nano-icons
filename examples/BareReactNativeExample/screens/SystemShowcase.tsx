@@ -18,6 +18,11 @@ const SIZED_ICON = () => ({
   aspectRatio: 2,
 });
 
+const TINTED_ICON = () => ({
+  ...nativeNanoSymbol('swm'),
+  aspectRatio: 2,
+});
+
 function Center({ label }: { label: string }) {
   return (
     <View style={styles.center}>
@@ -90,7 +95,7 @@ function ElementsHome({
         <Button variant="plain" icon={SIZED_ICON} onPress={() => {}}>
           Plain
         </Button>
-        <Button variant="tinted" icon={SIZED_ICON} onPress={() => {}}>
+        <Button variant="tinted" icon={TINTED_ICON} onPress={() => {}}>
           Tinted
         </Button>
         <Button variant="filled" icon={SIZED_ICON} onPress={() => {}}>
