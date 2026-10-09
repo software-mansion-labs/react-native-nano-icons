@@ -78,6 +78,17 @@ class NanoIconViewManager :
     }
   }
 
+  @ReactProp(name = "color", customType = "Color")
+  override fun setColor(view: NanoIconView, value: Int?) {
+    view.setTintColor(value)
+  }
+
+  @ReactProp(name = "tintLayers")
+  override fun setTintLayers(view: NanoIconView, value: ReadableArray?) {
+    val arr = if (value == null) intArrayOf() else IntArray(value.size()) { value.getInt(it) }
+    view.setTintLayers(arr)
+  }
+
   @ReactProp(name = "size", defaultFloat = 12f)
   override fun setSize(view: NanoIconView, value: Float) {
     view.setFontSize(value)

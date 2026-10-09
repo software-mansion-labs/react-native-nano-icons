@@ -114,6 +114,13 @@ describe('createIconSet (native) layer colors', () => {
     expect(props['style']).toBeUndefined();
   });
 
+  test('sends the tintable layer indices for the tint mode', () => {
+    expect(nativeProps({ name: 'badge' })['tintLayers']).toEqual([0, 1]);
+    expect(
+      nativeProps({ name: 'badge', tintMode: 'currentColor' })['tintLayers']
+    ).toEqual([1]);
+  });
+
   test('an empty color array falls back to the glyphmap defaults', () => {
     expect(nativeColors({ name: 'badge', color: [] })).toEqual([
       '#ff0000',

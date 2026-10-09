@@ -59,6 +59,30 @@ export function createLayerColorResolver(
   };
 }
 
+export function tintableLayers(
+  layers: GlyphEntry[1],
+  tintMode: TintMode = 'all'
+): readonly number[] {
+  if (tintMode === 'all') return allLayerIndices(layers);
+  const positions = currentColorPositions(layers);
+  const indices: number[] = [];
+  for (let i = 0; i < positions.length; i++) {
+    if (positions[i]! >= 0) indices.push(i);
+  }
+  return indices;
+}
+
+const allIndicesByLayers = new WeakMap<GlyphEntry[1], number[]>();
+
+function allLayerIndices(layers: GlyphEntry[1]): number[] {
+  let indices = allIndicesByLayers.get(layers);
+  if (!indices) {
+    indices = layers.map((_, i) => i);
+    allIndicesByLayers.set(layers, indices);
+  }
+  return indices;
+}
+
 const positionsByLayers = new WeakMap<GlyphEntry[1], number[]>();
 
 function currentColorPositions(layers: GlyphEntry[1]): number[] {

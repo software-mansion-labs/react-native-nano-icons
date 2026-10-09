@@ -6,6 +6,8 @@ export interface NativeProps extends ViewProps {
   fontFamily: string;
   codepoints: ReadonlyArray<Int32>;
   colors: ReadonlyArray<ColorValue>;
+  color?: ColorValue;
+  tintLayers: ReadonlyArray<Int32>;
   size: Float;
   allowFontScaling: boolean;
   advanceWidth: Int32;

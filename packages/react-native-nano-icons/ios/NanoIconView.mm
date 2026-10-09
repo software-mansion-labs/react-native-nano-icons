@@ -55,6 +55,9 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   NSArray<UIColor *> *_layerColors;
   // _layerColors resolved against the current trait collection.
   std::vector<CGColorRef> _cachedCGColors;
+  UIColor *_tintColor;
+  CGColorRef _cachedTintCGColor;
+  std::vector<bool> _tintable;
   CGFloat _fitScale;
   CGPoint _baselinePosition;
   BOOL _metricsValid;
@@ -224,7 +227,7 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   while (i < _glyphs.size()) {
     if (_glyphs[i] == 0) { i++; continue; }
 
-    CGColorRef color = (i < _cachedCGColors.size()) ? _cachedCGColors[i] : NULL;
+    CGColorRef color = [self _colorForLayer:i];
     if (!color) {
       static CGColorRef sBlack = CGColorCreateSRGB(0, 0, 0, 1);
       color = sBlack;
@@ -239,7 +242,7 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 
     while (i < _glyphs.size()) {
       if (_glyphs[i] == 0) { i++; continue; }
-      CGColorRef next = (i < _cachedCGColors.size()) ? _cachedCGColors[i] : NULL;
+      CGColorRef next = [self _colorForLayer:i];
       if (i > batchStart && next != color) break;
       if (batchCount < 16) {
         posBuf[batchCount] = _baselinePosition;
@@ -279,6 +282,17 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 - (void)_releaseCachedColors {
   for (CGColorRef c : _cachedCGColors) CGColorRelease(c);
   _cachedCGColors.clear();
+  if (_cachedTintCGColor) {
+    CGColorRelease(_cachedTintCGColor);
+    _cachedTintCGColor = NULL;
+  }
+}
+
+- (CGColorRef)_colorForLayer:(size_t)index {
+  if (_cachedTintCGColor && index < _tintable.size() && _tintable[index]) {
+    return _cachedTintCGColor;
+  }
+  return index < _cachedCGColors.size() ? _cachedCGColors[index] : NULL;
 }
 
 // Resolve the layer colors against the current traits into cached CGColorRefs.
@@ -292,6 +306,10 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   for (NSUInteger i = 0; i < _layerColors.count; i++) {
     UIColor *resolved = [_layerColors[i] resolvedColorWithTraitCollection:traits];
     _cachedCGColors[i] = CGColorRetain(resolved.CGColor);
+  }
+  if (_tintColor) {
+    UIColor *resolved = [_tintColor resolvedColorWithTraitCollection:traits];
+    _cachedTintCGColor = CGColorRetain(resolved.CGColor);
   }
 }
 
@@ -330,6 +348,21 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
     needsRedraw = YES;
   }
 
+  if (oldViewProps.color != newViewProps.color) {
+    _tintColor = newViewProps.color ? RCTUIColorFromSharedColor(newViewProps.color) : nil;
+    [self _rebuildCachedColors];
+    needsRedraw = YES;
+  }
+
+  if (oldViewProps.tintLayers != newViewProps.tintLayers ||
+      oldViewProps.codepoints != newViewProps.codepoints) {
+    _tintable.assign(newViewProps.codepoints.size(), false);
+    for (int layer : newViewProps.tintLayers) {
+      if (layer >= 0 && (size_t)layer < _tintable.size()) _tintable[layer] = true;
+    }
+    needsRedraw = YES;
+  }
+
   [super updateProps:props oldProps:oldProps];
   if (needsRedraw) [self _setNeedsRedraw];
 }
@@ -360,7 +393,7 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
   [super traitCollectionDidChange:previousTraitCollection];
 
-  if (_layerColors.count == 0) return;
+  if (_layerColors.count == 0 && !_tintColor) return;
   if (![self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
     return;
   }
