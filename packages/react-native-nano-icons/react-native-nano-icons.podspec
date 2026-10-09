@@ -11,7 +11,10 @@ Pod::Spec.new do |s|
   s.author       = package["author"]
   s.source       = { :git => package["repository"], :tag => "#{s.version}" }
   s.platforms    = { :ios => "15.1", :tvos => "15.1" }
-  s.source_files = "ios/**/*.{h,m,mm,cpp}"
+  s.source_files = "ios/**/*.{h,m,mm,cpp}", "common/cpp/**/*.{h,cpp}"
+  s.pod_target_xcconfig = {
+    "HEADER_SEARCH_PATHS" => "\"$(PODS_TARGET_SRCROOT)/common/cpp\""
+  }
   s.requires_arc = true
 
   install_modules_dependencies(s)

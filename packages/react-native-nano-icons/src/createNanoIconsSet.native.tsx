@@ -175,12 +175,11 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           fontFamily={fontFamilyBasename}
           codepoints={codepoints}
           colors={layerColors}
-          fontSize={size}
+          size={size}
+          allowFontScaling={allowFontScaling}
           advanceWidth={adv}
           unitsPerEm={unitsPerEm}
-          iconWidth={width}
-          iconHeight={scaledSize}
-          style={nativeStyle}
+          style={style}
           accessible={accessible}
           accessibilityRole={accessibilityRole}
           accessibilityLabel={accessibilityLabel ?? (name as string)}

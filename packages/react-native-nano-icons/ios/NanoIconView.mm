@@ -3,7 +3,7 @@
 #import <CoreText/CoreText.h>
 #import <React/RCTConversions.h>
 #import <React/RCTFabricComponentsPlugins.h>
-#import <react/renderer/components/RNNanoIconsSpec/ComponentDescriptors.h>
+#import <react/renderer/components/RNNanoIconsSpec/NanoIconViewComponentDescriptor.h>
 #import <react/renderer/components/RNNanoIconsSpec/Props.h>
 #import "NanoIconInlineBaseline.h"
 
@@ -303,9 +303,9 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   BOOL needsRedraw = NO;
 
   if (oldViewProps.fontFamily != newViewProps.fontFamily ||
-      oldViewProps.fontSize  != newViewProps.fontSize) {
+      oldViewProps.size  != newViewProps.size) {
     _fontFamily = [NSString stringWithUTF8String:newViewProps.fontFamily.c_str()];
-    _fontSize = newViewProps.fontSize;
+    _fontSize = newViewProps.size;
     _font = NanoIconResolveFont(_fontFamily, _fontSize);
     _metricsValid = NO;
     fontChanged = YES;
