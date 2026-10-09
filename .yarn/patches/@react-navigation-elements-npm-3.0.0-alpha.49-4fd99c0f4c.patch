@@ -20,9 +20,15 @@ index 3a3e697..2b3b0c6 100644
          }, style],
          ...rest
 diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
-index 0d0e908..4b354ad 100644
+index 0d0e908..04e5fec 100644
 --- a/lib/typescript/src/types.d.ts
 +++ b/lib/typescript/src/types.d.ts
+@@ -1,4 +1,4 @@
+-import type { MaterialSymbolProps } from '@react-navigation/native';
++import type { MaterialSymbolProps, SFSymbolNames } from '@react-navigation/native';
+ import * as React from 'react';
+ import type { Animated, ColorValue, ImageSourcePropType, LayoutChangeEvent, StyleProp, TextInputProps, TextStyle, ViewStyle } from 'react-native';
+ import type { SFSymbol } from 'sf-symbols-typescript';
 @@ -26,6 +26,13 @@ type IconImage = {
       * Defaults to `true`.
       */
@@ -33,7 +39,7 @@ index 0d0e908..4b354ad 100644
 +     *
 +     * Defaults to `1`.
 +     */
-+    aspectRatio?: number;
++    aspectRatio?: number | undefined;
  };
  type IconSfSymbol = {
      /**
@@ -42,7 +48,7 @@ index 0d0e908..4b354ad 100644
       * Name of the SF Symbol to use as the icon.
       */
 -    name: SFSymbol;
-+    name: SFSymbol | keyof import('@react-navigation/native').SFSymbolNames;
++    name: SFSymbol | keyof SFSymbolNames;
 +    /**
 +     * How to color the symbol.
 +     * - `monochrome`: Single color, using the tint color.
@@ -50,7 +56,7 @@ index 0d0e908..4b354ad 100644
 +     *
 +     * Defaults to a single color for system symbols.
 +     */
-+    renderingMode?: 'monochrome' | 'original';
++    renderingMode?: 'monochrome' | 'original' | undefined;
  };
  type IconMaterialSymbol = {
      /**

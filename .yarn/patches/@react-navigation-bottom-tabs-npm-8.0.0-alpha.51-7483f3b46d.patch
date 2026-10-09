@@ -31,35 +31,32 @@ index 2257021..64357c9 100644
        badgeStyle: badgeStyle,
        activeOpacity: activeOpacity,
 diff --git a/lib/module/views/BottomTabViewNativeImpl.js b/lib/module/views/BottomTabViewNativeImpl.js
-index bc22c00..28fa429 100644
+index bc22c00..45935c3 100644
 --- a/lib/module/views/BottomTabViewNativeImpl.js
 +++ b/lib/module/views/BottomTabViewNativeImpl.js
-@@ -315,6 +315,7 @@ export function BottomTabViewNative({
+@@ -315,6 +315,9 @@ export function BottomTabViewNative({
            tabBarSelectionEnabled,
            tabBarBadgeStyle,
            tabBarIcon,
 +          tabBarIconSize,
++          tabBarActiveIndicatorWidth,
++          tabBarActiveIndicatorHeight,
            tabBarBadge,
            tabBarSystemItem,
            tabBarBlurEffect = dark ? 'systemMaterialDark' : 'systemMaterial',
-@@ -407,6 +408,7 @@ export function BottomTabViewNative({
-           android: {
-             icon: icon?.android ?? icon?.shared,
-             selectedIcon: selectedIcon?.android ?? selectedIcon?.shared,
-+            iconSize: tabBarIconSize,
-             standardAppearance: {
-               tabBarBackgroundColor: tabBarBackgroundColor ?? backgroundColor,
-               tabBarItemRippleColor: currentOptions?.tabBarRippleColor,
-@@ -415,6 +417,8 @@ export function BottomTabViewNative({
+@@ -413,8 +416,11 @@ export function BottomTabViewNative({
+               tabBarItemLabelVisibilityMode: currentOptions?.tabBarLabelVisibilityMode,
+               normal: normalTabItemAppearance,
                selected: selectedTabItemAppearance,
++              tabBarItemIconSize: tabBarIconSize,
                tabBarItemActiveIndicatorColor: activeIndicatorColor,
                tabBarItemActiveIndicatorEnabled: currentOptions?.tabBarActiveIndicatorEnabled,
-+              tabBarItemActiveIndicatorWidth: currentOptions?.tabBarActiveIndicatorWidth,
-+              tabBarItemActiveIndicatorHeight: currentOptions?.tabBarActiveIndicatorHeight,
++              tabBarItemActiveIndicatorWidth: tabBarActiveIndicatorWidth,
++              tabBarItemActiveIndicatorHeight: tabBarActiveIndicatorHeight,
                tabBarItemTitleFontFamily: fontFamily,
                tabBarItemTitleFontWeight: fontWeight,
                tabBarItemTitleSmallLabelFontSize: fontSize,
-@@ -541,20 +545,28 @@ function getPlatformIcon(icon) {
+@@ -541,20 +547,27 @@ function getPlatformIcon(icon) {
          shared: undefined
        };
      case 'image':
@@ -79,22 +76,21 @@ index bc22c00..28fa429 100644
 -      };
 +      {
 +        // A `{ uri: 'name' }` source maps to an Android drawable by name.
-+        const drawableName = typeof icon.source === 'object' && icon.source != null && !Array.isArray(icon.source) && typeof icon.source.uri === 'string' ? icon.source.uri : undefined;
-+        const tinted = icon.tinted !== false;
++        const drawableName = typeof icon.source === 'object' && 'uri' in icon.source && icon.source.uri?.includes(':') === false ? icon.source.uri : undefined;
 +        return {
 +          ios: {
 +            type: 'imageSource',
 +            imageSource: icon.source,
-+            renderingMode: tinted ? 'template' : 'original'
++            renderingMode: icon.tinted === false ? 'original' : 'template'
 +          },
 +          android: drawableName != null ? {
 +            type: 'drawableResource',
 +            name: drawableName,
-+            tinting: tinted ? 'tinted' : 'original'
++            tinting: icon.tinted === false ? 'original' : 'tinted'
 +          } : {
 +            type: 'imageSource',
 +            imageSource: icon.source,
-+            tinting: tinted ? 'tinted' : 'original'
++            tinting: icon.tinted === false ? 'original' : 'tinted'
 +          },
 +          shared: undefined
 +        };
@@ -137,7 +133,7 @@ index 53c24dd..2d217d8 100644
        style: [styles.icon, {
          opacity: activeOpacity,
 diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
-index 5d4d79d..ee7e357 100644
+index 5d4d79d..184a709 100644
 --- a/lib/typescript/src/types.d.ts
 +++ b/lib/typescript/src/types.d.ts
 @@ -111,7 +111,7 @@ type BottomTabCustomOptions = {
@@ -149,7 +145,7 @@ index 5d4d79d..ee7e357 100644
      /**
       * Whether the tab bar gets hidden when the keyboard is shown.
       *
-@@ -319,6 +319,37 @@ export type BottomTabNavigationOptions = {
+@@ -319,6 +319,35 @@ export type BottomTabNavigationOptions = {
       * Only supported on Android with `native` implementation.
       */
      tabBarLabelVisibilityMode?: TabBarItemLabelVisibilityMode;
@@ -161,33 +157,31 @@ index 5d4d79d..ee7e357 100644
 +     * `native` implementation the largest value across tabs sets the bar's icon
 +     * box and smaller icons are inset to their own size (Android only).
 +     */
-+    tabBarIconSize?: number;
++    tabBarIconSize?: number | undefined;
 +    /**
-+     * Width (in dp) of the active indicator. Bar-wide, taken from the focused
-+     * tab (like `tabBarActiveIndicatorColor`); set it in `screenOptions` for a
-+     * consistent value. If unset, it auto-scales to wrap the icon box when icons
-+     * are enlarged via `tabBarIconSize`.
++     * Width (in dp) of this tab's active indicator. Can be set globally via
++     * `screenOptions` and/or overridden per screen. If unset, it is this tab's
++     * icon size plus the default Material padding.
 +     *
 +     * Only supported with `native` implementation.
 +     *
 +     * @platform android
 +     */
-+    tabBarActiveIndicatorWidth?: number;
++    tabBarActiveIndicatorWidth?: number | undefined;
 +    /**
-+     * Height (in dp) of the active indicator. Bar-wide, taken from the focused
-+     * tab (like `tabBarActiveIndicatorColor`); set it in `screenOptions` for a
-+     * consistent value. If unset, it auto-scales to wrap the icon box when icons
-+     * are enlarged via `tabBarIconSize`.
++     * Height (in dp) of this tab's active indicator. Can be set globally via
++     * `screenOptions` and/or overridden per screen. If unset, it is this tab's
++     * icon size plus the default Material padding.
 +     *
 +     * Only supported with `native` implementation.
 +     *
 +     * @platform android
 +     */
-+    tabBarActiveIndicatorHeight?: number;
++    tabBarActiveIndicatorHeight?: number | undefined;
      /**
       * Style object for the tab label.
       */
-@@ -332,8 +363,6 @@ export type BottomTabNavigationOptions = {
+@@ -332,8 +361,6 @@ export type BottomTabNavigationOptions = {
       * - on all platforms with `custom` implementation
       * - on iOS with `native` implementation
       *
@@ -196,3 +190,33 @@ index 5d4d79d..ee7e357 100644
       * A React element is only supported with `custom` implementation.
       */
      tabBarIcon?: Icon | ((props: {
+diff --git a/lib/typescript/src/views/BottomTabItem.d.ts b/lib/typescript/src/views/BottomTabItem.d.ts
+index 956ad2b..e0612f6 100644
+--- a/lib/typescript/src/views/BottomTabItem.d.ts
++++ b/lib/typescript/src/views/BottomTabItem.d.ts
+@@ -114,6 +114,10 @@ type Props = {
+      * Style object for the label element.
+      */
+     labelStyle?: StyleProp<TextStyle> | undefined;
++    /**
++     * Size (in dp) of the icon, overriding the default for the variant.
++     */
++    iconSize?: number | undefined;
+     /**
+      * Style object for the icon element.
+      */
+diff --git a/lib/typescript/src/views/TabBarIcon.d.ts b/lib/typescript/src/views/TabBarIcon.d.ts
+index 0196f48..ec9de09 100644
+--- a/lib/typescript/src/views/TabBarIcon.d.ts
++++ b/lib/typescript/src/views/TabBarIcon.d.ts
+@@ -6,6 +6,10 @@ export type TabBarIconProps = {
+     route: Route<string>;
+     variant: 'uikit' | 'material';
+     size: 'compact' | 'regular';
++    /**
++     * Explicit icon size (in dp) overriding the default for the variant/size.
++     */
++    iconSize?: number | undefined;
+     badge?: string | number | undefined;
+     badgeStyle?: StyleProp<TextStyle> | undefined;
+     activeOpacity: number;

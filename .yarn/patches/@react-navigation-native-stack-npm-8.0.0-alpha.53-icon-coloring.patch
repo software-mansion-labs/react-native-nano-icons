@@ -1,20 +1,17 @@
-diff --git a/lib/module/views/useHeaderConfigProps.js b/lib/module/views/useHeaderConfigProps.js
-index efc24fc..313556c 100644
---- a/lib/module/views/useHeaderConfigProps.js
-+++ b/lib/module/views/useHeaderConfigProps.js
-@@ -85,12 +85,10 @@ const processBarButtonItems = (items, colors, fonts) => {
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+index 6667581..953e513 100644
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -766,8 +766,10 @@ export type NativeStackNavigationOptions = {
+     inactiveBehavior?: 'pause' | 'unmount' | 'none' | undefined;
  };
- const transformIcon = icon => {
-   if (icon?.type === 'image') {
--    return icon.tinted === false ? {
-+    return {
-       type: 'imageSource',
--      imageSource: icon.source
--    } : {
--      type: 'templateSource',
--      templateSource: icon.source
-+      imageSource: icon.source,
-+      renderingMode: icon.tinted === false ? 'original' : 'template'
-     };
-   }
-   return icon;
+ type IconIOS = Extract<Icon, {
+-    type: 'image' | 'sfSymbol';
+-}>;
++    type: 'image';
++}> | Omit<Extract<Icon, {
++    type: 'sfSymbol';
++}>, 'renderingMode'>;
+ type SharedHeaderItem = {
+     /**
+      * Label of the item.

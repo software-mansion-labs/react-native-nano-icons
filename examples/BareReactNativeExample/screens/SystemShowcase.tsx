@@ -3,13 +3,7 @@ import { View, Text, StyleSheet, Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useTheme } from '@react-navigation/native';
-import {
-  Button,
-  HeaderBackButton,
-  PlatformIcon,
-} from '@react-navigation/elements';
+import { Button, HeaderBackButton } from '@react-navigation/elements';
 
 import { nativeNanoSymbol } from 'react-native-nano-icons/symbols';
 import SFSymbolShowcase from './SFSymbolShowcase';
@@ -84,58 +78,6 @@ function TopTabsDemo() {
   );
 }
 
-function NativeStackHome() {
-  return <Center label="Native stack header items" />;
-}
-
-function NativeStackHeaderIcons() {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.headerIcons}>
-      <PlatformIcon
-        icon={nativeNanoSymbol('walking')}
-        color={colors.text}
-        size={24}
-      />
-      <PlatformIcon
-        icon={nativeNanoSymbol('walking', 'original')}
-        color={colors.text}
-        size={24}
-      />
-    </View>
-  );
-}
-
-const NativeStack = createNativeStackNavigator();
-function NativeStackDemo() {
-  return (
-    <NativeStack.Navigator>
-      <NativeStack.Screen
-        name="NativeStackHome"
-        component={NativeStackHome}
-        options={{
-          title: 'Native stack',
-          headerRight: NativeStackHeaderIcons,
-          unstable_headerRightItems: () => [
-            {
-              type: 'button',
-              label: 'Monochrome',
-              icon: nativeNanoSymbol('walking'),
-              onPress: () => {},
-            },
-            {
-              type: 'button',
-              label: 'Original',
-              icon: nativeNanoSymbol('walking', 'original'),
-              onPress: () => {},
-            },
-          ],
-        }}
-      />
-    </NativeStack.Navigator>
-  );
-}
-
 function ElementsHome({
   navigation,
 }: {
@@ -168,12 +110,6 @@ function ElementsHome({
         onPress={() => navigation.navigate('TopTabsDemo')}
       >
         Material top tabs
-      </Button>
-      <Button
-        variant="tinted"
-        onPress={() => navigation.navigate('NativeStackDemo')}
-      >
-        Native stack header
       </Button>
       {Platform.OS === 'ios' ? (
         <Button
@@ -214,11 +150,6 @@ export default function SystemShowcase() {
         component={TopTabsDemo}
         options={{ title: 'Material top tabs' }}
       />
-      <Stack.Screen
-        name="NativeStackDemo"
-        component={NativeStackDemo}
-        options={{ headerShown: false }}
-      />
       {Platform.OS === 'ios' ? (
         <Stack.Screen
           name="SFSymbols"
@@ -234,7 +165,6 @@ const styles = StyleSheet.create({
   home: { flex: 1, backgroundColor: '#fff', padding: 20, gap: 12 },
   section: { fontSize: 13, fontWeight: '600', color: '#444', marginTop: 8 },
   row: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  headerIcons: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   center: {
     flex: 1,
     backgroundColor: '#fff',
