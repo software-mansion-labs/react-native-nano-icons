@@ -1,7 +1,6 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Tabs } from 'expo-router';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -45,6 +44,16 @@ export default function TabLayout() {
         options={{
           title: '(Nano)Material TwoTone Icons',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="colors"
+        options={{
+          title: 'Platform Colors',
+          tabBarLabel: 'Colors',
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="paint-brush" color={color} />
+          ),
         }}
       />
     </Tabs>

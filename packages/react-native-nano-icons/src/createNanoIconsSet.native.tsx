@@ -1,8 +1,10 @@
 import { memo, useMemo } from 'react';
-import { PixelRatio, UIManager, View, processColor } from 'react-native';
+import { PixelRatio, UIManager, View } from 'react-native';
+import type { ColorValue } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
 import { shallowEqualColor } from './utils/shallowEqualColor';
+import { validateLayerColor } from './utils/validateLayerColor';
 import {
   DEFAULT_ICON_SIZE,
   resolveGlyphEntry,
@@ -26,16 +28,10 @@ export { shallowEqualColor };
 
 const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
 
-// Shared processColor cache — avoids redundant color parsing for repeated
-// color strings like "black", "rgba(0,0,0,0.3)" across thousands of icons
-const processedColorCache = new Map<string, number>();
-function cachedProcessColor(color: string): number {
-  let result = processedColorCache.get(color);
-  if (result === undefined) {
-    result = (processColor(color) ?? 0xff000000) as number;
-    processedColorCache.set(color, result);
-  }
-  return result;
+function nativeSrcColor(srcColor: string | undefined): string {
+  return srcColor === undefined || srcColor === 'currentColor'
+    ? 'black'
+    : srcColor;
 }
 
 async function loadFontFromDevServer(family: string): Promise<boolean> {
@@ -90,9 +86,10 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
   }
 
   // Pre-compute per-icon static data (codepoints, default colors) once at set creation
-  // Avoids layers.map() + processColor per icon mount
+  // Avoids layers.map() per icon mount, and keeps the array identity stable so
+  // React Native's prop diff skips re-running processColorArray on re-render.
   const codepointsCache = new Map<string, readonly number[]>();
-  const defaultColorsCache = new Map<string, readonly number[]>();
+  const defaultColorsCache = new Map<string, readonly ColorValue[]>();
 
   function getCodepoints(
     name: string,
@@ -109,12 +106,10 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
   function getDefaultColors(
     name: string,
     layers: GlyphEntry[1]
-  ): readonly number[] {
+  ): readonly ColorValue[] {
     let colors = defaultColorsCache.get(name);
     if (!colors) {
-      colors = layers.map(([, srcColor]) =>
-        cachedProcessColor(srcColor ?? 'black')
-      );
+      colors = layers.map(([, srcColor]) => nativeSrcColor(srcColor));
       defaultColorsCache.set(name, colors);
     }
     return colors;
@@ -145,14 +140,18 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       const nameStr = name as string;
       const codepoints = getCodepoints(nameStr, layers);
 
-      const processedColors = useMemo(() => {
+      const layerColors = useMemo(() => {
         // Fast path: no custom color — use pre-computed defaults
         if (color === undefined || color === null) {
           return getDefaultColors(nameStr, layers);
         }
         const resolveColor = createLayerColorResolver(color);
         return layers.map(([, srcColor], i) =>
-          cachedProcessColor(resolveColor(i, srcColor) as string)
+          validateLayerColor(
+            resolveColor(i, nativeSrcColor(srcColor)),
+            nameStr,
+            i
+          )
         );
       }, [nameStr, color]);
 
@@ -177,13 +176,12 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           />
         );
       }
-
       return (
         <NanoIconViewNative
           ref={ref}
           fontFamily={fontFamilyBasename}
           codepoints={codepoints}
-          colors={processedColors}
+          colors={layerColors}
           fontSize={size}
           advanceWidth={adv}
           unitsPerEm={unitsPerEm}
