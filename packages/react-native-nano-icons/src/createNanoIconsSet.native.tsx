@@ -4,6 +4,7 @@ import type { ColorValue } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
 import { shallowEqualColor } from './utils/shallowEqualColor';
+import { validateLayerColor } from './utils/validateLayerColor';
 import {
   DEFAULT_ICON_SIZE,
   resolveGlyphEntry,
@@ -26,6 +27,12 @@ export type { IconComponent, IconProps };
 export { shallowEqualColor };
 
 const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
+
+function nativeSrcColor(srcColor: string | undefined): string {
+  return srcColor === undefined || srcColor === 'currentColor'
+    ? 'black'
+    : srcColor;
+}
 
 async function loadFontFromDevServer(family: string): Promise<boolean> {
   if (__DEV__) {
@@ -102,7 +109,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
   ): readonly ColorValue[] {
     let colors = defaultColorsCache.get(name);
     if (!colors) {
-      colors = layers.map(([, srcColor]) => srcColor ?? 'black');
+      colors = layers.map(([, srcColor]) => nativeSrcColor(srcColor));
       defaultColorsCache.set(name, colors);
     }
     return colors;
@@ -139,7 +146,13 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           return getDefaultColors(nameStr, layers);
         }
         const resolveColor = createLayerColorResolver(color);
-        return layers.map(([, srcColor], i) => resolveColor(i, srcColor));
+        return layers.map(([, srcColor], i) =>
+          validateLayerColor(
+            resolveColor(i, nativeSrcColor(srcColor)),
+            nameStr,
+            i
+          )
+        );
       }, [nameStr, color]);
 
       const nativeStyle = useMemo(
