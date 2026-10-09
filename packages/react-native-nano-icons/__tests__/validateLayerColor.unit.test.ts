@@ -20,6 +20,12 @@ describe('validateLayerColor', () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
+  it('maps currentColor and a missing color to black without reporting', () => {
+    expect(validateLayerColor('currentColor', 'star', 0)).toBe('black');
+    expect(validateLayerColor(undefined, 'star', 0)).toBe('black');
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
   it('passes platform color objects through untouched', () => {
     const platform = PlatformColor('label');
     expect(validateLayerColor(platform, 'star', 0)).toBe(platform);

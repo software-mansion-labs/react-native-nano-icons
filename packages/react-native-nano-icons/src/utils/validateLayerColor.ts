@@ -6,10 +6,11 @@ const validityByString = new Map<string, boolean>();
 const reportedInvalid = new Set<string>();
 
 export function validateLayerColor(
-  value: ColorValue,
+  value: ColorValue | undefined,
   iconName: string,
   layerIndex: number
 ): ColorValue {
+  if (value === undefined || value === 'currentColor') return 'black';
   if (typeof value !== 'string') return value;
   let valid = validityByString.get(value);
   if (valid === undefined) {

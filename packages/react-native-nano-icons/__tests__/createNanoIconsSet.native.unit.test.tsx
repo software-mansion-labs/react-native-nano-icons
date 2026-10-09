@@ -86,6 +86,17 @@ describe('createIconSet (native) layer colors', () => {
     ]);
   });
 
+  test('tintMode currentColor keeps hardcoded fills and tints the rest', () => {
+    expect(
+      nativeColors({ name: 'badge', color: 'red', tintMode: 'currentColor' })
+    ).toEqual(['#ff0000', 'red']);
+    expect(nativeColors({ name: 'badge', tintMode: 'currentColor' })).toEqual([
+      '#ff0000',
+      'black',
+    ]);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
   test('an empty color array falls back to the glyphmap defaults', () => {
     expect(nativeColors({ name: 'badge', color: [] })).toEqual([
       '#ff0000',

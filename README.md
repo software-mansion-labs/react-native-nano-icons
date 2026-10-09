@@ -227,6 +227,7 @@ export default function App() {
 | `name`               | `string`                     | **(required)**    | Icon name — corresponds to the original SVG filename. Fully typed from the glyphmap.                                                         |
 | `size`               | `number`                     | `12`              | Icon size in points.                                                                                                                         |
 | `color`              | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
+| `tintMode`           | `'all' \| 'currentColor'`    | `'all'`           | Which layers `color` applies to: every layer, or only those annotated with `currentColor` (an icon without any keeps its original colors).                             |
 | `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                                          |
 | `style`              | `ViewStyle`                  | —                 | Style applied to the icon container.                                                                                                         |
 | `accessible`         | `boolean`                    | —                 | Override the default accessibility behavior.                                                                                                 |
@@ -350,6 +351,7 @@ This makes the library well-suited for multicolor icons like country flags, bran
 
 - **Single string** — applies to all layers.
 - **Array** — each element maps to a layer. If the array is shorter than the number of layers, the last color is repeated.
+- **`tintMode="currentColor"`** — `color` applies only to layers annotated with `currentColor` in the SVG, so hardcoded colors (flags, logos) are kept. An array maps onto those layers in order, with the last color repeated. An icon with no `currentColor` layers renders in its original colors.
 - **Omitted** — uses the original SVG colors stored in the glyphmap.
 - **Platform colors** — `PlatformColor(...)` and `DynamicColorIOS(...)` work in both forms and follow system appearance changes natively, without a re-render.
 - **Invalid colors** — an unparseable color string falls back to black. In development an error names the icon and layer.

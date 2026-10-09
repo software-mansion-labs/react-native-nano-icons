@@ -6,6 +6,7 @@ import type {
   ViewStyle,
 } from 'react-native';
 import type { NanoGlyphMapInput } from './core/types';
+import type { TintMode } from './utils/glyphRuntime';
 
 type ViewRef = ComponentRef<typeof View>;
 
@@ -13,6 +14,7 @@ export type IconProps<Name> = {
   name: Name;
   size?: number;
   color?: ColorValue | ColorValue[];
+  tintMode?: TintMode;
   allowFontScaling?: boolean;
   style?: ViewStyle;
   accessible?: boolean;
