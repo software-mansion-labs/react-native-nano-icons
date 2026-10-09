@@ -78,28 +78,31 @@ class NanoIconViewManager :
     }
   }
 
-  @ReactProp(name = "fontSize", defaultFloat = 12f)
-  override fun setFontSize(view: NanoIconView, value: Float) {
+  @ReactProp(name = "color", customType = "Color")
+  override fun setColor(view: NanoIconView, value: Int?) {
+    view.setTintColor(value)
+  }
+
+  @ReactProp(name = "tintLayers")
+  override fun setTintLayers(view: NanoIconView, value: ReadableArray?) {
+    val arr = if (value == null) intArrayOf() else IntArray(value.size()) { value.getInt(it) }
+    view.setTintLayers(arr)
+  }
+
+  @ReactProp(name = "size", defaultFloat = 12f)
+  override fun setSize(view: NanoIconView, value: Float) {
     view.setFontSize(value)
+  }
+
+  @ReactProp(name = "allowFontScaling", defaultBoolean = true)
+  override fun setAllowFontScaling(view: NanoIconView, value: Boolean) {
   }
 
   @ReactProp(name = "advanceWidth", defaultInt = 0)
   override fun setAdvanceWidth(view: NanoIconView, value: Int) {
-    // Used for sizing on JS side; native view uses Canvas layout
   }
 
   @ReactProp(name = "unitsPerEm", defaultInt = 0)
   override fun setUnitsPerEm(view: NanoIconView, value: Int) {
-    // Used for sizing on JS side; native view uses Canvas layout
-  }
-
-  @ReactProp(name = "iconWidth", defaultFloat = 0f)
-  override fun setIconWidth(view: NanoIconView, value: Float) {
-    // Width set via style from JS
-  }
-
-  @ReactProp(name = "iconHeight", defaultFloat = 0f)
-  override fun setIconHeight(view: NanoIconView, value: Float) {
-    // Height set via style from JS
   }
 }

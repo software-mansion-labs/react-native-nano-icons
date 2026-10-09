@@ -16,6 +16,8 @@
     "lib",
     "ios",
     "android",
+    "common",
+    "react-native.config.js",
     "react-native-nano-icons.podspec"
   ],
   "scripts": {

@@ -6,11 +6,14 @@ export interface NativeProps extends ViewProps {
   fontFamily: string;
   codepoints: ReadonlyArray<Int32>;
   colors: ReadonlyArray<ColorValue>;
-  fontSize: Float;
+  color?: ColorValue;
+  tintLayers: ReadonlyArray<Int32>;
+  size: Float;
+  allowFontScaling: boolean;
   advanceWidth: Int32;
   unitsPerEm: Int32;
-  iconWidth: Float;
-  iconHeight: Float;
 }
 
-export default codegenNativeComponent<NativeProps>('NanoIconView');
+export default codegenNativeComponent<NativeProps>('NanoIconView', {
+  interfaceOnly: true,
+});

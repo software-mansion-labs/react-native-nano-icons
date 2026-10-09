@@ -20,6 +20,8 @@ class NanoIconView(context: Context) : View(context) {
   // configuration change — the props are not re-sent for that.
   private var literalColors: IntArray = intArrayOf()
   private var colorPaths: Array<Array<String>?>? = null
+  private var tintColor: Int? = null
+  private var tintLayers: IntArray = intArrayOf()
   private var cachedFontFamily: String? = null
   private var cachedTypeface: Typeface? = null
   // Cached String objects — rebuilt only when codepoints change
@@ -79,6 +81,22 @@ class NanoIconView(context: Context) : View(context) {
     invalidate()
   }
 
+  fun setTintColor(color: Int?) {
+    tintColor = color
+    invalidate()
+  }
+
+  fun setTintLayers(layers: IntArray) {
+    tintLayers = layers
+    invalidate()
+  }
+
+  private fun layerColor(index: Int): Int {
+    val tint = tintColor
+    if (tint != null && tintLayers.contains(index)) return tint
+    return if (index < colors.size) colors[index] else 0xFF000000.toInt()
+  }
+
   // Resolve theme-dependent entries against this view's current context; literal
   // entries pass through untouched.
   private fun resolveColors() {
@@ -135,8 +153,7 @@ class NanoIconView(context: Context) : View(context) {
 
     // All layers drawn at the same position (stacked on each other)
     for (i in cachedTexts.indices) {
-      val color = if (i < colors.size) colors[i] else 0xFF000000.toInt()
-      paint.color = color
+      paint.color = layerColor(i)
       canvas.drawText(cachedTexts[i], 0f, cachedBaseline, paint)
     }
 

@@ -52,14 +52,18 @@ const Icon = createIconSet(glyphMap);
 
 type IconElementProps = Parameters<typeof Icon>[0];
 
-function nativeColors(props: IconElementProps): unknown {
+function nativeProps(props: IconElementProps): Record<string, unknown> {
   let tree!: ReturnType<TestRendererModule['create']>;
   TestRenderer.act(() => {
     tree = TestRenderer.create(createElement(Icon, { size: 24, ...props }));
   });
   const nodes = tree.root.findAll((node) => node.type === 'NanoIconView');
   expect(nodes).toHaveLength(1);
-  return nodes[0]!.props['colors'];
+  return nodes[0]!.props;
+}
+
+function nativeColors(props: IconElementProps): unknown {
+  return nativeProps(props)['colors'];
 }
 
 describe('createIconSet (native) layer colors', () => {
@@ -95,6 +99,26 @@ describe('createIconSet (native) layer colors', () => {
       'black',
     ]);
     expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  test('passes size and font scaling to native and leaves sizing to the shadow node', () => {
+    const props = nativeProps({
+      name: 'badge',
+      size: 30,
+      allowFontScaling: false,
+    });
+    expect(props['size']).toBe(30);
+    expect(props['allowFontScaling']).toBe(false);
+    expect(props['advanceWidth']).toBe(1024);
+    expect(props['unitsPerEm']).toBe(1024);
+    expect(props['style']).toBeUndefined();
+  });
+
+  test('sends the tintable layer indices for the tint mode', () => {
+    expect(nativeProps({ name: 'badge' })['tintLayers']).toEqual([0, 1]);
+    expect(
+      nativeProps({ name: 'badge', tintMode: 'currentColor' })['tintLayers']
+    ).toEqual([1]);
   });
 
   test('an empty color array falls back to the glyphmap defaults', () => {

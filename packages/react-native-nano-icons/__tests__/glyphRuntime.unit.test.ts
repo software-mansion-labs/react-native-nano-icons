@@ -3,6 +3,7 @@ import {
   resolveGlyphEntry,
   createCharCache,
   createLayerColorResolver,
+  tintableLayers,
 } from '../src/utils/glyphRuntime';
 
 const glyphMap = {
@@ -175,6 +176,25 @@ describe('glyphRuntime', () => {
           '#00f',
         ]);
       }
+    });
+  });
+
+  describe('tintableLayers', () => {
+    const layers: [number, string][] = [
+      [1, '#f00'],
+      [2, 'currentColor'],
+      [3, '#00f'],
+      [4, 'currentColor'],
+    ];
+
+    test('all mode lists every layer', () => {
+      expect(tintableLayers(layers)).toEqual([0, 1, 2, 3]);
+      expect(tintableLayers(layers, 'all')).toBe(tintableLayers(layers));
+    });
+
+    test('currentColor mode lists only currentColor layers', () => {
+      expect(tintableLayers(layers, 'currentColor')).toEqual([1, 3]);
+      expect(tintableLayers([[1, '#f00']], 'currentColor')).toEqual([]);
     });
   });
 });

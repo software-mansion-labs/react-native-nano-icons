@@ -9,6 +9,7 @@ import {
   DEFAULT_ICON_SIZE,
   resolveGlyphEntry,
   createLayerColorResolver,
+  tintableLayers,
 } from './utils/glyphRuntime';
 import NanoIconViewNative from './specs/NanoIconViewNativeComponent';
 import {
@@ -175,12 +176,12 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           fontFamily={fontFamilyBasename}
           codepoints={codepoints}
           colors={layerColors}
-          fontSize={size}
+          tintLayers={tintableLayers(layers, tintMode)}
+          size={size}
+          allowFontScaling={allowFontScaling}
           advanceWidth={adv}
           unitsPerEm={unitsPerEm}
-          iconWidth={width}
-          iconHeight={scaledSize}
-          style={nativeStyle}
+          style={style}
           accessible={accessible}
           accessibilityRole={accessibilityRole}
           accessibilityLabel={accessibilityLabel ?? (name as string)}
