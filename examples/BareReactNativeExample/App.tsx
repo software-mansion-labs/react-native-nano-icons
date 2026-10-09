@@ -2,8 +2,19 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import React from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon, SWMIconsOutline } from './Icon';
+import { FontGridScreen } from './FontGridScreen';
 
 export default function App() {
+  const [fontGridOpen, setFontGridOpen] = React.useState(false);
+  if (fontGridOpen) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView edges={['top']} style={styles.container}>
+          <FontGridScreen onClose={() => setFontGridOpen(false)} />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
   return (
     <SafeAreaProvider>
       <SafeAreaView edges={['top']} style={styles.container}>
@@ -22,6 +33,14 @@ export default function App() {
             <Pressable style={styles.button}>
               <SWMIconsOutline name="ZoomIn" size={28} color={'#007AFF'} />
               <Text style={styles.buttonText}>Go to 1k icons screen</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.button}
+              onPress={() => setFontGridOpen(true)}
+              testID="open-font-grid"
+            >
+              <Text style={styles.buttonText}>Open font grid</Text>
             </Pressable>
           </View>
           <View style={styles.row}>
