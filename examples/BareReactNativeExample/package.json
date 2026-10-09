@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
+    "@react-native-community/slider": "^5.2.1",
     "@react-native/new-app-screen": "0.84.0",
     "@react-navigation/bottom-tabs": "patch:@react-navigation/bottom-tabs@npm%3A8.0.0-alpha.51#~/.yarn/patches/@react-navigation-bottom-tabs-npm-8.0.0-alpha.51-7483f3b46d.patch",
     "@react-navigation/drawer": "8.0.0-alpha.52",

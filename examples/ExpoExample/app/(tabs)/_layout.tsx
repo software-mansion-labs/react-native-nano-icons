@@ -84,6 +84,17 @@ export default function TabLayout() {
           }
         />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="platform-colors">
+        <NativeTabs.Trigger.Label>Platform Colors</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={
+            <NativeTabs.Trigger.VectorIcon
+              family={FontAwesome}
+              name="paint-brush"
+            />
+          }
+        />
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }

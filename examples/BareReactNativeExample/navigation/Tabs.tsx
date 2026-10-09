@@ -7,6 +7,7 @@ import { nativeNanoSymbol } from 'react-native-nano-icons/symbols';
 import IconsScreen from '../screens/IconsScreen';
 import MulticolorScreen from '../screens/MulticolorScreen';
 import SystemScreen from '../screens/SystemScreen';
+import InlineTextScreen from '../screens/InlineTextScreen';
 import type { TabiconsSymbol } from '../assets/nanoicons/tabicons.symbols';
 import type { MciconSymbol } from '../assets/nanoicons/mcicon.symbols';
 import { system } from '../helpers/icons';
@@ -52,6 +53,13 @@ const Tabs = createBottomTabNavigator({
         title: 'System',
         tabBarIcon: ({ focused }: { focused: boolean }) =>
           system(focused ? 'star.fill' : 'star', 'star'),
+      },
+    }),
+    Inline: createBottomTabScreen({
+      screen: InlineTextScreen,
+      options: {
+        title: 'Inline',
+        tabBarIcon: () => system('textformat', 'text_fields'),
       },
     }),
   },

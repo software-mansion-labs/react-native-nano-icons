@@ -49,7 +49,7 @@ export class IconSetBuildError extends Error {
   }
 }
 
-const DEFAULT_SAFE_ZONE_RATIO = 1020 / 1024;
+const DEFAULT_SAFE_ZONE_RATIO = 1;
 const DEFAULT_UPM = 1024;
 const DEFAULT_START_UNICODE = 0xe900;
 

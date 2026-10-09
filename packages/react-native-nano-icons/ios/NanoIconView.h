@@ -2,4 +2,5 @@
 #import <Foundation/Foundation.h>
 
 @interface NanoIconView : RCTViewComponentView
+- (void)invalidateInlineBaseline;
 @end

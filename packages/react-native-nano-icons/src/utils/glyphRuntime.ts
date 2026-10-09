@@ -36,11 +36,39 @@ export function createCharCache(): (codepoint: number) => string {
  * color wins, else the last supplied palette color spills onto remaining
  * layers, else the glyph's own source color, else black.
  */
+export type TintMode = 'all' | 'currentColor';
+
 export function createLayerColorResolver(
-  color: ColorValue | ColorValue[] | undefined
+  color: ColorValue | ColorValue[] | undefined,
+  tintMode: TintMode = 'all',
+  layers: GlyphEntry[1] = []
 ): (index: number, srcColor: string | undefined) => ColorValue {
   const colorArray = Array.isArray(color) ? color : [color];
   const lastPaletteColor = colorArray[colorArray.length - 1];
-  return (index, srcColor) =>
-    colorArray[index] ?? lastPaletteColor ?? srcColor ?? 'black';
+  const paletteIndexByLayer =
+    tintMode === 'currentColor' ? currentColorPositions(layers) : undefined;
+  return (index, srcColor) => {
+    const paletteIndex = paletteIndexByLayer
+      ? (paletteIndexByLayer[index] ?? -1)
+      : index;
+    const paletteColor =
+      paletteIndex < 0
+        ? undefined
+        : (colorArray[paletteIndex] ?? lastPaletteColor);
+    return paletteColor ?? srcColor ?? 'black';
+  };
+}
+
+const positionsByLayers = new WeakMap<GlyphEntry[1], number[]>();
+
+function currentColorPositions(layers: GlyphEntry[1]): number[] {
+  let positions = positionsByLayers.get(layers);
+  if (!positions) {
+    let next = 0;
+    positions = layers.map(([, srcColor]) =>
+      srcColor === 'currentColor' ? next++ : -1
+    );
+    positionsByLayers.set(layers, positions);
+  }
+  return positions;
 }

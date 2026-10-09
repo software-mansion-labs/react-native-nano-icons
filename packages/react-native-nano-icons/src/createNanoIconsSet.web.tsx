@@ -37,6 +37,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       name,
       size = DEFAULT_ICON_SIZE,
       color,
+      tintMode,
       style,
       accessible,
       accessibilityLabel,
@@ -51,7 +52,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       const fontFamily =
         useDynamicFontStatus(family) === 'ready' ? family : fontBasename;
 
-      const resolveColor = createLayerColorResolver(color);
+      const resolveColor = createLayerColorResolver(color, tintMode, layers);
 
       const containerStyle = useMemo<CSSProperties>(
         () => ({
@@ -114,6 +115,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       prev.size === next.size &&
       prev.style === next.style &&
       prev.className === next.className &&
+      prev.tintMode === next.tintMode &&
       shallowEqualColor(prev.color, next.color)
   );
 

@@ -1,7 +1,7 @@
 import { FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Text, View } from '@/components/Themed';
+import { Text, View, useThemeColor } from '@/components/Themed';
 import materialIconGlyphMap from '@/assets/nanoicons/MaterialIconsTwotone.glyphmap.json';
 import { MaterialIcon } from '@/components/Icon';
 
@@ -25,15 +25,18 @@ const Row = ({ icon }: { icon: keyof typeof materialIconGlyphMap.i }) => {
 };
 
 export default function MaterialScreen() {
+  const background = useThemeColor({}, 'background');
+
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+    <SafeAreaView
+      edges={['top']}
+      style={{ flex: 1, backgroundColor: background }}>
       <FlatList
         data={iconSubset}
         keyExtractor={(item) => item}
         renderItem={({ item }) => <Row icon={item} />}
         contentContainerStyle={{
           paddingHorizontal: 10,
-          backgroundColor: 'white',
         }}
       />
     </SafeAreaView>

@@ -1,11 +1,16 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon, SWMIconsOutline } from '@/components/Icon';
+import { Text, useThemeColor } from '@/components/Themed';
 
 export default function TabOneScreen() {
+  const screenBackground = useThemeColor({}, 'screenBackground');
+
   return (
     <SafeAreaProvider>
-      <SafeAreaView edges={['top']} style={styles.container}>
+      <SafeAreaView
+        edges={['top']}
+        style={[styles.container, { backgroundColor: screenBackground }]}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}>
@@ -73,7 +78,6 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#eee',
     justifyContent: 'center',
     alignItems: 'center',
   },

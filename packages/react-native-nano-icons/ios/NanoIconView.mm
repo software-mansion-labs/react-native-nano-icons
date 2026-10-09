@@ -5,6 +5,7 @@
 #import <React/RCTFabricComponentsPlugins.h>
 #import <react/renderer/components/RNNanoIconsSpec/ComponentDescriptors.h>
 #import <react/renderer/components/RNNanoIconsSpec/Props.h>
+#import "NanoIconInlineBaseline.h"
 
 using namespace facebook::react;
 
@@ -50,7 +51,9 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   NSString *_fontFamily;
   CGFloat _fontSize;
   std::vector<CGGlyph> _glyphs;
-  std::vector<uint32_t> _colors;
+  // Unresolved layer colors — may be trait-dependent (DynamicColorIOS, PlatformColor).
+  NSArray<UIColor *> *_layerColors;
+  // _layerColors resolved against the current trait collection.
   std::vector<CGColorRef> _cachedCGColors;
   CGFloat _fitScale;
   CGPoint _baselinePosition;
@@ -58,10 +61,9 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 
   // Inline-in-Text detection — resolved once on first layout, cached until reparenting.
   // Standalone icons (vast majority) skip the superview walk entirely after detection.
-  BOOL _inlineDetected;
-  BOOL _isInlineInText;
-  UIView * __weak _paragraphView;
-  CGFloat _cachedBaselineOffset;
+  BOOL _paragraphResolved;
+  UIView * __weak _paragraph;
+  CGFloat _baselineOffset;
   BOOL _baselineOffsetValid;
 
   // Drawing sublayer for inline icons — provides a shifted pixel buffer so the
@@ -112,61 +114,19 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   _metricsValid = YES;
 }
 
-// Detect whether this icon is inline inside a <Text> component and, if so,
-// compute the baseline offset in a single pass. Deferred to first layout
-// (not didMoveToSuperview) because Fabric may assemble the hierarchy bottom-up.
-// For standalone icons this completes in 1-3 class name checks with no
-// ObjC runtime method resolution or attributed string reads.
-- (void)_detectAndCacheInlineState {
-  _inlineDetected = YES;
-  _isInlineInText = NO;
-  _paragraphView = nil;
-  _cachedBaselineOffset = 0;
-  _baselineOffsetValid = YES;
+- (void)invalidateInlineBaseline {
+  _baselineOffsetValid = NO;
+  [self setNeedsLayout];
+}
 
-  // RCTParagraphComponentView is the immediate or near-immediate parent
-  // when the icon is inside <Text>. Three levels covers all known layouts.
-  UIView *current = self.superview;
-  UIView *target = nil;
-  for (int i = 0; i < 3 && current; i++) {
-    if ([NSStringFromClass([current class]) isEqualToString:@"RCTParagraphComponentView"]) {
-      target = current;
-      break;
-    }
-    current = current.superview;
+// The baseline offset depends on where RN placed the view, so a new frame
+// invalidates it.
+- (void)updateLayoutMetrics:(const LayoutMetrics &)layoutMetrics
+           oldLayoutMetrics:(const LayoutMetrics &)oldLayoutMetrics {
+  [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
+  if (layoutMetrics.frame != oldLayoutMetrics.frame) {
+    _baselineOffsetValid = NO;
   }
-
-  if (!target) return;
-
-  NSAttributedString *attrStr = nil;
-  if ([target respondsToSelector:@selector(attributedText)]) {
-    attrStr = [target performSelector:@selector(attributedText)];
-  }
-  if (!attrStr || attrStr.length == 0) return;
-
-  UIFont *f = [attrStr attribute:NSFontAttributeName atIndex:0 effectiveRange:nil];
-  if (!f) return;
-
-  _isInlineInText = YES;
-  _paragraphView = target;
-
-  // Derive the distance from this view's bottom edge to the text baseline.
-  // Respects custom RN lineHeight (mapped to NSParagraphStyle.maximumLineHeight)
-  // and any baseline offset applied by Fabric's text layout.
-  NSParagraphStyle *style = [attrStr attribute:NSParagraphStyleAttributeName
-                                       atIndex:0 effectiveRange:nil];
-  CGFloat lineHeight = (style && style.maximumLineHeight > 0)
-                     ? style.maximumLineHeight : f.lineHeight;
-
-  NSNumber *bOff = [attrStr attribute:NSBaselineOffsetAttributeName
-                              atIndex:0 effectiveRange:nil];
-  CGFloat baselineFromLineTop = f.ascender - (bOff ? bOff.doubleValue : 0);
-
-  CGFloat frameBottom = self.frame.origin.y + self.frame.size.height;
-  CGFloat posInLine = fmod(frameBottom, lineHeight);
-  if (posInLine < 0.01) posInLine = lineHeight;
-
-  _cachedBaselineOffset = MAX(0, posInLine - baselineFromLineTop);
 }
 
 // Lazily create the drawing sublayer for inline-in-Text icons.
@@ -185,17 +145,12 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 // Reset inline state when the view moves to a new parent.
 - (void)didMoveToSuperview {
   [super didMoveToSuperview];
-  _inlineDetected = NO;
-  _isInlineInText = NO;
-  _paragraphView = nil;
+  _paragraphResolved = NO;
+  _paragraph = nil;
   _baselineOffsetValid = NO;
-  if (_drawingLayer) {
-    [_drawingLayer removeFromSuperlayer];
-    _drawingLayer = nil;
-  }
 }
 
-// _cachedBaselineOffset and _fitScale are both derived from bounds.
+// _baselineOffset and _fitScale are both derived from bounds.
 - (void)setBounds:(CGRect)bounds {
   if (!CGSizeEqualToSize(self.bounds.size, bounds.size)) {
     _baselineOffsetValid = NO;
@@ -206,43 +161,49 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 
 #pragma mark - Layout
 
-// Standalone: no work beyond metrics validation (drawing via drawRect: on self).
-// Inline: position the drawing sublayer with the cached baseline offset,
-// recomputing only when bounds change or the view is reparented.
 - (void)layoutSubviews {
   [super layoutSubviews];
   if (!_metricsValid) [self _updateMetrics];
-
-  if (!_inlineDetected) {
-    [self _detectAndCacheInlineState];
+  if (!_paragraphResolved) {
+    _paragraph = NanoIconParagraphNeedingBaselineCorrection(self);
+    _paragraphResolved = YES;
   }
-
-  if (_isInlineInText) {
-    if (!_baselineOffsetValid) {
-      [self _detectAndCacheInlineState];
-    }
-    BOOL created = !_drawingLayer;
-    [self _ensureDrawingLayer];
-    CGRect newFrame = CGRectMake(0, -_cachedBaselineOffset,
-                                 self.bounds.size.width, self.bounds.size.height);
-    if (!CGRectEqualToRect(_drawingLayer.frame, newFrame)) {
-      [CATransaction begin];
-      [CATransaction setDisableActions:YES];
-      _drawingLayer.frame = newFrame;
-      [CATransaction commit];
-    }
-    // First layout after inline detection: the layer missed the initial
-    // setNeedsDisplay from updateProps (which targeted self before detection).
-    if (created) [_drawingLayer setNeedsDisplay];
+  if (!_baselineOffsetValid) {
+    _baselineOffset = _paragraph ? NanoIconInlineBaselineOffset(self, _paragraph) : 0;
+    _baselineOffsetValid = YES;
   }
-  // standalone: draws directly via drawRect: on self
+  [self _layoutDrawingLayer];
+}
+
+// Standalone icons draw in drawRect:. An icon that needs a baseline correction
+// draws in a sublayer shifted by the offset instead, so it can overflow the
+// Yoga frame without moving the view itself.
+- (void)_layoutDrawingLayer {
+  if (_baselineOffset == 0) {
+    if (_drawingLayer) {
+      [_drawingLayer removeFromSuperlayer];
+      _drawingLayer = nil;
+      [self setNeedsDisplay];
+    }
+    return;
+  }
+  BOOL created = !_drawingLayer;
+  [self _ensureDrawingLayer];
+  CGRect frame = CGRectMake(0, -_baselineOffset, self.bounds.size.width, self.bounds.size.height);
+  if (!CGRectEqualToRect(_drawingLayer.frame, frame)) {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    _drawingLayer.frame = frame;
+    [CATransaction commit];
+  }
+  if (created) [_drawingLayer setNeedsDisplay];
 }
 
 #pragma mark - Drawing
 
 // Standalone icons draw directly in this view's drawRect:.
 - (void)drawRect:(CGRect)rect {
-  if (_isInlineInText) return; // inline icons draw via _drawingLayer
+  if (_drawingLayer) return;
   CGContextRef ctx = UIGraphicsGetCurrentContext();
   if (ctx) [self _drawIconInContext:ctx bounds:self.bounds];
 }
@@ -320,17 +281,17 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   _cachedCGColors.clear();
 }
 
-// Convert ARGB uint32 color values into cached CGColorRefs.
+// Resolve the layer colors against the current traits into cached CGColorRefs.
+// Resolving up front (rather than relying on UIKit's current trait collection at
+// draw time) keeps the CALayer inline-in-Text path correct — CoreAnimation does
+// not install a trait collection around -drawInContext:.
 - (void)_rebuildCachedColors {
   [self _releaseCachedColors];
-  _cachedCGColors.resize(_colors.size());
-  for (size_t i = 0; i < _colors.size(); i++) {
-    uint32_t ci = _colors[i];
-    _cachedCGColors[i] = CGColorCreateSRGB(
-        ((ci >> 16) & 0xFF) / 255.0,
-        ((ci >> 8)  & 0xFF) / 255.0,
-        ( ci        & 0xFF) / 255.0,
-        ((ci >> 24) & 0xFF) / 255.0);
+  UITraitCollection *traits = self.traitCollection;
+  _cachedCGColors.resize(_layerColors.count);
+  for (NSUInteger i = 0; i < _layerColors.count; i++) {
+    UIColor *resolved = [_layerColors[i] resolvedColorWithTraitCollection:traits];
+    _cachedCGColors[i] = CGColorRetain(resolved.CGColor);
   }
 }
 
@@ -359,10 +320,12 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 
   if (oldViewProps.colors != newViewProps.colors) {
     const auto &colors = newViewProps.colors;
-    _colors.resize(colors.size());
+    NSMutableArray<UIColor *> *layerColors = [NSMutableArray arrayWithCapacity:colors.size()];
     for (size_t i = 0; i < colors.size(); i++) {
-      _colors[i] = (uint32_t)colors[i];
+      UIColor *color = RCTUIColorFromSharedColor(colors[i]);
+      [layerColors addObject:color ?: [UIColor blackColor]];
     }
+    _layerColors = layerColors;
     [self _rebuildCachedColors];
     needsRedraw = YES;
   }
@@ -391,6 +354,21 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   }
 }
 
+// Trait-dependent colors (DynamicColorIOS, PlatformColor) resolve to a different
+// CGColor when the interface style or contrast changes. Fabric does not re-send
+// props for that, so re-resolve and redraw here.
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+  [super traitCollectionDidChange:previousTraitCollection];
+
+  if (_layerColors.count == 0) return;
+  if (![self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+    return;
+  }
+
+  [self _rebuildCachedColors];
+  [self _setNeedsRedraw];
+}
+
 - (void)_resolveFontIfMissing {
   if (_font || _fontFamily.length == 0) return;
   _font = NanoIconResolveFont(_fontFamily, _fontSize);
@@ -402,7 +380,7 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 }
 
 - (void)_setNeedsRedraw {
-  if (_isInlineInText && _drawingLayer) {
+  if (_drawingLayer) {
     [_drawingLayer setNeedsDisplay];
   } else {
     [self setNeedsDisplay];
