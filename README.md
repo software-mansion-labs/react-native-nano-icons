@@ -351,6 +351,8 @@ This makes the library well-suited for multicolor icons like country flags, bran
 - **Single string** — applies to all layers.
 - **Array** — each element maps to a layer. If the array is shorter than the number of layers, the last color is repeated.
 - **Omitted** — uses the original SVG colors stored in the glyphmap.
+- **Platform colors** — `PlatformColor(...)` and `DynamicColorIOS(...)` work in both forms and follow system appearance changes natively, without a re-render.
+- **Invalid colors** — an unparseable color string falls back to black. In development an error names the icon and layer.
 
 An SVG with many distinct colors (e.g., a detailed vector image with 50 colors) produces at least 50 glyph layers. Each layer is a lightweight text glyph, so this is fine for typical icons (3–10 colors). For highly complex illustrations with dozens of colors, consider using `expo-image` instead.
 
