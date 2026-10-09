@@ -86,5 +86,95 @@ describe('glyphRuntime', () => {
       expect(resolve(0, 'srcColor')).toBe('srcColor');
       expect(resolve(0, undefined)).toBe('black');
     });
+
+    const mixedLayers: [number, string][] = [
+      [1, '#f00'],
+      [2, 'currentColor'],
+      [3, '#00f'],
+      [4, 'currentColor'],
+    ];
+    const resolveAll = (
+      resolve: (index: number, srcColor: string | undefined) => unknown
+    ) => mixedLayers.map(([, src], i) => resolve(i, src));
+
+    test('tintMode currentColor tints only currentColor layers with a single color', () => {
+      const resolve = createLayerColorResolver(
+        'red',
+        'currentColor',
+        mixedLayers
+      );
+      expect(resolveAll(resolve)).toEqual(['#f00', 'red', '#00f', 'red']);
+    });
+
+    test('tintMode currentColor maps array entries onto currentColor layers in order', () => {
+      expect(
+        resolveAll(
+          createLayerColorResolver(
+            ['teal', 'pink'],
+            'currentColor',
+            mixedLayers
+          )
+        )
+      ).toEqual(['#f00', 'teal', '#00f', 'pink']);
+      expect(
+        resolveAll(
+          createLayerColorResolver(['a', 'b', 'c'], 'currentColor', mixedLayers)
+        )
+      ).toEqual(['#f00', 'a', '#00f', 'b']);
+    });
+
+    test('a one-element array behaves like a single color in both modes', () => {
+      for (const mode of ['all', 'currentColor'] as const) {
+        expect(
+          resolveAll(createLayerColorResolver(['red'], mode, mixedLayers))
+        ).toEqual(
+          resolveAll(createLayerColorResolver('red', mode, mixedLayers))
+        );
+      }
+    });
+
+    test('tintMode currentColor without a color falls back to source colors', () => {
+      for (const color of [undefined, []]) {
+        expect(
+          resolveAll(
+            createLayerColorResolver(color, 'currentColor', mixedLayers)
+          )
+        ).toEqual(['#f00', 'currentColor', '#00f', 'currentColor']);
+      }
+    });
+
+    test('tintMode currentColor repeats the last array color over the remaining currentColor layers', () => {
+      const layers: [number, string][] = [
+        [1, 'currentColor'],
+        [2, '#f00'],
+        [3, 'currentColor'],
+        [4, 'currentColor'],
+      ];
+      const resolve = createLayerColorResolver(
+        ['teal', 'pink'],
+        'currentColor',
+        layers
+      );
+      expect(layers.map(([, src], i) => resolve(i, src))).toEqual([
+        'teal',
+        '#f00',
+        'pink',
+        'pink',
+      ]);
+    });
+
+    test('tintMode currentColor leaves an icon without currentColor layers untouched', () => {
+      const layers: [number, string][] = [
+        [1, '#f00'],
+        [2, '#00f'],
+      ];
+      for (const color of ['red', ['red'], ['red', 'blue']]) {
+        const resolve = createLayerColorResolver(color, 'currentColor', layers);
+        expect(layers.map(([, src], i) => resolve(i, src))).toEqual([
+          '#f00',
+          '#00f',
+        ]);
+      }
+    });
   });
 });

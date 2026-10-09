@@ -28,12 +28,6 @@ export { shallowEqualColor };
 
 const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
 
-function nativeSrcColor(srcColor: string | undefined): string {
-  return srcColor === undefined || srcColor === 'currentColor'
-    ? 'black'
-    : srcColor;
-}
-
 async function loadFontFromDevServer(family: string): Promise<boolean> {
   if (__DEV__) {
     const dev = require('./devServerFont') as typeof import('./devServerFont');
@@ -109,7 +103,9 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
   ): readonly ColorValue[] {
     let colors = defaultColorsCache.get(name);
     if (!colors) {
-      colors = layers.map(([, srcColor]) => nativeSrcColor(srcColor));
+      colors = layers.map(([, srcColor], i) =>
+        validateLayerColor(srcColor, name, i)
+      );
       defaultColorsCache.set(name, colors);
     }
     return colors;
@@ -120,6 +116,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       name,
       size = DEFAULT_ICON_SIZE,
       color,
+      tintMode,
       style,
       allowFontScaling = true,
       accessible,
@@ -145,15 +142,11 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
         if (color === undefined || color === null) {
           return getDefaultColors(nameStr, layers);
         }
-        const resolveColor = createLayerColorResolver(color);
+        const resolveColor = createLayerColorResolver(color, tintMode, layers);
         return layers.map(([, srcColor], i) =>
-          validateLayerColor(
-            resolveColor(i, nativeSrcColor(srcColor)),
-            nameStr,
-            i
-          )
+          validateLayerColor(resolveColor(i, srcColor), nameStr, i)
         );
-      }, [nameStr, color]);
+      }, [nameStr, color, tintMode]);
 
       const nativeStyle = useMemo(
         () => [{ width, height: scaledSize }, style],
@@ -202,6 +195,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       prev.size === next.size &&
       prev.allowFontScaling === next.allowFontScaling &&
       prev.style === next.style &&
+      prev.tintMode === next.tintMode &&
       shallowEqualColor(prev.color, next.color)
   );
 

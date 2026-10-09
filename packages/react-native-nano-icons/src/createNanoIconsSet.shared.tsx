@@ -101,6 +101,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       name,
       size = DEFAULT_ICON_SIZE,
       color,
+      tintMode,
       style,
       allowFontScaling = true,
       accessible,
@@ -118,7 +119,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
 
       const pending = useDynamicFontPending(managed, fontBasename);
 
-      const resolveColor = createLayerColorResolver(color);
+      const resolveColor = createLayerColorResolver(color, tintMode, layers);
 
       const containerStyle = useMemo(
         () => [{ height: scaledSize, width, bottom: 0 as const }, style],
@@ -159,6 +160,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       prev.size === next.size &&
       prev.allowFontScaling === next.allowFontScaling &&
       prev.style === next.style &&
+      prev.tintMode === next.tintMode &&
       shallowEqualColor(prev.color, next.color)
   );
 
