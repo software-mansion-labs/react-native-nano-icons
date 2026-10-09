@@ -1,5 +1,6 @@
 const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
+const { withNanoIcons } = require('react-native-nano-icons/metro');
 
 const projectRoot = __dirname;
 const repoRoot = path.resolve(projectRoot, '../..');
@@ -20,6 +21,8 @@ function escapeRegExp(s) {
 }
 
 const config = getDefaultConfig(projectRoot);
+
+config.resolver.assetExts.push('woff2');
 
 // Metro's default blockList can be RegExp or RegExp[]
 const baseBlockList = Array.isArray(config.resolver.blockList)
@@ -48,4 +51,4 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform);
 };
 
-module.exports = config;
+module.exports = withNanoIcons(config);

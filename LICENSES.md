@@ -26,18 +26,15 @@ This project bundles or depends on the following third-party software:
    License: BSD-3-Clause
    Source: https://www.npmjs.com/package/pathkit-wasm
 
-7. pyodide
-   License: MPL-2.0
-   Source: https://www.npmjs.com/package/pyodide
-
-Notes about MPL-2.0 (Pyodide):
-
-- Pyodide is licensed under Mozilla Public License 2.0 (MPL-2.0), a file-level copyleft license.
-- If you modify Pyodide-covered source files and distribute the modified version, you must make those modified files available under MPL-2.0.
-- If you do not modify Pyodide itself, you generally only need to retain the license and notices when distributing.
+7. picosvg
+   License: Apache-2.0
+   Source: https://github.com/googlefonts/picosvg
+   Note: `src/core/svg/flatten/` is a TypeScript port of picosvg
+   (Copyright 2020 Google LLC). The ported files retain attribution headers
+   as required by the Apache License, Version 2.0.
 
 Full license texts:
 
 - MIT License: https://opensource.org/licenses/MIT
 - BSD 3-Clause License: https://opensource.org/licenses/BSD-3-Clause
-- MPL 2.0 License: https://www.mozilla.org/en-US/MPL/2.0/
+- Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0

@@ -58,10 +58,9 @@
     <false/>
     <key>UIAppFonts</key>
     <array>
-      <string>Testicons.ttf</string>
-      <string>DifferentIcons.ttf</string>
       <string>MaterialIconsTwotone.ttf</string>
       <string>SWMIconsOutline.ttf</string>
+      <string>Testicons.ttf</string>
     </array>
   </dict>
 </plist>

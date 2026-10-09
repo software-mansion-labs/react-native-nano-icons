@@ -1,4 +1,5 @@
 #import "NanoIconView.h"
+#import "NanoIconFontResolver.h"
 #import <CoreText/CoreText.h>
 #import <React/RCTConversions.h>
 #import <React/RCTFabricComponentsPlugins.h>
@@ -9,6 +10,7 @@ using namespace facebook::react;
 
 // Forward-declare so the layer subclass can call the drawing method.
 @interface NanoIconView ()
+- (void)_resolveFontIfMissing;
 - (void)_drawIconInContext:(CGContextRef)context bounds:(CGRect)bounds;
 @end
 
@@ -24,28 +26,33 @@ using namespace facebook::react;
 }
 @end
 
-// Process-wide CTFontRef cache keyed by (fontFamily, fontSize).
-// Avoids 1000× CTFontCreateWithName for identical (family, size) combos.
-static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
-  static NSMutableDictionary *cache;
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{ cache = [NSMutableDictionary new]; });
+static NSHashTable<NanoIconView *> *sNanoIconLiveViews;
+static dispatch_once_t sNanoIconLiveViewsOnce;
 
-  NSString *key = [NSString stringWithFormat:@"%@:%.1f", family, size];
-  id existing = cache[key];
-  if (existing) return (__bridge CTFontRef)existing;
-
-  CTFontRef font = CTFontCreateWithName((__bridge CFStringRef)family, size, NULL);
-  if (font) cache[key] = (__bridge id)font;
-  return font;
+static void NanoIconTrackLiveView(NanoIconView *view) {
+  dispatch_once(&sNanoIconLiveViewsOnce, ^{
+    sNanoIconLiveViews = [NSHashTable weakObjectsHashTable];
+    [[NSNotificationCenter defaultCenter]
+        addObserverForName:(__bridge NSString *)kCTFontManagerRegisteredFontsChangedNotification
+                    object:nil
+                     queue:[NSOperationQueue mainQueue]
+                usingBlock:^(__unused NSNotification *note) {
+                  for (NanoIconView *live in [sNanoIconLiveViews allObjects]) {
+                    [live _resolveFontIfMissing];
+                  }
+                }];
+  });
+  [sNanoIconLiveViews addObject:view];
 }
 
 @implementation NanoIconView {
-  CTFontRef _font;   // borrowed from static cache — do NOT CFRelease
+  CTFontRef _font;   // borrowed from the shared resolver cache — do NOT CFRelease
   NSString *_fontFamily;
   CGFloat _fontSize;
   std::vector<CGGlyph> _glyphs;
-  std::vector<uint32_t> _colors;
+  // Unresolved layer colors — may be trait-dependent (DynamicColorIOS, PlatformColor).
+  NSArray<UIColor *> *_layerColors;
+  // _layerColors resolved against the current trait collection.
   std::vector<CGColorRef> _cachedCGColors;
   CGFloat _fitScale;
   CGPoint _baselinePosition;
@@ -76,6 +83,7 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
 
     _fitScale = 1.0;
     _baselinePosition = CGPointZero;
+    NanoIconTrackLiveView(self);
 
     // _drawingLayer is created lazily only when inline in Text
   }
@@ -170,6 +178,7 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
   NanoIconDrawingLayer *layer = [NanoIconDrawingLayer layer];
   layer.owner = self;
   layer.opaque = NO;
+  layer.needsDisplayOnBoundsChange = YES;
   layer.contentsScale = [UIScreen mainScreen].scale;
   [self.layer addSublayer:layer];
   _drawingLayer = layer;
@@ -188,10 +197,11 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
   }
 }
 
-// Invalidate cached offset when size changes (text relayout).
+// _cachedBaselineOffset and _fitScale are both derived from bounds.
 - (void)setBounds:(CGRect)bounds {
   if (!CGSizeEqualToSize(self.bounds.size, bounds.size)) {
     _baselineOffsetValid = NO;
+    _metricsValid = NO;
   }
   [super setBounds:bounds];
 }
@@ -312,17 +322,17 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
   _cachedCGColors.clear();
 }
 
-// Convert ARGB uint32 color values into cached CGColorRefs.
+// Resolve the layer colors against the current traits into cached CGColorRefs.
+// Resolving up front (rather than relying on UIKit's current trait collection at
+// draw time) keeps the CALayer inline-in-Text path correct — CoreAnimation does
+// not install a trait collection around -drawInContext:.
 - (void)_rebuildCachedColors {
   [self _releaseCachedColors];
-  _cachedCGColors.resize(_colors.size());
-  for (size_t i = 0; i < _colors.size(); i++) {
-    uint32_t ci = _colors[i];
-    _cachedCGColors[i] = CGColorCreateSRGB(
-        ((ci >> 16) & 0xFF) / 255.0,
-        ((ci >> 8)  & 0xFF) / 255.0,
-        ( ci        & 0xFF) / 255.0,
-        ((ci >> 24) & 0xFF) / 255.0);
+  UITraitCollection *traits = self.traitCollection;
+  _cachedCGColors.resize(_layerColors.count);
+  for (NSUInteger i = 0; i < _layerColors.count; i++) {
+    UIColor *resolved = [_layerColors[i] resolvedColorWithTraitCollection:traits];
+    _cachedCGColors[i] = CGColorRetain(resolved.CGColor);
   }
 }
 
@@ -337,7 +347,7 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
       oldViewProps.fontSize  != newViewProps.fontSize) {
     _fontFamily = [NSString stringWithUTF8String:newViewProps.fontFamily.c_str()];
     _fontSize = newViewProps.fontSize;
-    _font = NanoIconGetCachedFont(_fontFamily, _fontSize);
+    _font = NanoIconResolveFont(_fontFamily, _fontSize);
     _metricsValid = NO;
     fontChanged = YES;
     needsRedraw = YES;
@@ -345,48 +355,82 @@ static CTFontRef NanoIconGetCachedFont(NSString *family, CGFloat size) {
 
   // Map Unicode codepoints to font glyph IDs, handling surrogate pairs for codepoints > 0xFFFF.
   if (fontChanged || oldViewProps.codepoints != newViewProps.codepoints) {
-    const auto &codepoints = newViewProps.codepoints;
-    _glyphs.resize(codepoints.size());
-    for (size_t i = 0; i < codepoints.size(); i++) {
-      int32_t cp = codepoints[i];
-      if (cp <= 0xFFFF) {
-        UniChar ch = (UniChar)cp;
-        CTFontGetGlyphsForCharacters(_font, &ch, &_glyphs[i], 1);
-      } else {
-        UniChar surr[2] = {
-          (UniChar)(0xD800 + ((cp - 0x10000) >> 10)),
-          (UniChar)(0xDC00 + ((cp - 0x10000) & 0x3FF))
-        };
-        CGGlyph pair[2] = {0, 0};
-        CTFontGetGlyphsForCharacters(_font, surr, pair, 2);
-        _glyphs[i] = pair[0];
-      }
-    }
+    [self _mapGlyphs:newViewProps.codepoints];
     needsRedraw = YES;
   }
 
   if (oldViewProps.colors != newViewProps.colors) {
     const auto &colors = newViewProps.colors;
-    _colors.resize(colors.size());
+    NSMutableArray<UIColor *> *layerColors = [NSMutableArray arrayWithCapacity:colors.size()];
     for (size_t i = 0; i < colors.size(); i++) {
-      _colors[i] = (uint32_t)colors[i];
+      UIColor *color = RCTUIColorFromSharedColor(colors[i]);
+      [layerColors addObject:color ?: [UIColor blackColor]];
     }
+    _layerColors = layerColors;
     [self _rebuildCachedColors];
     needsRedraw = YES;
   }
 
   [super updateProps:props oldProps:oldProps];
-  if (needsRedraw) {
-    if (_isInlineInText && _drawingLayer) {
-      [_drawingLayer setNeedsDisplay];
+  if (needsRedraw) [self _setNeedsRedraw];
+}
+
+- (void)_mapGlyphs:(const std::vector<int32_t> &)codepoints {
+  _glyphs.assign(codepoints.size(), 0);
+  if (!_font) return;
+  for (size_t i = 0; i < codepoints.size(); i++) {
+    int32_t cp = codepoints[i];
+    if (cp <= 0xFFFF) {
+      UniChar ch = (UniChar)cp;
+      CTFontGetGlyphsForCharacters(_font, &ch, &_glyphs[i], 1);
     } else {
-      [self setNeedsDisplay];
+      UniChar surr[2] = {
+        (UniChar)(0xD800 + ((cp - 0x10000) >> 10)),
+        (UniChar)(0xDC00 + ((cp - 0x10000) & 0x3FF))
+      };
+      CGGlyph pair[2] = {0, 0};
+      CTFontGetGlyphsForCharacters(_font, surr, pair, 2);
+      _glyphs[i] = pair[0];
     }
+  }
+}
+
+// Trait-dependent colors (DynamicColorIOS, PlatformColor) resolve to a different
+// CGColor when the interface style or contrast changes. Fabric does not re-send
+// props for that, so re-resolve and redraw here.
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+  [super traitCollectionDidChange:previousTraitCollection];
+
+  if (_layerColors.count == 0) return;
+  if (![self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+    return;
+  }
+
+  [self _rebuildCachedColors];
+  [self _setNeedsRedraw];
+}
+
+- (void)_resolveFontIfMissing {
+  if (_font || _fontFamily.length == 0) return;
+  _font = NanoIconResolveFont(_fontFamily, _fontSize);
+  if (!_font) return;
+  const auto &viewProps = static_cast<const NanoIconViewProps &>(*_props);
+  [self _mapGlyphs:viewProps.codepoints];
+  _metricsValid = NO;
+  [self _setNeedsRedraw];
+}
+
+- (void)_setNeedsRedraw {
+  if (_isInlineInText && _drawingLayer) {
+    [_drawingLayer setNeedsDisplay];
+  } else {
+    [self setNeedsDisplay];
   }
 }
 
 - (void)dealloc {
   // _font is borrowed from static cache — do not release
+  [sNanoIconLiveViews removeObject:self];
   [self _releaseCachedColors];
 }
 

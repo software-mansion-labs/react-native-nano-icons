@@ -7,6 +7,14 @@ export { shallowEqualColor } from './utils/shallowEqualColor';
 
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
+): IconComponent<GM>;
+export function createIconSet<GM extends NanoGlyphMapInput>(
+  glyphMap: GM,
+  font: unknown
+): IconComponent<GM>;
+export function createIconSet<GM extends NanoGlyphMapInput>(
+  glyphMap: GM,
+  font?: unknown
 ): IconComponent<GM> {
-  return createJSIconSet(glyphMap);
+  return createJSIconSet(glyphMap, font);
 }

@@ -1,11 +1,16 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon, SWMIconsOutline } from '@/components/Icon';
+import { Text, useThemeColor } from '@/components/Themed';
 
 export default function TabOneScreen() {
+  const screenBackground = useThemeColor({}, 'screenBackground');
+
   return (
     <SafeAreaProvider>
-      <SafeAreaView edges={['top']} style={styles.container}>
+      <SafeAreaView
+        edges={['top']}
+        style={[styles.container, { backgroundColor: screenBackground }]}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}>
@@ -40,27 +45,21 @@ export default function TabOneScreen() {
                   '#092330',
                   '#0C2C40',
                   '#FCC9A7',
-                  '#FCC9A7',
                   '#1C2226',
-                  '#123036',
-                  '#123036',
-                  '#FCF3F0',
+                  '#9a4219',
+                  '#9a4219',
                   '#FCC9A7',
                   '#F4BE9A',
                   '#FCC9A7',
+                  '#045286',
                   '#FCC9A7',
-                  '#1C2226',
-                  '#FCC9A7',
-                  'red',
-                  '#0C2C40',
-                  '#FCF3F0',
+                  '#ff166f',
+                  '#9a4219',
                   '#EADDD8',
                   '#AFAFAF',
                   '#D1D1D1',
                   '#FCC9A7',
-                  '#FCC9A7',
-                  '#123036',
-                  '#EADDD8',
+                  '#9a4219',
                   '#EADDD8',
                   '#1C2226',
                 ]}
@@ -79,7 +78,6 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#eee',
     justifyContent: 'center',
     alignItems: 'center',
   },

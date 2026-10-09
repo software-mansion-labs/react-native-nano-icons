@@ -40,13 +40,13 @@ export async function createOraLogger(level: LogLevel): Promise<NanoLogger> {
       spinner.fail(chalk.red(msg));
     },
     info(msg) {
-      if (level === 'verbose') {
-        // Print below the current spinner without disrupting it
-        process.stdout.write(`\n${dimPrefix}${chalk.dim(msg)}`);
-      }
+      if (level !== 'verbose') return;
+      spinner.clear();
+      process.stdout.write(`${dimPrefix}${chalk.dim(msg)}\n`);
+      if (spinner.isSpinning && process.stdout.isTTY) spinner.render();
     },
     warn(msg) {
-      spinner.warn(chalk.yellow(msg));
+      spinner.warn(chalk.dim(msg));
     },
   };
 }
@@ -74,13 +74,13 @@ export async function createQuietLogger(level: LogLevel): Promise<NanoLogger> {
       console.log(`${dimPrefix} ${tick} ${msg}`);
     },
     fail(msg) {
-      console.error(`${dimPrefix} ${cross} ${msg}`);
+      console.error(`${dimPrefix} ${cross} ${chalk.red(msg)}`);
     },
     info(msg) {
       if (level === 'verbose') console.log(`${dimPrefix} ${info} ${msg}`);
     },
     warn(msg) {
-      console.warn(`${dimPrefix} ${warning} ${msg}`);
+      console.warn(`${dimPrefix} ${warning} ${chalk.dim(msg)}`);
     },
   };
 }

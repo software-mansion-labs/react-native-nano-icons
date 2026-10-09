@@ -2,6 +2,7 @@
 const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
 const { mergeConfig } = require('@react-native/metro-config');
+const { withNanoIcons } = require('react-native-nano-icons/metro');
 
 const appRoot = __dirname;
 const repoRoot = path.resolve(appRoot, '../..');
@@ -31,7 +32,7 @@ const baseBlockList = Array.isArray(defaultConfig.resolver.blockList)
   ? defaultConfig.resolver.blockList
   : [defaultConfig.resolver.blockList].filter(Boolean);
 
-module.exports = mergeConfig(defaultConfig, {
+const config = mergeConfig(defaultConfig, {
   projectRoot: appRoot,
 
   // Metro must be able to watch+hash the patched dependency files
@@ -85,3 +86,5 @@ module.exports = mergeConfig(defaultConfig, {
     unstable_enablePackageExports: false,
   },
 });
+
+module.exports = withNanoIcons(config);

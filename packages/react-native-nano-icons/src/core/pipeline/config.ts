@@ -5,6 +5,8 @@ export type PipelineConfig = {
   upm: number;
   safeZone: number;
   startUnicode: number;
+  linking: 'static' | 'dynamic';
+  web?: boolean;
 };
 
 export type PipelinePaths = {
@@ -21,4 +23,13 @@ export function ensureEmptyDir(dir: string): void {
 /** Create directory if it does not exist; do not remove existing contents (for shared output dirs). */
 export function ensureDir(dir: string): void {
   fs.mkdirSync(dir, { recursive: true });
+}
+
+export function writeFileAtomic(
+  filePath: string,
+  data: string | Uint8Array
+): void {
+  const tmpPath = `${filePath}.tmp`;
+  fs.writeFileSync(tmpPath, data);
+  fs.renameSync(tmpPath, filePath);
 }

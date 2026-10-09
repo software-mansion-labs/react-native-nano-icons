@@ -1,0 +1,26 @@
+{
+  "cli": {
+    "version": ">= 18.8.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "25.6.0",
+      "android": { "image": "latest", "buildType": "app-bundle" },
+      "ios": { "image": "latest" },
+      "autoIncrement": true,
+      "credentialsSource": "remote"
+    },
+    "dev": {
+      "distribution": "internal",
+      "extends": "base",
+      "channel": "dev",
+      "environment": "development",
+      "developmentClient": true,
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "development"
+      }
+    }
+  }
+}

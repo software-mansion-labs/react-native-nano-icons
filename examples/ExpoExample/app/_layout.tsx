@@ -4,10 +4,12 @@ import {
   ThemeProvider,
 } from '@react-navigation/native';
 import { Stack } from 'expo-router';
+import { View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import WebFontProvider from '@/components/WebFontProvider';
+import FontIntegrityBanner from '@/components/FontIntegrityBanner';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -34,9 +36,12 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <WebFontProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
+        <View style={{ flex: 1 }}>
+          <FontIntegrityBanner />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </View>
       </WebFontProvider>
     </ThemeProvider>
   );
