@@ -1,0 +1,66 @@
+diff --git a/ios/ReactNavigationSFSymbolView.swift b/ios/ReactNavigationSFSymbolView.swift
+index b192a4c..45bd90e 100644
+--- a/ios/ReactNavigationSFSymbolView.swift
++++ b/ios/ReactNavigationSFSymbolView.swift
+@@ -137,7 +137,7 @@ import UIKit
+           imageView.tintColor = nil
+           setImage(image, props: props, animated: shouldAnimate)
+ 
+-        case "multicolor":
++        case "original":
+           configuration = configuration.applying(
+             UIImage.SymbolConfiguration.preferringMulticolor()
+           )
+diff --git a/lib/typescript/src/native/types.d.ts b/lib/typescript/src/native/types.d.ts
+index 1064df6..3912e3a 100644
+--- a/lib/typescript/src/native/types.d.ts
++++ b/lib/typescript/src/native/types.d.ts
+@@ -68,7 +68,7 @@ export type MaterialSymbolOptions = {
+     color?: ColorValue | undefined;
+ };
+ type SFSymbolScale = 'small' | 'medium' | 'large';
+-type SFSymbolRenderingMode = 'monochrome' | 'hierarchical' | 'palette' | 'multicolor';
++type SFSymbolRenderingMode = 'monochrome' | 'hierarchical' | 'palette' | 'original';
+ export type SFSymbolEffectName = 'bounce' | 'pulse' | 'appear' | 'disappear' | 'variableColor' | 'scale' | 'breathe' | 'wiggle' | 'rotate' | 'drawOn' | 'drawOff';
+ export type SFSymbolContentTransitionEffect = 'automatic' | 'replace';
+ export type SFSymbolEffectRepeat = 'continuous' | 'nonRepeating' | {
+@@ -276,7 +276,7 @@ export type SFSymbolOptions = {
+     /**
+      * The name of the SF Symbol to display.
+      */
+-    name: import('sf-symbols-typescript').SFSymbol;
++    name: import('sf-symbols-typescript').SFSymbol | keyof import('../types').SFSymbolNames;
+     /**
+      * The size of the symbol.
+      *
+@@ -330,7 +330,7 @@ export type SFSymbolOptions = {
+      * - `monochrome`: Single color tint (default).
+      * - `hierarchical`: Derived hierarchy from a single color.
+      * - `palette`: Explicit colors for each layer.
+-     * - `multicolor`: Uses the symbol's built-in multicolor scheme.
++     * - `original`: Uses the symbol's own colors (Apple's multicolor rendering).
+      *
+      * @default 'monochrome'
+      */
+@@ -339,7 +339,7 @@ export type SFSymbolOptions = {
+      * The colors for non-monochrome rendering modes.
+      * - `hierarchical`: uses `primary` as the base color.
+      * - `palette`: uses `primary`, `secondary`, and `tertiary` for each layer.
+-     * - `multicolor`: ignored.
++     * - `original`: ignored.
+      *
+      * Falls back to `color` for `primary` if not specified.
+      */
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+index 66f51f9..0699837 100644
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -26,6 +26,8 @@ declare module '@react-navigation/core' {
+     interface Theme extends NativeTheme {
+     }
+ }
++export interface SFSymbolNames {
++}
+ export type LocaleDirection = 'ltr' | 'rtl';
+ export type LinkingPrefix = '*' | (string & {});
+ export type LinkingOptions<ParamList extends {}> = {

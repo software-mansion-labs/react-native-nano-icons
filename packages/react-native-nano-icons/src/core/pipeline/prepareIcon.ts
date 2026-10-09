@@ -8,6 +8,7 @@ import type { NanoLogger } from '../types';
 import { prepareSvgLayers } from './prepare';
 
 export type IconTask = {
+  kind: 'font';
   file: string;
   filePath: string;
   fontFamily: string;
@@ -28,7 +29,7 @@ export type IconResult = {
   error: string | null;
 };
 
-function collectingLogger(logs: IconLog[]): NanoLogger {
+export function collectingLogger(logs: IconLog[]): NanoLogger {
   const push = (level: IconLog[0]) => (msg: string) => {
     logs.push([level, msg]);
   };

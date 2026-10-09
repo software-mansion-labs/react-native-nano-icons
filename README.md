@@ -40,6 +40,7 @@ That’s it 🔬⚡️
 - [🧩 Platforms Supported](#-platforms-supported)
 - [🚀 Quick Start](#-quick-start)
 - [🎨 Multicolor Icons](#-multicolor-icons)
+- [🧭 Native Symbol Support](#-native-symbol-support)
 - [📊 Performance](#-performance)
 - [⚠️ Known Limitations](#%EF%B8%8F-known-limitations)
 - [🔧 Font Generation Pipeline](#-font-generation-pipeline)
@@ -362,6 +363,101 @@ Since all of that is actually simple text, you can use your beautiful multicolor
 
 > [!IMPORTANT]
 > You should always verify your icons visually.
+
+---
+
+## 🧭 Native Symbol Support
+
+Native tab bars draw their icons themselves, so they can't host a React component like `<Icon>`. For them, the same SVGs are forged into native assets loaded by name: custom symbols in your iOS `Images.xcassets` and Android `VectorDrawable`s. `nativeNanoSymbol('home')` then returns an icon react-navigation accepts wherever it takes an `Icon`.
+
+> [!NOTE]
+> Native symbols are **iOS and Android only** and need `react-native-screens` 4.29+ with react-navigation 8. They are always bundled natively, so [dynamic linking](#dynamic-linking-expo-ota-updates-support) is not available for them.
+
+### 1. Configure
+
+Add a `symbolSets` array next to `iconSets` in your `.nanoicons.json` (or the Expo plugin options):
+
+```JSON
+{
+  "symbolSets": [{ "inputDir": "./assets/tabicons" }]
+}
+```
+
+<details>
+<summary><u>All symbolSets Entry Options</u></summary>
+
+| Property     | Type      | Required | Default        | Description                                                                                              |
+| :----------- | :-------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------- |
+| `inputDir`   | `string`  | **Yes**  | —              | Path to the directory containing your `.svg` files.                                                      |
+| `name`       | `string`  | No       | Folder name    | Set name, used for output filenames and the generated typed manifest.                                    |
+| `prefix`     | `string`  | No       | `nano`         | Symbol-name prefix: `home.svg` → `nano.home` (iOS) / `nano_home` (Android).                              |
+| `outputDir`  | `string`  | No       | `../nanoicons` | Path where the generated artifacts are written. Defaults to a sibling `nanoicons` folder.                |
+
+</details>
+
+### 2. Build and link
+
+The same [build / prebuild step](#3-configure) that generates your fonts forges and links the symbols. Then rebuild the native app: symbols are compiled into the binary, so new or changed SVGs show up only after a native rebuild.
+
+<details>
+<summary><u>What gets generated</u></summary>
+
+- **iOS** – one `<prefix>.<name>.symbolset` per SVG in your app's `Images.xcassets`.
+- **Android** – two drawables per SVG in `res/drawable/`: `<prefix>_<name>` (monochrome) and `<prefix>_<name>_original`.
+- **`outputDir`** – `<set>.symbols.d.ts`, a typed manifest that makes `nativeNanoSymbol` names (and react-navigation's `SFSymbolNames`) type-check from your filenames. Make sure your `tsconfig` includes it.
+
+</details>
+
+### 3. Use
+
+Return `nativeNanoSymbol(filename)` from any react-navigation icon option. Every symbol has two looks: `monochrome` (a silhouette in the bar's tint, the default) and `original` (the SVG's own colors).
+
+```TypeScript
+import { nativeNanoSymbol } from 'react-native-nano-icons/symbols';
+
+// monochrome — painted in the bar's tint
+tabBarIcon: () => nativeNanoSymbol('message'),
+
+// original — the icon's own colors while focused, the bar's tint while not
+tabBarIcon: ({ focused }) =>
+  nativeNanoSymbol('flag-us', focused ? 'original' : 'monochrome'),
+```
+
+<details>
+<summary><u><code>nativeNanoSymbol(name, renderingMode?, prefix?)</code> Arguments</u></summary>
+
+- `name` — the SVG filename.
+- `renderingMode` — `'monochrome'` (default) or `'original'`. Returned as the symbol's `renderingMode` on iOS and as `tinted` on the Android image icon.
+- `prefix` — matches the set's `prefix` (defaults to `nano`).
+
+</details>
+
+<details>
+<summary><u>Icon turns into a solid block when tinted? (knockouts)</u></summary>
+
+Tinting paints every shape in one color, so "white on color" art (lettering on a plate, stripes on a flag) would collapse into a solid block. Such details become **knockouts**: in `monochrome` they are holes that show the bar through the plate; in `original` they are painted in their own fill. By default every white (or near-white) shape over other shapes is a knockout. To choose them yourself, add `data-nano-knockout="true"` to the shapes or groups in the SVG; once an icon has an annotation, only annotated shapes are knockouts. A knockout floating over nothing is drawn in both modes.
+
+```xml
+<svg viewBox="0 0 24 24">
+  <rect width="24" height="24" fill="#B22234"/>
+  <path data-nano-knockout="true" fill="#FFD700" d="…"/> <!-- hole when tinted, gold in color -->
+</svg>
+```
+
+</details>
+
+<details>
+<summary><u>Using symbols with <code>&lt;SFSymbol&gt;</code> (iOS)</u></summary>
+
+Forged symbols also work in react-navigation's `<SFSymbol>` component and in `{ type: 'sfSymbol', name: 'nano.home' }`, including symbol effects. Palette and hierarchical rendering show a single color, because forged symbols only define monochrome and multicolor layers.
+
+```TypeScript
+import { SFSymbol } from '@react-navigation/native';
+
+<SFSymbol name="nano.folder" size={32} color="#001A72" effect={{ type: 'bounce', repeat: 'continuous' }} />
+```
+
+</details>
 
 ---
 

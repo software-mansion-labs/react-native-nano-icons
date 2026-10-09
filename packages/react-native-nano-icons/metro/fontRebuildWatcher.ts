@@ -13,19 +13,23 @@ import {
 
 export const FONT_ROUTE = '/__nanoicons/';
 
-const REBUILD_DEBOUNCE_MS = 50;
-const ADDED_FILES_SETTLE_MS = 250;
+export const REBUILD_DEBOUNCE_MS = 50;
+export const ADDED_FILES_SETTLE_MS = 250;
 const MAX_LISTED_CHANGES = 3;
 
 const WEB_PLATFORM = /[?&]platform=web(?:&|$)/;
 
-const CHANGE_LABEL = { add: 'added', change: 'changed', delete: 'removed' };
+export const CHANGE_LABEL = {
+  add: 'added',
+  change: 'changed',
+  delete: 'removed',
+};
 
 function setName(set: IconSetConfig): string {
   return set.fontFamily ?? path.basename(set.inputDir);
 }
 
-function summarize(changes: string[]): string {
+export function summarize(changes: string[]): string {
   const listed = changes.slice(0, MAX_LISTED_CHANGES).join(', ');
   const rest = changes.length - MAX_LISTED_CHANGES;
   return rest > 0 ? `${listed} and ${rest} more` : listed;
@@ -89,7 +93,6 @@ export class FontRebuildWatcher {
   private readonly fontsByFamily = new Map<string, BuiltFont>();
   private readonly dirty = new Map<IconSetConfig, string[]>();
   private readonly preparedSvgCache: PreparedSvgCache = new Map();
-  private readonly svgWorkerPool = new SvgWorkerPool();
   private webDetected = false;
   private pending: Promise<void> = Promise.resolve();
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -99,7 +102,8 @@ export class FontRebuildWatcher {
     private readonly projectRoot: string,
     iconSets: IconSetConfig[],
     watcher: FileWatcher,
-    private readonly logger: DevLogger
+    private readonly logger: DevLogger,
+    private readonly svgWorkerPool = new SvgWorkerPool()
   ) {
     for (const set of iconSets) {
       this.setsByInputDir.set(path.resolve(projectRoot, set.inputDir), set);

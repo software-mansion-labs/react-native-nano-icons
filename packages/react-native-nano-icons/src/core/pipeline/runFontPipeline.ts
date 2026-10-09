@@ -80,6 +80,7 @@ export async function runFontPipeline(
 
   const results = await prepareIconsWithCache(
     files.map((file) => ({
+      kind: 'font' as const,
       file,
       filePath: path.join(paths.inputDir, file),
       fontFamily: config.fontFamily,

@@ -6,6 +6,7 @@ import { parseFlattenedSvg, type ParsedPath } from '../glyph/parse';
 import { preprocessSvg, validateSvg } from '../glyph/validate';
 import { convertEvenoddToWinding } from '../pathkit/evenodd';
 import type { PathKitModule } from '../pathkit/types';
+import { KNOCKOUT_ATTRIBUTE, markKnockoutFills } from '../symbols/knockout';
 import type { NanoLogger } from '../types';
 
 export type PreparedSvg = {
@@ -13,6 +14,27 @@ export type PreparedSvg = {
   /** Z-ordered, same-color-merged, nonzero-winding layers. */
   paths: ParsedPath[];
 };
+
+function tagKnockoutPaths(
+  paths: ParsedPath[],
+  svg: string,
+  pathkit: PathKitModule,
+  fileLabel: string,
+  logger?: NanoLogger
+): void {
+  const marked = markKnockoutFills(svg);
+  if (marked === null) return;
+  const markedPaths = parseFlattenedSvg(flattenSvg(marked, pathkit)).paths;
+  if (markedPaths.length !== paths.length) {
+    logger?.warn(
+      `${fileLabel}: ignoring ${KNOCKOUT_ATTRIBUTE}, the annotated elements change the flattened shape count`
+    );
+    return;
+  }
+  markedPaths.forEach((markedPath, i) => {
+    if (markedPath.fill !== paths[i]!.fill) paths[i]!.knockout = true;
+  });
+}
 
 /**
  * Shared per-file SVG prep: validate → preprocess → flatten → parse →
@@ -24,6 +46,7 @@ export async function prepareSvgLayers(opts: {
   fileLabel: string;
   pathkit: PathKitModule;
   logger?: NanoLogger;
+  tagKnockouts?: boolean;
 }): Promise<PreparedSvg | null> {
   const { filePath, fileLabel, pathkit, logger } = opts;
 
@@ -61,6 +84,10 @@ export async function prepareSvgLayers(opts: {
       );
     },
   });
+
+  if (opts.tagKnockouts) {
+    tagKnockoutPaths(parsed.paths, preprocessed, pathkit, fileLabel, logger);
+  }
 
   // Convert evenodd to nonzero winding with our containment-based
   // algorithm. Mark as noMerge — compound paths with holes must stay

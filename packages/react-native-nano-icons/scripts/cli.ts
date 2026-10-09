@@ -21,9 +21,14 @@ import {
   loadDynamicIconSets,
   loadDynamicSetsFromAppConfig,
   buildAllFonts,
+  buildAllSymbols,
   IconSetBuildError,
+  SymbolSetBuildError,
   linkBare,
+  linkBareSymbols,
+  linkBareAndroidDrawables,
   type BuiltFont,
+  type BuiltSymbolSet,
 } from '../cli/index';
 
 export async function main(logger: NanoLogger): Promise<void> {
@@ -47,17 +52,37 @@ export async function main(logger: NanoLogger): Promise<void> {
     await buildAllFonts(dynamicIconSets, appRoot, { logger });
   } else {
     const config = loadNanoIconsConfig(configRoot);
-    let built: BuiltFont[];
-    let buildError: IconSetBuildError | undefined;
-    try {
-      built = await buildAllFonts(config.iconSets, appRoot, { logger });
-    } catch (err) {
-      if (!(err instanceof IconSetBuildError)) throw err;
-      buildError = err;
-      built = err.built;
+    let buildError: IconSetBuildError | SymbolSetBuildError | undefined;
+
+    if (config.iconSets?.length) {
+      let built: BuiltFont[];
+      try {
+        built = await buildAllFonts(config.iconSets, appRoot, { logger });
+      } catch (err) {
+        if (!(err instanceof IconSetBuildError)) throw err;
+        buildError = err;
+        built = err.built;
+      }
+
+      await linkBare(appRoot, built, logger, config.iconSets.length);
     }
 
-    await linkBare(appRoot, built, logger, config.iconSets.length);
+    if (config.symbolSets?.length) {
+      let builtSymbols: BuiltSymbolSet[];
+      try {
+        builtSymbols = await buildAllSymbols(config.symbolSets, appRoot, {
+          logger,
+        });
+      } catch (err) {
+        if (!(err instanceof SymbolSetBuildError)) throw err;
+        buildError ??= err;
+        builtSymbols = err.built;
+      }
+
+      await linkBareSymbols(appRoot, builtSymbols, logger);
+      await linkBareAndroidDrawables(appRoot, builtSymbols, logger);
+    }
+
     if (buildError) throw buildError;
   }
 }

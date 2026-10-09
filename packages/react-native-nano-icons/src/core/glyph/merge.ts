@@ -33,11 +33,13 @@ export function mergeSameColorPaths(
     // Paths converted from evenodd have compound hole structure and must not
     // be merged — their CW hole contours would cancel CCW contours from
     // adjacent paths, producing incorrect fill.
+    const knockout = paths[i]!.knockout;
     let j = i + 1;
     if (!paths[i]!.noMerge) {
       while (
         j < paths.length &&
         paths[j]!.fill === fill &&
+        paths[j]!.knockout === knockout &&
         !paths[j]!.noMerge
       ) {
         j++;
@@ -53,7 +55,9 @@ export function mergeSameColorPaths(
         logger?.info(
           `    ⊕ Merged ${group.length} same-color paths (fill=${fill})`
         );
-        result.push({ d: merged, fill });
+        result.push(
+          knockout ? { d: merged, fill, knockout } : { d: merged, fill }
+        );
       } else {
         result.push(...group);
       }

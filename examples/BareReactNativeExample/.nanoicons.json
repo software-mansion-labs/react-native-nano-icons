@@ -15,5 +15,19 @@
       "fontFamily": "SWMIconsOutline",
       "outputDir": "./assets/nanoicons"
     }
+  ],
+  "symbolSets": [
+    {
+      "inputDir": "./assets/tabicons",
+      "name": "tabicons",
+      "prefix": "nano",
+      "outputDir": "./assets/nanoicons"
+    },
+    {
+      "inputDir": "./assets/mcicon",
+      "name": "mcicon",
+      "prefix": "nano",
+      "outputDir": "./assets/nanoicons"
+    }
   ]
 }

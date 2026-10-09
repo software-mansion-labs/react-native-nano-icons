@@ -1,0 +1,25 @@
+diff --git a/build/native-tabs/utils/optionsIconConverter.ios.js b/build/native-tabs/utils/optionsIconConverter.ios.js
+index 065aaaec5ac35c38c99fb3d29e163856bfd7dafd..1bd45e9f5eea397c1186b071ffb905f9225901fe 100644
+--- a/build/native-tabs/utils/optionsIconConverter.ios.js
++++ b/build/native-tabs/utils/optionsIconConverter.ios.js
+@@ -50,6 +50,20 @@ function convertOptionsIconToScreensPropsIcon(icon, iconColor) {
+             name: icon.sf,
+         };
+     }
++    // PATCH(react-native-nano-icons): route xcasset through react-native-screens'
++    // native xcasset icon type so asset-catalog names (including custom SF
++    // Symbols) resolve via UIImage(named:) with full symbol semantics.
++    // Without this, xcasset is sent as { uri: name } through RCTImageLoader,
++    // which cannot resolve asset-catalog names (icons render blank), and
++    // icon/selectedIcon can resolve to different native types (template vs
++    // original) depending on per-state icon colors, crashing RNScreens with
++    // "[RNScreens] icon and selectedIcon must be same type".
++    if (icon && 'xcasset' in icon && icon.xcasset) {
++        return {
++            type: 'xcasset',
++            name: icon.xcasset,
++        };
++    }
+     if (icon && (('xcasset' in icon && icon.xcasset) || ('src' in icon && icon.src))) {
+         const imageSource = 'xcasset' in icon && icon.xcasset
+             ? { uri: icon.xcasset }

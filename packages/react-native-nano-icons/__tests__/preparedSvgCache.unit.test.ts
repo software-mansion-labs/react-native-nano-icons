@@ -14,6 +14,8 @@ import {
   runFontPipeline,
   type PreparedSvgCache,
 } from '../src/core/pipeline/index';
+import type { SymbolTask } from '../src/core/pipeline/prepareSymbol';
+import { runSymbolPipeline } from '../src/core/pipeline/runSymbolPipeline';
 
 const mockPrepareIcons = prepareIcons as jest.MockedFunction<
   typeof prepareIcons
@@ -114,4 +116,49 @@ test('a different upm or safeZone does not hit the cache', async () => {
     { concurrency: 1, preparedSvgCache: cache }
   );
   expect(preparedFiles(1)).toEqual(['a.svg', 'b.svg', 'c.svg']);
+});
+
+describe('symbol pipeline', () => {
+  const buildSymbols = (
+    config: { prefix: string },
+    outputDir: string,
+    preparedSvgCache?: PreparedSvgCache<SymbolTask>
+  ) =>
+    runSymbolPipeline(
+      { name: 'tabs', ...config },
+      { inputDir, outputDir },
+      { concurrency: 1, preparedSvgCache }
+    );
+
+  test('only changed files are prepared again', async () => {
+    const cache: PreparedSvgCache<SymbolTask> = new Map();
+    const config = { prefix: 'nano' };
+    await buildSymbols(config, path.join(root, 'out'), cache);
+    expect(preparedFiles(0)).toEqual(['a.svg', 'b.svg', 'c.svg']);
+
+    fs.writeFileSync(path.join(inputDir, 'b.svg'), shape('blue', 35));
+    await buildSymbols(config, path.join(root, 'out'), cache);
+    expect(preparedFiles(1)).toEqual(['b.svg']);
+  });
+
+  test('a cached build is identical to a cold build', async () => {
+    const cache: PreparedSvgCache<SymbolTask> = new Map();
+    const config = { prefix: 'nano' };
+    const read = (dir: string) =>
+      fs.readFileSync(
+        path.join(dir, 'tabs.symbols', 'nano.a.symbolset', 'nano.a.svg'),
+        'utf8'
+      );
+    await buildSymbols(config, path.join(root, 'warm'), cache);
+    await buildSymbols(config, path.join(root, 'warm'), cache);
+    await buildSymbols(config, path.join(root, 'cold'));
+    expect(read(path.join(root, 'warm'))).toBe(read(path.join(root, 'cold')));
+  });
+
+  test('a different prefix does not hit the cache', async () => {
+    const cache: PreparedSvgCache<SymbolTask> = new Map();
+    await buildSymbols({ prefix: 'nano' }, path.join(root, 'out'), cache);
+    await buildSymbols({ prefix: 'other' }, path.join(root, 'out'), cache);
+    expect(preparedFiles(1)).toEqual(['a.svg', 'b.svg', 'c.svg']);
+  });
 });

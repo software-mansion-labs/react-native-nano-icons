@@ -1,0 +1,17 @@
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+index 6667581..953e513 100644
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -766,8 +766,10 @@ export type NativeStackNavigationOptions = {
+     inactiveBehavior?: 'pause' | 'unmount' | 'none' | undefined;
+ };
+ type IconIOS = Extract<Icon, {
+-    type: 'image' | 'sfSymbol';
+-}>;
++    type: 'image';
++}> | Omit<Extract<Icon, {
++    type: 'sfSymbol';
++}>, 'renderingMode'>;
+ type SharedHeaderItem = {
+     /**
+      * Label of the item.

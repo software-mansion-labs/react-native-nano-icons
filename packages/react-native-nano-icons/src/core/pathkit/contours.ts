@@ -672,6 +672,25 @@ export function canonicalContourCmds(
   return contours.flatMap((x) => x.cmds);
 }
 
+export function cmdsToPathData(cmds: readonly Cmd[], V: VerbMap): string {
+  const parts: string[] = [];
+  for (const cmd of cmds) {
+    const v = cmd[0]!;
+    if (v === V.MOVE) parts.push(`M${roundN(cmd[1]!)} ${roundN(cmd[2]!)}`);
+    else if (v === V.LINE) parts.push(`L${roundN(cmd[1]!)} ${roundN(cmd[2]!)}`);
+    else if (v === V.QUAD)
+      parts.push(
+        `Q${roundN(cmd[1]!)} ${roundN(cmd[2]!)} ${roundN(cmd[3]!)} ${roundN(cmd[4]!)}`
+      );
+    else if (v === V.CUBIC)
+      parts.push(
+        `C${roundN(cmd[1]!)} ${roundN(cmd[2]!)} ${roundN(cmd[3]!)} ${roundN(cmd[4]!)} ${roundN(cmd[5]!)} ${roundN(cmd[6]!)}`
+      );
+    else if (v === V.CLOSE) parts.push('Z');
+  }
+  return parts.join(' ');
+}
+
 export function contoursArea(cmds: readonly Cmd[], V: VerbMap): number {
   let total = 0;
   for (const c of splitContours(cmds, V)) {

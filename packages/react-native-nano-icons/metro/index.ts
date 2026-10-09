@@ -6,8 +6,11 @@ import {
   detectExpoLogLevel,
   loadIconSetsFromAppConfig,
   loadNanoIconsConfig,
+  loadSymbolSetsFromAppConfig,
+  SvgWorkerPool,
   type IconSetConfig,
   type NanoLogger,
+  type SymbolSetConfig,
 } from '../cli/index';
 import {
   FontRebuildWatcher,
@@ -15,8 +18,9 @@ import {
   type FileWatcher,
   type Next,
 } from './fontRebuildWatcher';
+import { SymbolRebuildWatcher } from './symbolRebuildWatcher';
 
-export type { IconSetConfig };
+export type { IconSetConfig, SymbolSetConfig };
 
 export type Middleware = (
   req: IncomingMessage,
@@ -41,6 +45,7 @@ export type MetroConfigLike = {
 
 export type WithNanoIconsOptions = {
   iconSets?: IconSetConfig[];
+  symbolSets?: SymbolSetConfig[];
   projectRoot?: string;
 };
 
@@ -55,9 +60,16 @@ export type WithNanoIcons<T extends MetroConfigLike> = T & {
 
 export function resolveIconSets(projectRoot: string): IconSetConfig[] {
   if (fs.existsSync(path.join(projectRoot, '.nanoicons.json'))) {
-    return loadNanoIconsConfig(projectRoot).iconSets;
+    return loadNanoIconsConfig(projectRoot).iconSets ?? [];
   }
   return loadIconSetsFromAppConfig(projectRoot);
+}
+
+export function resolveSymbolSets(projectRoot: string): SymbolSetConfig[] {
+  if (fs.existsSync(path.join(projectRoot, '.nanoicons.json'))) {
+    return loadNanoIconsConfig(projectRoot).symbolSets ?? [];
+  }
+  return loadSymbolSetsFromAppConfig(projectRoot);
 }
 
 function bufferedLogger(): DevLogger {
@@ -84,11 +96,11 @@ function isInside(dir: string, root: string): boolean {
   return !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
-export function unwatchedIconSets(
-  iconSets: IconSetConfig[],
+export function unwatchedIconSets<T extends { inputDir: string }>(
+  iconSets: T[],
   projectRoot: string,
   watchFolders: readonly string[]
-): IconSetConfig[] {
+): T[] {
   const roots = [projectRoot, ...watchFolders];
   return iconSets.filter((set) => {
     const inputDir = path.resolve(projectRoot, set.inputDir);
@@ -113,8 +125,12 @@ export function withNanoIcons<T extends MetroConfigLike>(
 
     const logger = bufferedLogger();
     let iconSets: IconSetConfig[];
+    let symbolSets: SymbolSetConfig[];
     try {
       iconSets = options?.iconSets ?? resolveIconSets(projectRoot);
+      symbolSets =
+        options?.symbolSets ??
+        (options?.iconSets ? [] : resolveSymbolSets(projectRoot));
     } catch (err) {
       logger.warn(
         `Icon hot reload is off: ${err instanceof Error ? err.message : String(err)}`
@@ -131,13 +147,34 @@ export function withNanoIcons<T extends MetroConfigLike>(
         `Icon set "${set.fontFamily ?? path.basename(set.inputDir)}": ${set.inputDir} is outside Metro's watch folders, so its svg changes will not trigger a rebuild. Add the folder to watchFolders in metro.config.js.`
       );
     }
+    for (const set of unwatchedIconSets(
+      symbolSets,
+      projectRoot,
+      config.watchFolders ?? []
+    )) {
+      logger.warn(
+        `Symbol set "${set.name ?? path.basename(set.inputDir)}": ${set.inputDir} is outside Metro's watch folders, so its svg changes will not trigger a rebuild. Add the folder to watchFolders in metro.config.js.`
+      );
+    }
 
+    const watcher = server.getBundler().getBundler().getWatcher();
+    const svgWorkerPool = new SvgWorkerPool();
     const fonts = new FontRebuildWatcher(
       projectRoot,
       iconSets,
-      server.getBundler().getBundler().getWatcher(),
-      logger
+      watcher,
+      logger,
+      svgWorkerPool
     );
+    if (symbolSets.length) {
+      new SymbolRebuildWatcher(
+        projectRoot,
+        symbolSets,
+        watcher,
+        logger,
+        svgWorkerPool
+      );
+    }
     return (req, res, next) =>
       fonts.middleware(req, res, () => enhanced(req, res, next));
   };

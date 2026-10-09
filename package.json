@@ -55,5 +55,9 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
+  },
+  "resolutions": {
+    "react-native/@react-native/codegen": "0.84.0",
+    "@react-navigation/elements@npm:^3.0.0-alpha.49": "patch:@react-navigation/elements@npm%3A3.0.0-alpha.49#~/.yarn/patches/@react-navigation-elements-npm-3.0.0-alpha.49-4fd99c0f4c.patch"
   }
 }

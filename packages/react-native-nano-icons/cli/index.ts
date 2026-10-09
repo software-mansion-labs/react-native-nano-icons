@@ -5,6 +5,12 @@ export {
   type BuiltFont,
 } from './build';
 export {
+  buildAllSymbols,
+  SymbolSetBuildError,
+  type SymbolSetConfig,
+  type BuiltSymbolSet,
+} from './buildSymbols';
+export {
   SvgWorkerPool,
   type PreparedSvgCache,
 } from '../src/core/pipeline/index';
@@ -23,5 +29,13 @@ export {
 export {
   loadDynamicSetsFromAppConfig,
   loadIconSetsFromAppConfig,
+  loadSymbolSetsFromAppConfig,
 } from './expoConfig';
-export { linkBare, syncAndroidFontAssets } from './link';
+export {
+  linkBare,
+  syncAndroidFontAssets,
+  linkBareSymbols,
+  copySymbolsetsIntoCatalog,
+  linkBareAndroidDrawables,
+  copyDrawablesIntoResDir,
+} from './link';
