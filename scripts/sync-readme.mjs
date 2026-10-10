@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,7 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const ROOT_README = path.join(ROOT, 'README.md');
 const PKG_DIR = path.join(ROOT, 'packages/react-native-nano-icons');
 const PKG_README = path.join(PKG_DIR, 'README.md');
-const BACKUP = path.join(PKG_DIR, 'README.md.bak');
+const BACKUP = path.join(os.tmpdir(), 'react-native-nano-icons.README.md.bak');
 
 const REPO = 'software-mansion-labs/react-native-nano-icons';
 const BRANCH = 'main';
