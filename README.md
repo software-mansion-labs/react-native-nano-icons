@@ -39,8 +39,20 @@ That’s it 🔬⚡️
 
 - [🧩 Platforms Supported](#-platforms-supported)
 - [🚀 Quick Start](#-quick-start)
-- [🎨 Multicolor Icons](#-multicolor-icons)
-- [🧭 Native Symbol Support](#-native-symbol-support)
+- [📚 Guides](#-multicolor-icons)
+  - [🎨 Multicolor Icons](#-multicolor-icons)
+  - [🧭 Native Symbols](#-native-symbols)
+  - [☁️ OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking)
+  - [🔁 Rebuilds & Font Integrity](#-rebuilds--font-integrity)
+- [📖 Reference](#-reference)
+  - [`iconSets` options](#iconsets-options)
+  - [`createNanoIconSet()`](#createnanoiconset)
+  - [`<Icon>`](#icon)
+  - [`addFontIntegrityListener()`](#addfontintegritylistener)
+  - [`getFontIntegrityIssues()`](#getfontintegrityissues)
+  - [`symbolSets` options](#symbolsets-options)
+  - [`nativeNanoSymbol()`](#nativenanosymbol)
+  - [CLI](#cli)
 - [📊 Performance](#-performance)
 - [⚠️ Known Limitations](#%EF%B8%8F-known-limitations)
 - [🔧 Font Generation Pipeline](#-font-generation-pipeline)
@@ -109,37 +121,15 @@ The library uses an Expo Config Plugin to hook into the prebuild phase. This aut
 }
 ```
 
-<details>
-<summary><u>All iconSets Entry Plugin Options</u></summary>
-
-The plugin accepts an object with an `iconSets` array, allowing you to generate multiple distinct fonts in a single build.
-
-| Property       | Type     | Required | Default        | Description                                                                                                                |
-| :------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`).                                            |
-| `fontFamily`   | `string` | No       | Folder Name    | The name of the generated `.ttf` and `.glyphmap.json` files. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). The font family registered at runtime is `glyphMap.m.f`, which appends a short build hash (e.g. `ui-1a2b3c4d`) so every build of the set is distinct. |
-| `outputDir`    | `string` | No       | `../nanoicons` | Path where the `.ttf` and `.json` artifacts will be saved. Defaults to a sibling `nanoicons` folder relative to the input. |
-| `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
-| `startUnicode` | `string` | No       | `0xe900`       | The starting Hex Unicode point for the first icon glyph.                                                                   |
-| `linking`      | `'static' \| 'dynamic'` | No | `'static'` | Delivery mode for the generated TTF. `'static'` bundles it into the native app. `'dynamic'` excludes it from native linking so the host app can deliver it at runtime (i.e. via OTA update). See [Dynamic linking](#dynamic-linking-expo-ota-updates-support). |
-| `web`          | `boolean` | No      | `false`        | Also emit `<fontFamily>.woff2` into `outputDir`, rebuilt together with the `.ttf` on every change. It is never linked natively; link it on web like any other web font. |
-
-  <details>
-  <summary>Default Dir Path Behavior</summary>
-  If you do not specify an `outputDir` or `fontFamily`, the library attempts to keep your project organized by creating a   sibling folder.
-
-- **Input:** `./assets/icons/user`
-- **Resulting Output:** `./assets/icons/nanoicons/user.ttf` & `user.glyphmap.json`
-  </details>
-  </details>
+The plugin accepts an `iconSets` array, so one build can generate multiple distinct fonts. See [all `iconSets` options](#iconsets-options).
 
 #### Bare React Native / React Native Web / Expo Go
 
 Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 
-1. **Config** – Add a `.nanoicons.json` with the same `iconSets` shape as the Expo plugin (see options above). Paths in it are relative to the app root.
-   <details>
-    <summary>.nanoicons.json example</summary>
+1. **Config** – Add a `.nanoicons.json` with the same `iconSets` shape as the Expo plugin. Paths in it are relative to the app root.
+
+   `.nanoicons.json`
 
    ```JSON
    {
@@ -151,22 +141,26 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
    }
    ```
 
-    </details>
-
 2. **Build and link** – From the app root run:
 
    ```sh
    npx react-native-nano-icons
    ```
 
-   If the config lives elsewhere in the app, pass it: `--path path/to/.nanoicons.json`. From outside the app (for example a monorepo root), pass the app folder: `--path apps/mobile`. A folder with a `package.json` counts as the app, so the CLI reads the config, builds and links there.
+   If the config lives elsewhere in the app, pass it: `--path path/to/.nanoicons.json`. From outside the app (for example a monorepo root), pass the app folder: `--path apps/mobile`. A folder with a `package.json` counts as the app, so the CLI reads the config, builds and links there. See [all CLI flags](#cli).
 
    This works exactly like the config plugin, removing any necessity for manual Xcode/Android Studio font linking steps.
 
-> [!TIP]
-> Run `EXPO_DEBUG=1 npx expo prebuild` or `npx react-native-nano-icons --verbose` to get font build-time logs.
+> [!NOTE]
+> With `web: true`, the `my-icons` set also gets `assets/icons/nanoicons/my-icons.woff2` next to its `.ttf`. Link it on web like any regular font, named `my-icons`. If you want to `require()` it through Metro (e.g. with `expo-font`), add this to `metro.config.js`:
+> ```js
+> config.resolver.assetExts.push("woff2");
+> ```
 
-### 4. Add the Metro plugin (recommended)
+> [!TIP]
+> For detailed build logs, run `npx react-native-nano-icons --verbose`, or set `EXPO_DEBUG=1` before `npx expo prebuild` or before starting Metro.
+
+### 4. Add the Metro plugin
 
 Add the plugin to your Metro config to get hot reload for your icons: edit an SVG and the running dev app picks up the new glyph, with no native rebuild or CLI run.
 
@@ -187,15 +181,6 @@ Production builds are not affected — the fonts are linked exactly as configure
 
 > [!NOTE]
 > Hot reload needs a development build; Expo Go cannot register fonts at runtime. Before a web export, run the font step as usual (CLI or `expo prebuild`).
-
-> [!NOTE]
-> In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/), keyed by `glyphMap.m.f`. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
-
-> [!NOTE]
-> With `web: true`, the `my-icons` set also gets `assets/icons/nanoicons/my-icons.woff2` next to its `.ttf`. Link it on web like any regular font, named `my-icons`. If you want to `require()` it through Metro (e.g. with `expo-font`), add this to `metro.config.js`:
-> ```js
-> config.resolver.assetExts.push("woff2");
-> ```
 
 ### 5. Use
 
@@ -221,107 +206,12 @@ export default function App() {
 }
 ```
 
-#### Props
-
-| Prop                 | Type                         | Default           | Description                                                                                                                                  |
-| -------------------- | ---------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`               | `string`                     | **(required)**    | Icon name — corresponds to the original SVG filename. Fully typed from the glyphmap.                                                         |
-| `size`               | `number`                     | `12`              | Icon size in points.                                                                                                                         |
-| `color`              | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
-| `tintMode`           | `'all' \| 'currentColor'`    | `'all'`           | Which layers `color` applies to: every layer, or only those annotated with `currentColor` (an icon without any keeps its original colors).                             |
-| `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                                          |
-| `style`              | `ViewStyle`                  | —                 | Style applied to the icon container.                                                                                                         |
-| `accessible`         | `boolean`                    | —                 | Override the default accessibility behavior.                                                                                                 |
-| `accessibilityLabel` | `string`                     | Icon `name`       | Label announced by screen readers. Defaults to the icon name.                                                                                |
-| `accessibilityRole`  | `AccessibilityRole`          | `"image"`         | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text.                                                         |
-| `testID`             | `string`                     | —                 | Test identifier for e2e testing frameworks.                                                                                                  |
-| `ref`                | `Ref<View>`                  | —                 | Ref to the underlying native view.                                                                                                           |
-
-### Dynamic linking (Expo OTA updates support)
-TL;DR the default static linking is best for most use cases as it does not affect JS bundle size at all, but if you have an [OTA updates workflow](https://expo.dev/solutions/eas-ota-updates) and make changes to your icons frequently, you can opt out of native bundling and register a particular iconSet font at runtime explicitly.
-
-By default, generated TTFs are bundled into the native app at build/link time. Set `linking: 'dynamic'` to opt out: the build still produces the `.ttf` and `.glyphmap.json`, but then OTA workflows will ship icon outside the native binary - you deliver the file and the library will register it at runtime. 
-
-**Config**
-
-```JSON
-{
-  "iconSets": [
-    {
-      "inputDir": "./assets/icons/dynamic-ota-icons",
-      "linking": "dynamic"
-    }
-  ]
-}
-```
+See [all `<Icon>` props](#props).
 
 > [!NOTE]
-> You can mix both linking modes in the same config — some icon sets can be statically bundled and others delivered dynamically. Each entry in `iconSets` is independent.
+> In [Expo Go](https://expo.dev/go), icons are rendered using a regular `<Text>` fallback so you can iterate quickly. You will need to link the font manually via the already included [`expo-font` library](https://docs.expo.dev/versions/latest/sdk/font/), keyed by `glyphMap.m.f`. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library automatically switches to the native component implementation. Remember to remove any `expo-font`-related icon font setup after the switch.
 
-**Runtime**
-
-Pass the font as the second argument to `createNanoIconSet`. The library registers it under the family name at runtime.
-
-```TypeScript
-import { createNanoIconSet } from "react-native-nano-icons";
-import glyphMap from "./dynamic-ota-icons.glyphmap.json";
-
-export const Icon = createNanoIconSet(glyphMap, require("./dynamic-ota-icons.ttf"));
-// or: createNanoIconSet(glyphMap, { uri: "https://cdn.example.com/remote-nano-icons.ttf" })
-```
-
-> [!NOTE]
-> In [Expo Go](https://expo.dev/go), the native font loader is unavailable, but you can still see real icons by loading the font manually via [`expo-font`](https://docs.expo.dev/versions/latest/sdk/font/) — use the value of `glyphMap.m.f` as the family name key. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library registers the font automatically and you can remove the `expo-font` setup.
-
-> If a dynamic glyphmap gets no font, its icons render blank until one is registered under `glyphMap.m.f` (with a dev warning).
-
-### 6. Font Regeneration
-
-**The build script detects changes in path and contents of the SVGs** in your input directory, in the set's config (`upm`, `safeZone`, `startUnicode`) and in the library version or the versions of the packages it builds fonts with, based on a fingerprint hash. If anything changes (file names, SVG attributes/nodes, config, an upgrade of `react-native-nano-icons` or of a font-building dependency) or the output font/glyphmap files are deleted, the icon set is regenerated during `prebuild` or manual script run. The first 8 characters of the fingerprint become part of the runtime font family (`glyphMap.m.f`), so a rebuilt set never clashes with a previous build that is still bundled in the app.
-
-### Regenerating dynamic fonts only (useful for an OTA update) ☁️
-
-When your `dynamic` icons change and you want to ship them via OTA update, you don't need to run a full `expo prebuild` and native rebuild. Use `--dynamic` to regenerate only the dynamic sets:
-
-```sh
-# run from your app root
-npx react-native-nano-icons --dynamic
-```
-
-
-> [!TIP]
-> Using Expo CNG with the app config and expo plugin instead of `.nanoicons.json` ? Just add `--app-config` flag to use your plugin input setup instead: 
-> ```sh
-> # run from your app root
-> npx react-native-nano-icons --dynamic --app-config
-> ```
-> This reads your config directly from `app.json` / `app.config.js` / `app.config.ts` (no separate `.nanoicons.json` needed). In a monorepo, run it from the app's folder or point it there with `--path <app root>`.
-
-The CLI rebuilds only the sets defined with `linking: "dynamic"`, and skips all native linking. Commit the updated `.ttf` and `.glyphmap.json` and push your OTA update as usual ☁️ 🚀
-
-> [!NOTE]
-> A full (non `--dynamic`) run keeps the native projects in sync with the config: the fonts linked natively are exactly the products of the current static sets. Copies of sets that were switched to dynamic, removed from the config, or rebuilt under a new fingerprint are deleted from `ios/nanoicons-fonts`, `UIAppFonts`, and `android/app/src/main/assets/fonts`. Fonts you added yourself are left alone.
-
-### Font integrity check
-
-Every icon build is deterministic: the same SVGs, config and toolchain produce the same font identity, and the glyphmap refers to that exact font. At startup the library checks, once per icon set, that this font is available to the renderer, so the app always renders the font its glyphmap refers to. The check fails when the glyphmap in the JS bundle and the font in the app come from different builds, for example after an OTA update that changed icons without a new binary. In development a warning is printed. In every build the issue is recorded:
-
-```TypeScript
-import { addFontIntegrityListener, getFontIntegrityIssues } from "react-native-nano-icons";
-
-addFontIntegrityListener((issue, status) => {
-  // status: "found" | "resolved"
-});
-
-getFontIntegrityIssues(); // current issues
-```
-
-- `"found"`: the set's font is missing or out of date, so its icons render blank. A listener added later receives the current issues immediately.
-- `"resolved"`: a font for that set loaded later (for example through `loadFont`), and the issue was dropped.
-
-Forward `"found"` issues to your error monitoring (e.g. Sentry) to catch a bad OTA update.
-
-For every scenario and its message, see [FONT_INTEGRITY.md](packages/react-native-nano-icons/docs/FONT_INTEGRITY.md).
+**Next:** color your icons with [Multicolor Icons](#-multicolor-icons), put them in native tab bars with [Native Symbols](#-native-symbols), or ship them over the air with [OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking).
 
 ---
 
@@ -366,25 +256,263 @@ Since all of that is actually simple text, you can use your beautiful multicolor
 
 ---
 
-## 🧭 Native Symbol Support
+## 🧭 Native Symbols
 
-Native tab bars draw their icons themselves, so they can't host a React component like `<Icon>`. For them, the same SVGs are forged into native assets loaded by name: custom symbols in your iOS `Images.xcassets` and Android `VectorDrawable`s. `nativeNanoSymbol('home')` then returns an icon react-navigation accepts wherever it takes an `Icon`.
+Native tab bars can't render a React component like `<Icon>`. Nano Icons forges the same SVGs into native tab bar icons: custom SF Symbol `.symbolset`s in the iOS asset catalog and `VectorDrawable`s on Android.
+
+Use them in react-navigation's native bottom tabs, material top tabs, drawer, and `@react-navigation/elements` components that take an icon, such as `Button` and `HeaderBackButton`.
+
+
+
+### Setup
 
 > [!NOTE]
-> Native symbols are **iOS and Android only** and need `react-native-screens` 4.29+ with react-navigation 8. They are always bundled natively, so [dynamic linking](#dynamic-linking-expo-ota-updates-support) is not available for them.
+> Displaying native symbols requires [`react-navigation`](https://reactnavigation.org/) and [`react-native-screens`](https://docs.swmansion.com/react-native-screens/). See the minimum versions below.
 
-### 1. Configure
+<details>
+<summary>Minimum versions</summary>
 
-Add a `symbolSets` array next to `iconSets` in your `.nanoicons.json` (or the Expo plugin options):
+- `react-native-screens` 4.29+
+- `@react-navigation/native` 8.0.0-alpha.51+
+- `@react-navigation/elements` 3.0.0-alpha.55+
+- `@react-navigation/bottom-tabs` 8.0.0-alpha.57+, for native bottom tabs
+
+</details>
+
+1. **Configure** – add a `symbolSets` array next to `iconSets`, in `.nanoicons.json` or the Expo plugin options. See [all `symbolSets` options](#symbolsets-options).
+
+   ```JSON
+   {
+     "symbolSets": [{ "inputDir": "./assets/tabicons" }]
+   }
+   ```
+
+2. **Build** – run `npx react-native-nano-icons` or `expo prebuild`, then rebuild the native app.
+
+3. **Use** – pass the SVG filename to `nativeNanoSymbol` in `tabBarIcon`:
+
+   ```TypeScript
+   import { nativeNanoSymbol } from 'react-native-nano-icons/symbols';
+
+   tabBarIcon: () => nativeNanoSymbol('home'),
+   ```
+
+   On iOS, react-navigation's `<SFSymbol>` also takes the symbol name, including symbol effects: `<SFSymbol name="nano.home" />`.
+
+> [!IMPORTANT]
+> Symbols are static assets that need an app binary rebuild. When you edit one of their input SVGs, the [Metro plugin](#4-add-the-metro-plugin) regenerates its symbol and reminds you in the terminal.
+
+### Symbol rendering modes
+
+`'monochrome'` (default) draws one silhouette in the tab bar's tint color. `'original'` keeps the SVG's own colors.
+
+Rendering mode is an iOS option. On Android, the same switch is the icon's `tinted` prop. `nativeNanoSymbol` sets it from its second argument.
+
+> [!NOTE]
+> In `monochrome`, white shapes are cut out of the icon. To cut out other shapes instead, add `data-nano-knockout="true"` to them in the SVG.
+
+One SVG covers both tab states:
+
+- **Tint only** – keep `'monochrome'`. The tab bar colors the icon for the focused and unfocused states.
+- **Switch modes** – pass `'original'` when focused. A knocked-out inner shape gives an outline in `'monochrome'` and a filled icon in `'original'`.
+
+```TypeScript
+tabBarIcon: ({ focused }) =>
+  nativeNanoSymbol('heart', focused ? 'original' : 'monochrome'),
+```
+
+---
+
+## ☁️ OTA Updates & Dynamic Linking
+
+TL;DR the default static linking is best for most use cases as it does not affect JS bundle size at all, but if you have an [OTA updates workflow](https://expo.dev/solutions/eas-ota-updates) and make changes to your icons frequently, you can opt out of native bundling and register a particular iconSet font at runtime explicitly.
+
+By default, generated TTFs are bundled into the native app at build/link time. Set `linking: 'dynamic'` to opt out: the build still produces the `.ttf` and `.glyphmap.json`, but then OTA workflows will ship icon outside the native binary - you deliver the file and the library will register it at runtime. 
+
+**Config**
 
 ```JSON
 {
-  "symbolSets": [{ "inputDir": "./assets/tabicons" }]
+  "iconSets": [
+    {
+      "inputDir": "./assets/icons/dynamic-ota-icons",
+      "linking": "dynamic"
+    }
+  ]
 }
 ```
 
+> [!NOTE]
+> You can mix both linking modes in the same config — some icon sets can be statically bundled and others delivered dynamically. Each entry in `iconSets` is independent.
+
+**Runtime**
+
+Pass the font as the second argument to `createNanoIconSet`. The library registers it under the family name at runtime.
+
+```TypeScript
+import { createNanoIconSet } from "react-native-nano-icons";
+import glyphMap from "./dynamic-ota-icons.glyphmap.json";
+
+export const Icon = createNanoIconSet(glyphMap, require("./dynamic-ota-icons.ttf"));
+// or: createNanoIconSet(glyphMap, { uri: "https://cdn.example.com/remote-nano-icons.ttf" })
+```
+
+> [!NOTE]
+> In [Expo Go](https://expo.dev/go), the native font loader is unavailable, but you can still see real icons by loading the font manually via [`expo-font`](https://docs.expo.dev/versions/latest/sdk/font/) — use the value of `glyphMap.m.f` as the family name key. [Once you move to a development build](https://docs.expo.dev/develop/development-builds/expo-go-to-dev-build/), the library registers the font automatically and you can remove the `expo-font` setup.
+
+> If a dynamic glyphmap gets no font, its icons render blank until one is registered under `glyphMap.m.f` (with a dev warning).
+
+### Regenerating dynamic fonts only
+
+When your `dynamic` icons change and you want to ship them via OTA update, you don't need to run a full `expo prebuild` and native rebuild. Use `--dynamic` to regenerate only the dynamic sets:
+
+```sh
+# run from your app root
+npx react-native-nano-icons --dynamic
+```
+
+
+> [!TIP]
+> Using Expo CNG with the app config and expo plugin instead of `.nanoicons.json` ? Just add `--app-config` flag to use your plugin input setup instead: 
+> ```sh
+> # run from your app root
+> npx react-native-nano-icons --dynamic --app-config
+> ```
+> This reads your config directly from `app.json` / `app.config.js` / `app.config.ts` (no separate `.nanoicons.json` needed). In a monorepo, run it from the app's folder or point it there with `--path <app root>`.
+
+The CLI rebuilds only the sets defined with `linking: "dynamic"`, and skips all native linking. Commit the updated `.ttf` and `.glyphmap.json` and push your OTA update as usual ☁️ 🚀
+
+---
+
+## 🔁 Rebuilds & Font Integrity
+
+### When fonts are regenerated
+
+Running `expo prebuild` or the CLI regenerates an icon set when its SVGs, its config, or the library version change, or when its generated files are deleted. Regeneration replaces the set's files completely. Builds are deterministic: the same SVGs, config, and library version always produce the same identifiable font. Unchanged sets are skipped.
+
+> [!IMPORTANT]
+> Regenerate the fonts before a release build:
+> - **Bare React Native** – run `npx react-native-nano-icons`. The [Metro plugin](#4-add-the-metro-plugin) rebuilds fonts during development, but it does not link them into the native project.
+> - **Expo** – EAS Build runs `expo prebuild` for you. Without EAS, remember to run `npx expo prebuild` yourself.
+
+### Font integrity check
+
+Each glyphmap refers to the exact font it was built with. At startup the library checks, once per icon set, that this font is available. If it is missing or comes from a different build, the set's icons render blank. A warning is printed in development, and the issue is recorded in every build. Read recorded issues with [`addFontIntegrityListener()`](#addfontintegritylistener) and [`getFontIntegrityIssues()`](#getfontintegrityissues).
+
+**Example:** an OTA update changes icons in a set with `linking: 'static'`. The update delivers the new glyphmap, but the installed app still has the old font, so the check fails. Use `linking: 'dynamic'` for sets you update over the air: the update then delivers the font too. See [OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking).
+
+Forward `"found"` issues to your error monitoring (e.g. Sentry) to catch a bad OTA update. Static issues are always real. A dynamic set reports `"resolved"` once its font loads, so if you load fonts later with [`Icon.loadFont()`](#methods), forward only issues that stay unresolved.
+
+For every scenario and its message, see [FONT_INTEGRITY.md](packages/react-native-nano-icons/docs/FONT_INTEGRITY.md).
+
+---
+
+## 📖 Reference
+
+### `iconSets` options
+
+Each entry of `iconSets` (in the Expo plugin options or `.nanoicons.json`) generates one font.
+
+| Property       | Type     | Required | Default        | Description                                                                                                                |
+| :------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`).                                            |
+| `fontFamily`   | `string` | No       | Folder Name    | The name of the generated `.ttf` and `.glyphmap.json` files. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). The font family registered at runtime is `glyphMap.m.f`, which appends a short build hash (e.g. `ui-1a2b3c4d`) so every build of the set is distinct. |
+| `outputDir`    | `string` | No       | `../nanoicons` | Path where the `.ttf` and `.json` artifacts will be saved. Defaults to a sibling `nanoicons` folder relative to the input. |
+| `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
+| `startUnicode` | `string` | No       | `0xe900`       | The starting Hex Unicode point for the first icon glyph.                                                                   |
+| `linking`      | `'static' \| 'dynamic'` | No | `'static'` | Delivery mode for the generated TTF. `'static'` bundles it into the native app. `'dynamic'` excludes it from native linking so the host app can deliver it at runtime (i.e. via OTA update). See [OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking). |
+| `web`          | `boolean` | No      | `false`        | Also emit `<fontFamily>.woff2` into `outputDir`, rebuilt together with the `.ttf` on every change. It is never linked natively; link it on web like any other web font. |
+
 <details>
-<summary><u>All symbolSets Entry Options</u></summary>
+<summary>Default Dir Path Behavior</summary>
+If you do not specify an `outputDir` or `fontFamily`, the library attempts to keep your project organized by creating a sibling folder.
+
+- **Input:** `./assets/icons/user`
+- **Resulting Output:** `./assets/icons/nanoicons/user.ttf` & `user.glyphmap.json`
+</details>
+
+### `createNanoIconSet()`
+
+```TypeScript
+createNanoIconSet(glyphMap, font?)
+```
+
+| Argument   | Default        | Description                                                                                                                                                                  |
+| :--------- | :------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `glyphMap` | **(required)** | The generated `.glyphmap.json`. Icon names are typed from it.                                                                                                                |
+| `font`     | `undefined`    | Font source for a set with `linking: 'dynamic'`: `require('./icons.ttf')`, `{ uri }`, or a path string. Ignored for static sets. See [OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking). |
+
+Returns the [`<Icon>`](#icon) component.
+
+### `<Icon>`
+
+The component returned by [`createNanoIconSet()`](#createnanoiconset).
+
+#### Props
+
+| Prop                 | Type                         | Default           | Description                                                                                                                                  |
+| -------------------- | ---------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`               | `string`                     | **(required)**    | Icon name — corresponds to the original SVG filename. Fully typed from the glyphmap.                                                         |
+| `size`               | `number`                     | `12`              | Icon size in points.                                                                                                                         |
+| `color`              | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
+| `tintMode`           | `'all' \| 'currentColor'`    | `'all'`           | Which layers `color` applies to: every layer, or only those annotated with `currentColor` (an icon without any keeps its original colors).                             |
+| `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                                          |
+| `style`              | `ViewStyle`                  | `undefined`       | Style applied to the icon container.                                                                                                         |
+| `className` | `string` | `undefined` | Web only. Forwarded to the container element. |
+| `accessible`         | `boolean`                    | `undefined`       | Override the default accessibility behavior.                                                                                                 |
+| `accessibilityLabel` | `string`                     | Icon `name`       | Label announced by screen readers. Defaults to the icon name.                                                                                |
+| `accessibilityRole`  | `AccessibilityRole`          | `"image"`         | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text.                                                         |
+| `accessibilityElementsHidden` | `boolean` | `undefined` | iOS and web only. Hides the icon from screen readers. |
+| `importantForAccessibility` | `'auto' \| 'yes' \| 'no' \| 'no-hide-descendants'` | `undefined` | Android only. Controls whether screen readers reach the icon. |
+| `testID`             | `string`                     | `undefined`       | Test identifier for e2e testing frameworks.                                                                                                  |
+| `ref`                | `Ref<View>`                  | `undefined`       | Ref to the underlying native view.                                                                                                           |
+
+#### Methods
+
+```TypeScript
+Icon.loadFont(font?): Promise<void>
+```
+
+| Argument | Default                                  | Description                                                          |
+| :------- | :--------------------------------------- | :------------------------------------------------------------------- |
+| `font`   | The `font` passed to `createNanoIconSet` | Font source: `require('./icons.ttf')`, `{ uri }`, or a path string. |
+
+Registers a dynamic set's font again, for example to retry a failed load or to load the font later. A successful load resolves the set's [font integrity](#font-integrity-check) issue. For static sets and on web, it is a no-op.
+
+### `addFontIntegrityListener()`
+
+```TypeScript
+addFontIntegrityListener(listener): () => void
+```
+
+| Argument   | Default        | Description                                                                                       |
+| :--------- | :------------- | :------------------------------------------------------------------------------------------------ |
+| `listener` | **(required)** | `(issue, status) => void`. `issue` has the [`getFontIntegrityIssues()`](#getfontintegrityissues) shape. |
+
+`status` is one of:
+
+- `"found"`: the set's font is missing or out of date, so its icons render blank. A listener added later receives the current issues immediately.
+- `"resolved"`: a dynamic set's font loaded after the issue was found, for example through [`Icon.loadFont()`](#methods). Its icons render again, and the issue is removed from `getFontIntegrityIssues()`.
+
+Returns a function that removes the listener.
+
+### `getFontIntegrityIssues()`
+
+```TypeScript
+getFontIntegrityIssues(): FontIntegrityIssue[]
+```
+
+Returns the current issues. Each issue has:
+
+- `fontFamily`: the set's configured font family.
+- `family`: the font family the glyphmap refers to (`glyphMap.m.f`).
+- `linking`: `'static'` or `'dynamic'`.
+- `message`: the warning text.
+- `cause`: the load error behind a dynamic font failure, when there is one.
+
+### `symbolSets` options
+
+Each entry of `symbolSets` forges one set of [native symbols](#-native-symbols).
 
 | Property     | Type      | Required | Default        | Description                                                                                              |
 | :----------- | :-------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------- |
@@ -393,71 +521,42 @@ Add a `symbolSets` array next to `iconSets` in your `.nanoicons.json` (or the Ex
 | `prefix`     | `string`  | No       | `nano`         | Symbol-name prefix: `home.svg` → `nano.home` (iOS) / `nano_home` (Android).                              |
 | `outputDir`  | `string`  | No       | `../nanoicons` | Path where the generated artifacts are written. Defaults to a sibling `nanoicons` folder.                |
 
-</details>
-
-### 2. Build and link
-
-The same [build / prebuild step](#3-configure) that generates your fonts forges and links the symbols. Then rebuild the native app: symbols are compiled into the binary, so new or changed SVGs show up only after a native rebuild.
-
-<details>
-<summary><u>What gets generated</u></summary>
-
-- **iOS** – one `<prefix>.<name>.symbolset` per SVG in your app's `Images.xcassets`.
-- **Android** – two drawables per SVG in `res/drawable/`: `<prefix>_<name>` (monochrome) and `<prefix>_<name>_original`.
-- **`outputDir`** – `<set>.symbols.d.ts`, a typed manifest that makes `nativeNanoSymbol` names (and react-navigation's `SFSymbolNames`) type-check from your filenames. Make sure your `tsconfig` includes it.
-
-</details>
-
-### 3. Use
-
-Return `nativeNanoSymbol(filename)` from any react-navigation icon option. Every symbol has two looks: `monochrome` (a silhouette in the bar's tint, the default) and `original` (the SVG's own colors).
+### `nativeNanoSymbol()`
 
 ```TypeScript
-import { nativeNanoSymbol } from 'react-native-nano-icons/symbols';
-
-// monochrome — painted in the bar's tint
-tabBarIcon: () => nativeNanoSymbol('message'),
-
-// original — the icon's own colors while focused, the bar's tint while not
-tabBarIcon: ({ focused }) =>
-  nativeNanoSymbol('flag-us', focused ? 'original' : 'monochrome'),
+nativeNanoSymbol(name, renderingMode?, prefix?)
 ```
 
-<details>
-<summary><u><code>nativeNanoSymbol(name, renderingMode?, prefix?)</code> Arguments</u></summary>
+| Argument        | Default        | Description                                                                                                                                           |
+| :-------------- | :------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`          | **(required)** | The SVG filename, typed from the generated manifest.                                                                                                  |
+| `renderingMode` | `'monochrome'` | `'monochrome'` renders the silhouette in the consumer's tint; `'original'` renders the icon's own colors. See [Symbol rendering modes](#symbol-rendering-modes). |
+| `prefix`        | `'nano'`       | The set's `prefix`.                                                                                                                                   |
 
-- `name` — the SVG filename.
-- `renderingMode` — `'monochrome'` (default) or `'original'`. Returned as the symbol's `renderingMode` on iOS and as `tinted` on the Android image icon.
-- `prefix` — matches the set's `prefix` (defaults to `nano`).
+Returns a react-navigation `Icon`: `{ type: 'sfSymbol', name, renderingMode }` on iOS and `{ type: 'image', source: { uri }, tinted }` on Android.
 
-</details>
+> [!NOTE]
+> Using `nativeNanoSymbol` is optional. You can pass a plain `Icon` object with the symbol name instead. In that case, only `sfSymbol` names are typed.
+>
+> ```TypeScript
+> tabBarIcon: () =>
+>   Platform.OS === 'ios'
+>     ? { type: 'sfSymbol', name: 'nano.home' }
+>     : { type: 'image', source: { uri: 'nano_home' } },
+> ```
 
-<details>
-<summary><u>Icon turns into a solid block when tinted? (knockouts)</u></summary>
+### CLI
 
-Tinting paints every shape in one color, so "white on color" art (lettering on a plate, stripes on a flag) would collapse into a solid block. Such details become **knockouts**: in `monochrome` they are holes that show the bar through the plate; in `original` they are painted in their own fill. By default every white (or near-white) shape over other shapes is a knockout. To choose them yourself, add `data-nano-knockout="true"` to the shapes or groups in the SVG; once an icon has an annotation, only annotated shapes are knockouts. A knockout floating over nothing is drawn in both modes.
-
-```xml
-<svg viewBox="0 0 24 24">
-  <rect width="24" height="24" fill="#B22234"/>
-  <path data-nano-knockout="true" fill="#FFD700" d="…"/> <!-- hole when tinted, gold in color -->
-</svg>
+```sh
+npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--app-config]
 ```
 
-</details>
-
-<details>
-<summary><u>Using symbols with <code>&lt;SFSymbol&gt;</code> (iOS)</u></summary>
-
-Forged symbols also work in react-navigation's `<SFSymbol>` component and in `{ type: 'sfSymbol', name: 'nano.home' }`, including symbol effects. Palette and hierarchical rendering show a single color, because forged symbols only define monochrome and multicolor layers.
-
-```TypeScript
-import { SFSymbol } from '@react-navigation/native';
-
-<SFSymbol name="nano.folder" size={32} color="#001A72" effect={{ type: 'bounce', repeat: 'continuous' }} />
-```
-
-</details>
+| Flag                | Description                                                                                                                         |
+| :------------------ | :---------------------------------------------------------------------------------------------------------------------------------- |
+| `--path <dir\|file>` | An app folder (has a `package.json`): read the config, build and link there. Any other folder or `.nanoicons.json`: read the config there, build and link in the current directory. Default: current directory. |
+| `--verbose`         | Show per-SVG processing details and pipeline timing.                                                                                |
+| `--dynamic`         | Rebuild only icon sets with `linking: 'dynamic'` and skip native linking. See [Regenerating dynamic fonts only](#regenerating-dynamic-fonts-only). |
+| `--app-config`      | Read the config from the Expo app config (`app.json` / `app.config.js` / `app.config.ts`) instead of `.nanoicons.json`. Must be combined with `--dynamic`. |
 
 ---
 
