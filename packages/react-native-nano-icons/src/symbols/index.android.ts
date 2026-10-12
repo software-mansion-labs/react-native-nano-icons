@@ -31,19 +31,19 @@ type NanoSymbolName = [keyof NanoSymbolNames] extends [never]
  *
  * iOS — the asset is referenced by its asset-catalog name via the `sfSymbol`
  * path. Every forged symbol carries both rendering modes; `renderingMode`
- * picks one: `monochrome` (bar tint, default) or `original` (the SVG's own
- * colors — Apple's "multicolor" symbol rendering).
+ * picks one: `monochrome` (bar tint, default) or `multicolor` (the SVG's own
+ * colors).
  *
  * Android — the drawable resource name is derived from `${prefix}.${name}` with
  * the same pure transform the build uses. Each icon ships two drawables;
  * `renderingMode` picks the solid silhouette the bar tints (`monochrome`) or
- * the untinted drawable that keeps its own colors (`original`, `_original`
+ * the untinted drawable that keeps its own colors (`multicolor`, `_original`
  * suffix), forwarded as react-navigation's `tinted`.
  *
  *     tabBarIcon: () => nativeNanoSymbol('home')
  *     // tints only when unfocused, keeps the icon's own colors while focused
  *     tabBarIcon: ({ focused }) =>
- *       nativeNanoSymbol('home', focused ? 'original' : 'monochrome')
+ *       nativeNanoSymbol('home', focused ? 'multicolor' : 'monochrome')
  */
 export function nativeNanoSymbol<Name extends NanoSymbolName>(
   name: Name,
@@ -64,7 +64,7 @@ export function nativeNanoSymbol(
     type: 'image',
     source: {
       uri:
-        renderingMode === 'original'
+        renderingMode === 'multicolor'
           ? toOriginalDrawableResourceName(resourceName)
           : resourceName,
     },

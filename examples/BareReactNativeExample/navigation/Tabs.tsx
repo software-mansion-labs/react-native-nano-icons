@@ -43,7 +43,7 @@ const Tabs = createBottomTabNavigator({
         title: 'Multicolor',
         tabBarIconSize: 30,
         tabBarIcon: ({ focused }) =>
-          nativeNanoSymbol('walking', focused ? 'original' : 'monochrome'),
+          nativeNanoSymbol('walking', focused ? 'multicolor' : 'monochrome'),
       },
     }),
     // Built-in system symbol — SF Symbol on iOS, Material Symbol on Android.

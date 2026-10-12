@@ -31,7 +31,7 @@ index 2257021..64357c9 100644
        badgeStyle: badgeStyle,
        activeOpacity: activeOpacity,
 diff --git a/lib/module/views/BottomTabViewNativeImpl.js b/lib/module/views/BottomTabViewNativeImpl.js
-index bc22c00..45935c3 100644
+index bc22c00..cfa3c60 100644
 --- a/lib/module/views/BottomTabViewNativeImpl.js
 +++ b/lib/module/views/BottomTabViewNativeImpl.js
 @@ -315,6 +315,9 @@ export function BottomTabViewNative({
@@ -56,7 +56,20 @@ index bc22c00..45935c3 100644
                tabBarItemTitleFontFamily: fontFamily,
                tabBarItemTitleFontWeight: fontWeight,
                tabBarItemTitleSmallLabelFontSize: fontSize,
-@@ -541,20 +547,27 @@ function getPlatformIcon(icon) {
+@@ -522,7 +528,11 @@ function getPlatformIcon(icon) {
+   switch (icon.type) {
+     case 'sfSymbol':
+       return {
+-        ios: icon,
++        ios: {
++          type: 'sfSymbol',
++          name: icon.name,
++          renderingMode: icon.renderingMode === 'multicolor' ? 'original' : icon.renderingMode
++        },
+         android: undefined,
+         shared: undefined
+       };
+@@ -541,20 +551,27 @@ function getPlatformIcon(icon) {
          shared: undefined
        };
      case 'image':
@@ -99,7 +112,7 @@ index bc22c00..45935c3 100644
        {
          const _exhaustiveCheck = icon;
 diff --git a/lib/module/views/TabBarIcon.js b/lib/module/views/TabBarIcon.js
-index 53c24dd..2d217d8 100644
+index 53c24dd..f983cfa 100644
 --- a/lib/module/views/TabBarIcon.js
 +++ b/lib/module/views/TabBarIcon.js
 @@ -20,6 +20,7 @@ export function TabBarIcon({
@@ -110,24 +123,19 @@ index 53c24dd..2d217d8 100644
    badge,
    badgeStyle,
    activeOpacity,
-@@ -30,12 +31,19 @@ export function TabBarIcon({
+@@ -30,12 +31,14 @@ export function TabBarIcon({
    allowFontScaling,
    style
  }) {
 -  const iconSize = variant === 'material' ? ICON_SIZE_MATERIAL : size === 'compact' ? ICON_SIZE_SQUARE_COMPACT : ICON_SIZE_SQUARE;
 +  const iconSize = iconSizeOverride ?? (variant === 'material' ? ICON_SIZE_MATERIAL : size === 'compact' ? ICON_SIZE_SQUARE_COMPACT : ICON_SIZE_SQUARE);
-+
-+  // Grow only the container's width to fit a wider image (e.g. a logo); height
-+  // stays the default so icons stay vertically aligned across tabs.
-+  const imageAspectRatio = typeof icon === 'object' && icon != null && 'type' in icon ? icon.type === 'image' ? icon.aspectRatio : undefined : undefined;
-+  const boxWidth = imageAspectRatio != null ? iconSize * imageAspectRatio : iconSizeOverride;
  
    // We render the icon twice at the same position on top of each other:
    // active and inactive one, so we can fade between them.
    return /*#__PURE__*/_jsxs(View, {
 -    style: [variant === 'material' ? styles.wrapperMaterial : size === 'compact' ? styles.wrapperUikitCompact : styles.wrapperUikit, style],
-+    style: [variant === 'material' ? styles.wrapperMaterial : size === 'compact' ? styles.wrapperUikitCompact : styles.wrapperUikit, boxWidth != null && {
-+      width: boxWidth
++    style: [variant === 'material' ? styles.wrapperMaterial : size === 'compact' ? styles.wrapperUikitCompact : styles.wrapperUikit, iconSizeOverride != null && {
++      width: iconSizeOverride
 +    }, style],
      children: [/*#__PURE__*/_jsx(View, {
        style: [styles.icon, {

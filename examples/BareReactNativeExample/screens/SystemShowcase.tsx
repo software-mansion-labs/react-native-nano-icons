@@ -9,19 +9,9 @@ import { nativeNanoSymbol } from 'react-native-nano-icons/symbols';
 import SFSymbolShowcase from './SFSymbolShowcase';
 
 // Default-size icon for the header (sfSymbol iOS / image drawable Android).
-const HEADER_ICON = () => nativeNanoSymbol('swm', 'original');
+const HEADER_ICON = () => nativeNanoSymbol('swm', 'multicolor');
 
-// Sized variant — spread the descriptor and add aspectRatio, which the image
-// (Android) honors so the wide logo renders at its intended proportions.
-const SIZED_ICON = () => ({
-  ...nativeNanoSymbol('swm', 'original'),
-  aspectRatio: 2,
-});
-
-const TINTED_ICON = () => ({
-  ...nativeNanoSymbol('swm'),
-  aspectRatio: 2,
-});
+const TINTED_ICON = () => nativeNanoSymbol('swm');
 
 function Center({ label }: { label: string }) {
   return (
@@ -47,12 +37,12 @@ function DrawerDemo() {
       <Drawer.Screen
         name="Inbox"
         component={DrawerA}
-        options={{ drawerIcon: SIZED_ICON }}
+        options={{ drawerIcon: HEADER_ICON }}
       />
       <Drawer.Screen
         name="Archive"
         component={DrawerB}
-        options={{ drawerIcon: SIZED_ICON }}
+        options={{ drawerIcon: HEADER_ICON }}
       />
     </Drawer.Navigator>
   );
@@ -72,12 +62,12 @@ function TopTabsDemo() {
       <TopTabs.Screen
         name="One"
         component={TopA}
-        options={{ tabBarIcon: SIZED_ICON }}
+        options={{ tabBarIcon: HEADER_ICON }}
       />
       <TopTabs.Screen
         name="Two"
         component={TopB}
-        options={{ tabBarIcon: SIZED_ICON }}
+        options={{ tabBarIcon: HEADER_ICON }}
       />
     </TopTabs.Navigator>
   );
@@ -92,13 +82,13 @@ function ElementsHome({
     <View style={styles.home}>
       <Text style={styles.section}>elements Button</Text>
       <View style={styles.row}>
-        <Button variant="plain" icon={SIZED_ICON} onPress={() => {}}>
+        <Button variant="plain" icon={HEADER_ICON} onPress={() => {}}>
           Plain
         </Button>
         <Button variant="tinted" icon={TINTED_ICON} onPress={() => {}}>
           Tinted
         </Button>
-        <Button variant="filled" icon={SIZED_ICON} onPress={() => {}}>
+        <Button variant="filled" icon={HEADER_ICON} onPress={() => {}}>
           Filled
         </Button>
       </View>

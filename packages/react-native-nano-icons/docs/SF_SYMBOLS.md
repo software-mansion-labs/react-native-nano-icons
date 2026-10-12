@@ -22,7 +22,7 @@ The pipeline converts a directory of SVG icon files into:
 - A **typed manifest** (`<set>.symbols.ts`) exporting a const map of icon names → symbol names
 - A **symbolmap** (`<set>.symbolmap.json`) carrying the input fingerprint for incremental builds
 
-Unlike the font pipeline (which produces glyphs *we* render via CoreText), symbol mode produces assets that **the OS renders**. The result is a first-class system symbol: native tinting, selected/unselected tab states, weight/scale configuration, a runtime `monochrome`/`original` rendering-mode switch, and automatic Liquid Glass treatment in iOS 26 tab bars — with zero runtime code in this library.
+Unlike the font pipeline (which produces glyphs *we* render via CoreText), symbol mode produces assets that **the OS renders**. The result is a first-class system symbol: native tinting, selected/unselected tab states, weight/scale configuration, a runtime `monochrome`/`multicolor` rendering-mode switch, and automatic Liquid Glass treatment in iOS 26 tab bars — with zero runtime code in this library.
 
 ### Why this exists
 
@@ -232,7 +232,7 @@ The package version and the toolchain versions are folded into the stored finger
 
 ### Color management: one asset, two rendering modes
 
-The public API names the modes `monochrome` (one color, tinted by the host) and `original` (the asset's own colors). For SF Symbols `original` corresponds to Apple's **"multicolor"** rendering mode, which is why the layer classes below say `multicolor-N:custom` — that word is Apple's file format, not this library's API.
+The public API names the modes `monochrome` (one color, tinted by the host) and `multicolor` (the asset's own colors), the same names react-navigation uses for SF Symbol icons and Apple uses for symbol rendering. The layer classes below say `multicolor-N:custom` for the same reason.
 
 Monochrome rendering joins every layer into one nonzero-filled path in one color, regardless of class. No per-layer style can hide a layer in monochrome only (see the findings below). Knockouts are therefore expressed in geometry: a knockout layer winds against the ink beneath it, so the join has a hole there while multicolor still paints the layer.
 
@@ -240,9 +240,9 @@ What survives:
 
 1. **Geometry** — the visible layers after occlusion. Identical in both modes.
 2. **Knockouts** — holes in monochrome (the bar shows through), painted in their own fill in original.
-3. **Fills** — each remaining layer's color, declared for the `original` (Apple: multicolor) mode. Fill opacity is kept: on iOS as an `opacity` property in the layer's multicolor rule (e.g. `.multicolor-0:custom {fill:#000000;opacity:0.3}`), on Android as `fillAlpha`.
+3. **Fills** — each remaining layer's color, declared for the `multicolor` mode. Fill opacity is kept: on iOS as an `opacity` property in the layer's multicolor rule (e.g. `.multicolor-0:custom {fill:#000000;opacity:0.3}`), on Android as `fillAlpha`.
 
-Consequences for monochrome tinting are unchanged: side-by-side colored regions union into one shape, off-white tones (any channel below 240, or `α < 0.9`) are ink unless annotated, and gradients/patterns parse to black. The `original` mode shows those icons in their colors.
+Consequences for monochrome tinting are unchanged: side-by-side colored regions union into one shape, off-white tones (any channel below 240, or `α < 0.9`) are ink unless annotated, and gradients/patterns parse to black. The `multicolor` mode shows those icons in their colors.
 
 **Worked examples** (`examples/BareReactNativeExample`, `tabicons` set), tinted:
 
@@ -273,7 +273,7 @@ The template encodes rendering modes as per-layer CSS classes inside the one SVG
   </g>
 ```
 
-Rules the emitter follows, each one a verified failure mode otherwise (`multicolor` here is Apple's name for the `original` rendering mode):
+Rules the emitter follows, each one a verified failure mode otherwise (`multicolor` is the rendering mode of the same name):
 
 - Every layer path gets `class="monochrome-N multicolor-N:custom"`, `N` = z-order index (back → front), unique per layer. Single-layer icons are annotated too.
 - Custom colors are declared **only** in the `<style>` block placed right after the opening `<svg>` tag. `fill` attributes on the paths, `rgb()` fills, `custom-RRGGBB` suffixes and `SFSymbolsPreview…` classes are ignored by UIKit and render black — so layer paths carry no `fill` at all.
@@ -311,7 +311,7 @@ A VectorDrawable fills each `<path>` separately and never joins them, and the ba
 
 ### Runtime: `nativeNanoSymbol(name, renderingMode?, prefix?)`
 
-`renderingMode` is `'monochrome'` (default) or `'original'`. The helper returns react-navigation's `Icon` shapes: `{ type: 'sfSymbol', name: '<prefix>.<name>', renderingMode }` on iOS and `{ type: 'image', source: { uri }, tinted }` on Android, where `uri` is `<prefix>_<name>` and `tinted: true` for monochrome, `<prefix>_<name>_original` and `tinted: false` for original. react-navigation's native bottom tabs pass the symbol's `renderingMode` to react-native-screens' `Tabs` (PR #4209), which applies `AlwaysTemplate` / `AlwaysOriginal` per slot on iOS, and map `tinted` to screens' Android `tinting` (`'tinted'` / `'original'`).
+`renderingMode` is `'monochrome'` (default) or `'multicolor'`. The helper returns react-navigation's `Icon` shapes: `{ type: 'sfSymbol', name: '<prefix>.<name>', renderingMode }` on iOS and `{ type: 'image', source: { uri }, tinted }` on Android, where `uri` is `<prefix>_<name>` and `tinted: true` for monochrome, `<prefix>_<name>_original` and `tinted: false` for multicolor. react-navigation's native bottom tabs pass the symbol's `renderingMode` to react-native-screens' `Tabs` (PR #4209), mapping `multicolor` to screens' `original`,, which applies `AlwaysTemplate` / `AlwaysOriginal` per slot on iOS, and map `tinted` to screens' Android `tinting` (`'tinted'` / `'original'`).
 
 ### `Contents.json`
 
@@ -402,7 +402,7 @@ xcrun actool My.xcassets --compile /tmp/out \
 
 ### Knockout and rendering-mode matrix (Bare example, 2026-10)
 
-Every symbol of the `tabicons` and `mcicon` sets in `monochrome`, `original`, the default and the `focused ? 'original' : 'monochrome'` switch, selected and unselected, against dark and green backgrounds:
+Every symbol of the `tabicons` and `mcicon` sets in `monochrome`, `multicolor`, the default and the `focused ? 'multicolor' : 'monochrome'` switch, selected and unselected, against dark and green backgrounds:
 
 | Target | Surface | Result |
 |---|---|---|

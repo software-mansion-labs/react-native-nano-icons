@@ -10,10 +10,10 @@ describe('nativeNanoSymbol', () => {
       name: 'nano.home',
       renderingMode: 'monochrome',
     });
-    expect(iosNanoSymbol('home', 'original', 'brand')).toEqual({
+    expect(iosNanoSymbol('home', 'multicolor', 'brand')).toEqual({
       type: 'sfSymbol',
       name: 'brand.home',
-      renderingMode: 'original',
+      renderingMode: 'multicolor',
     });
   });
 
@@ -23,7 +23,7 @@ describe('nativeNanoSymbol', () => {
       source: { uri: 'nano_person_walking' },
       tinted: true,
     });
-    expect(androidNanoSymbol('home', 'original', 'brand')).toEqual({
+    expect(androidNanoSymbol('home', 'multicolor', 'brand')).toEqual({
       type: 'image',
       source: { uri: 'brand_home_original' },
       tinted: false,

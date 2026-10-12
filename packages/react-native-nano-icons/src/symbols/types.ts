@@ -1,6 +1,6 @@
 // Returned by nativeNanoSymbol(). Structurally matches react-navigation's `Icon`
 // so it spreads into `tabBarIcon`, without importing it (keeps this module RN-nav-free).
-export type NanoSymbolRenderingMode = 'monochrome' | 'original';
+export type NanoSymbolRenderingMode = 'monochrome' | 'multicolor';
 
 export type NativeNanoSymbol =
   | { type: 'sfSymbol'; name: string; renderingMode: NanoSymbolRenderingMode }

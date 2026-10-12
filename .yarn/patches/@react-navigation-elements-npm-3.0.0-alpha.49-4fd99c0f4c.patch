@@ -1,5 +1,5 @@
 diff --git a/lib/module/PlatformIcon.js b/lib/module/PlatformIcon.js
-index 3a3e697..2b3b0c6 100644
+index 3a3e697..138988f 100644
 --- a/lib/module/PlatformIcon.js
 +++ b/lib/module/PlatformIcon.js
 @@ -14,6 +14,7 @@ export function PlatformIcon({
@@ -10,17 +10,8 @@ index 3a3e697..2b3b0c6 100644
          color: color,
          size: size,
          style: StyleSheet.flatten(style),
-@@ -36,7 +37,7 @@ export function PlatformIcon({
-         fadeDuration: 0,
-         tintColor: icon.tinted === false ? undefined : color,
-         style: [{
--          width: size,
-+          width: size * (icon.aspectRatio ?? 1),
-           height: size
-         }, style],
-         ...rest
 diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
-index 0d0e908..04e5fec 100644
+index 0d0e908..9f96098 100644
 --- a/lib/typescript/src/types.d.ts
 +++ b/lib/typescript/src/types.d.ts
 @@ -1,4 +1,4 @@
@@ -29,21 +20,7 @@ index 0d0e908..04e5fec 100644
  import * as React from 'react';
  import type { Animated, ColorValue, ImageSourcePropType, LayoutChangeEvent, StyleProp, TextInputProps, TextStyle, ViewStyle } from 'react-native';
  import type { SFSymbol } from 'sf-symbols-typescript';
-@@ -26,6 +26,13 @@ type IconImage = {
-      * Defaults to `true`.
-      */
-     tinted?: boolean;
-+    /**
-+     * Width to height ratio for non-square images.
-+     * The image renders at `size * aspectRatio` × `size` of the consumer's icon size.
-+     *
-+     * Defaults to `1`.
-+     */
-+    aspectRatio?: number | undefined;
- };
- type IconSfSymbol = {
-     /**
-@@ -35,7 +42,15 @@ type IconSfSymbol = {
+@@ -35,7 +35,15 @@ type IconSfSymbol = {
      /**
       * Name of the SF Symbol to use as the icon.
       */
@@ -52,11 +29,11 @@ index 0d0e908..04e5fec 100644
 +    /**
 +     * How to color the symbol.
 +     * - `monochrome`: Single color, using the tint color.
-+     * - `original`: Keeps the symbol's own colors (Apple's multicolor rendering).
++     * - `multicolor`: Uses the symbol's built-in multicolor scheme.
 +     *
 +     * Defaults to a single color for system symbols.
 +     */
-+    renderingMode?: 'monochrome' | 'original' | undefined;
++    renderingMode?: 'monochrome' | 'multicolor' | undefined;
  };
  type IconMaterialSymbol = {
      /**

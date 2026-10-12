@@ -318,7 +318,7 @@ Use them in react-navigation's native bottom tabs, material top tabs, drawer, an
 
 ### Symbol rendering modes
 
-`'monochrome'` (default) draws one silhouette in the tab bar's tint color. `'original'` keeps the SVG's own colors.
+`'monochrome'` (default) draws one silhouette in the tab bar's tint color. `'multicolor'` keeps the SVG's own colors.
 
 > [!NOTE]
 > On both platforms, white and near-white shapes in `monochrome` cut a hole where they cover other shapes. To cut out other shapes instead, add `data-nano-knockout="true"` to them in the SVG.
@@ -328,11 +328,11 @@ Rendering mode is an iOS option. On Android, the same switch is the `tinted` opt
 One SVG covers both tab states:
 
 - **Tint only** – keep `'monochrome'`. The tab bar colors the icon for the focused and unfocused states.
-- **Switch modes** – pass `'original'` when focused. A knocked-out inner shape is a hole in `'monochrome'` and keeps its own color in `'original'`. Give it a visible color and mark it with `data-nano-knockout="true"` to get an outline when unfocused and a filled icon when focused.
+- **Switch modes** – pass `'multicolor'` when focused. A knocked-out inner shape is a hole in `'monochrome'` and keeps its own color in `'multicolor'`. Give it a visible color and mark it with `data-nano-knockout="true"` to get an outline when unfocused and a filled icon when focused.
 
 ```TypeScript
 tabBarIcon: ({ focused }) =>
-  nativeNanoSymbol('heart', focused ? 'original' : 'monochrome'),
+  nativeNanoSymbol('heart', focused ? 'multicolor' : 'monochrome'),
 ```
 
 ---
@@ -559,7 +559,7 @@ nativeNanoSymbol(name, renderingMode?, prefix?)
 | Argument        | Default        | Description                                                                                                                                           |
 | :-------------- | :------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`          | **(required)** | The SVG filename without `.svg`, typed from the generated manifest.                                                                                                  |
-| `renderingMode` | `'monochrome'` | `'monochrome'` renders the silhouette in the consumer's tint; `'original'` renders the icon's own colors. See [Symbol rendering modes](#symbol-rendering-modes). |
+| `renderingMode` | `'monochrome'` | `'monochrome'` renders the silhouette in the consumer's tint; `'multicolor'` renders the icon's own colors. See [Symbol rendering modes](#symbol-rendering-modes). |
 | `prefix`        | `'nano'`       | The set's `prefix`.                                                                                                                                   |
 
 Returns a react-navigation `Icon`: `{ type: 'sfSymbol', name, renderingMode }` on iOS and `{ type: 'image', source: { uri }, tinted }` on Android.
@@ -576,7 +576,7 @@ Returns a react-navigation `Icon`: `{ type: 'sfSymbol', name, renderingMode }` o
 >     : { type: 'image', source: { uri: 'nano_home' } },
 > ```
 >
-> For `'original'`, use `{ type: 'sfSymbol', name: 'nano.home', renderingMode: 'original' }` on iOS and `{ type: 'image', source: { uri: 'nano_home_original' }, tinted: false }` on Android.
+> For `'multicolor'`, use `{ type: 'sfSymbol', name: 'nano.home', renderingMode: 'multicolor' }` on iOS and `{ type: 'image', source: { uri: 'nano_home_original' }, tinted: false }` on Android.
 
 ### CLI
 
