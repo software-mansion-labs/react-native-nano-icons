@@ -244,6 +244,7 @@ describe('Pipeline E2E — failure reporting', () => {
 
   test('every per-file message leads with the [Set: file] label', async () => {
     const { failures, warnings } = await runBroken({
+      'em.svg': SVG('<rect width="10em" height="10"/>'),
       'textEl.svg': SVG('<text x="1" y="1">hi</text>'),
       'masked.svg': SVG(
         '<mask id="m"><rect width="24" height="12" fill="white"/></mask><rect width="24" height="24" mask="url(#m)"/>'
@@ -252,9 +253,12 @@ describe('Pipeline E2E — failure reporting', () => {
     });
     expect(failures).toEqual([
       expect.stringMatching(
-        /^\[BrokenSet: textEl\.svg\] failed to flatten: Unsupported element <text>/
+        /^\[BrokenSet: em\.svg\] failed to flatten: width="10em" on <rect>/
       ),
     ]);
+    expect(warnings).toContain(
+      '[BrokenSet: textEl.svg] skipped: <text> is not supported yet'
+    );
     expect(warnings).toContain(
       '[BrokenSet: masked.svg] skipped: <mask> is not supported yet'
     );
@@ -266,22 +270,20 @@ describe('Pipeline E2E — failure reporting', () => {
   test('every broken icon is reported, then the set fails listing them all', async () => {
     const { error, failures, ttfWritten } = await runBroken({
       'ok.svg': SVG('<rect width="10" height="10"/>'),
-      'textEl.svg': SVG(
-        '<text x="1" y="1">hi</text><rect width="4" height="4"/>'
-      ),
+      'em.svg': SVG('<rect width="10em" height="4"/>'),
       'badRef.svg': SVG(
         '<rect width="24" height="24" clip-path="url(#nope)"/>'
       ),
     });
     expect(failures).toHaveLength(2);
-    expect(failures.find((f) => f.includes('[BrokenSet: textEl.svg]'))).toMatch(
-      /Unsupported element <text> at \/svg\[0\]\/text\[0\]/
+    expect(failures.find((f) => f.includes('[BrokenSet: em.svg]'))).toMatch(
+      /width="10em" on <rect> is not a number/
     );
     expect(failures.find((f) => f.includes('[BrokenSet: badRef.svg]'))).toMatch(
       /url\(#nope\) references <clipPath> with id "nope", but no such element exists/
     );
     expect(error?.message).toBe(
-      '2 of 3 icons in [BrokenSet] could not be converted: badRef.svg, textEl.svg'
+      '2 of 3 icons in [BrokenSet] could not be converted: badRef.svg, em.svg'
     );
     expect(ttfWritten).toBe(false);
   }, 120_000);

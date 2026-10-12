@@ -5,6 +5,7 @@ import {
   XML_FILTER,
   XML_IMAGE,
   XML_MASK,
+  XML_UNCONVERTIBLE,
   XML_XMLNS,
 } from '../../utils/svgPatterns';
 import { SVG_NS } from '../flatten/dom';
@@ -22,6 +23,13 @@ export function validateSvg(content: string): SvgValidation {
     return {
       valid: false,
       reason: 'embedded raster <image> is not supported yet',
+    };
+  }
+  const unconvertible = XML_UNCONVERTIBLE.exec(content);
+  if (unconvertible) {
+    return {
+      valid: false,
+      reason: `<${unconvertible[1]}> is not supported yet`,
     };
   }
   return { valid: true };

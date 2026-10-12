@@ -210,6 +210,31 @@ describe('validateSvg', () => {
     }
   });
 
+  test.each(['text', 'style', 'foreignObject', 'a', 'switch'])(
+    'SVG with <%s> is invalid and reason names the element',
+    (tag) => {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg"><${tag}/><path d="M0 0"/></svg>`;
+      expect(validateSvg(svg)).toEqual({
+        valid: false,
+        reason: `<${tag}> is not supported yet`,
+      });
+    }
+  );
+
+  test('SVG with <animate> or <textPath> is not matched as <a> or <text>', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"><animate attributeName="d"/></path><textPath/></svg>';
+    expect(validateSvg(svg)).toEqual({ valid: true });
+  });
+
+  test.each(['mask', 'filter', 'image'])(
+    'self-closing <%s/> is invalid',
+    (tag) => {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg"><${tag}/><path d="M0 0"/></svg>`;
+      expect(validateSvg(svg).valid).toBe(false);
+    }
+  );
+
   test('SVG with <clipPath> is valid', () => {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="c"><path d="M0 0h24v24H0z"/></clipPath></defs><g clip-path="url(#c)"><path d="M1 1"/></g></svg>';

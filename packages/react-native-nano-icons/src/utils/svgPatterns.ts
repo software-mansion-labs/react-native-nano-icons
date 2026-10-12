@@ -12,11 +12,12 @@ export const WHITESPACE = /\s+/;
 
 // --- SVG/XML validation ---
 /** `<mask …>` element (unsupported). */
-export const XML_MASK = /<mask[\s>]/i;
+export const XML_MASK = /<mask[\s/>]/i;
 /** `<filter …>` element (unsupported). */
-export const XML_FILTER = /<filter[\s>]/i;
+export const XML_FILTER = /<filter[\s/>]/i;
 /** `<image …>` element (unsupported). */
-export const XML_IMAGE = /<image[\s>]/i;
+export const XML_IMAGE = /<image[\s/>]/i;
+export const XML_UNCONVERTIBLE = /<(text|style|foreignObject|a|switch)[\s/>]/i;
 /** An `xmlns=` attribute. */
 export const XML_XMLNS = /xmlns\s*=/;
 /** Opening `<svg` tag. */
