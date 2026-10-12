@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Run from your app root: npx react-native-nano-icons [--verbose] [--path <dir|file>] [--dynamic] [--app-config] [--help]
+ * Run from your app root: npx react-native-nano-icons [--verbose] [--path <dir|file>] [--dynamic] [--dynamic-app-config] [--help]
  *
  * Flags:
  *   -h, --help         Print usage and exit without building
@@ -10,8 +10,8 @@
  *                      in the current directory. Default: cwd.
  *   --dynamic          Rebuild only icon sets with linking: 'dynamic'. Skips native linking —
  *                      use this for OTA font regeneration without running expo prebuild.
- *   --app-config       Read config from Expo app config (app.json / app.config.js / app.config.ts)
- *                      instead of .nanoicons.json. Must be combined with --dynamic.
+ *   --dynamic-app-config  Like --dynamic, but reads the config from the Expo app config
+ *                      (app.json / app.config.js / app.config.ts) instead of .nanoicons.json.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,18 +38,18 @@ export const USAGE = `Usage: npx react-native-nano-icons [options]
 Builds the icon fonts and native symbols from .nanoicons.json and links them into ios/ and android/.
 
 Options:
-  --path <dir|file>  Folder with .nanoicons.json, or the file itself. Default: current directory.
-  --dynamic          Rebuild only icon sets with linking: "dynamic". Skips native linking.
-  --app-config       Read the sets from the Expo app config instead of .nanoicons.json. Requires --dynamic.
-  --verbose          Show per-SVG processing details.
-  -h, --help         Show this help.`;
+  --path <dir|file>     Folder with .nanoicons.json, or the file itself. Default: current directory.
+  --dynamic             Rebuild only icon sets with linking: "dynamic". Skips native linking.
+  --dynamic-app-config  Like --dynamic, but reads the sets from the Expo app config.
+  --verbose             Show per-SVG processing details.
+  -h, --help            Show this help.`;
 
 const CONFIG_FILE_NAME = '.nanoicons.json';
 
 const OPTIONS = {
   path: { type: 'string' },
   dynamic: { type: 'boolean' },
-  'app-config': { type: 'boolean' },
+  'dynamic-app-config': { type: 'boolean' },
   verbose: { type: 'boolean' },
   help: { type: 'boolean', short: 'h' },
 } as const;
@@ -98,6 +98,11 @@ export function parseCliArgs(args: string[]): CliOptions {
     if (token.kind === 'positional') {
       throw new CliUsageError(`Unexpected argument "${token.value}".`);
     }
+    if (token.name === 'app-config') {
+      throw new CliUsageError(
+        `Unknown option ${token.rawName}. Use --dynamic-app-config instead.`
+      );
+    }
     if (!isOptionName(token.name)) {
       throw new CliUsageError(`Unknown option ${token.rawName}.`);
     }
@@ -121,12 +126,17 @@ export function parseCliArgs(args: string[]): CliOptions {
       throw new CliUsageError(`${token.rawName} does not take a value.`);
     }
     if (token.name === 'dynamic') options.dynamic = true;
-    if (token.name === 'app-config') options.appConfig = true;
+    if (token.name === 'dynamic-app-config') {
+      options.dynamic = true;
+      options.appConfig = true;
+    }
     if (token.name === 'verbose') options.verbose = true;
   }
 
-  if (options.appConfig && !options.dynamic) {
-    throw new CliUsageError('--app-config requires --dynamic.');
+  if (seen.has('dynamic') && seen.has('dynamic-app-config')) {
+    throw new CliUsageError(
+      '--dynamic and --dynamic-app-config cannot be used together.'
+    );
   }
 
   return options;

@@ -224,8 +224,8 @@ describe('cli main', () => {
     );
   });
 
-  test('--app-config reads and builds in the current directory by default', async () => {
-    process.argv = ['node', 'cli', '--dynamic', '--app-config'];
+  test('--dynamic-app-config reads and builds in the current directory by default', async () => {
+    process.argv = ['node', 'cli', '--dynamic-app-config'];
     mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[2]]);
     mockBuildAllFonts.mockResolvedValue([]);
 
@@ -241,9 +241,9 @@ describe('cli main', () => {
     );
   });
 
-  test('--app-config with --path to an app folder reads and builds there', async () => {
+  test('--dynamic-app-config with --path to an app folder reads and builds there', async () => {
     const app = makeFolder(true);
-    process.argv = ['node', 'cli', '--dynamic', '--app-config', '--path', app];
+    process.argv = ['node', 'cli', '--dynamic-app-config', '--path', app];
     mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[2]]);
     mockBuildAllFonts.mockResolvedValue([]);
 
@@ -289,8 +289,7 @@ describe('parseCliArgs', () => {
       parseCliArgs([
         '--path',
         'apps/mobile',
-        '--dynamic',
-        '--app-config',
+        '--dynamic-app-config',
         '--verbose',
       ])
     ).toEqual({
@@ -316,6 +315,13 @@ describe('parseCliArgs', () => {
     expect(parseCliArgs(['--app-config', '-h']).help).toBe(true);
   });
 
+  test('--dynamic alone reads .nanoicons.json', () => {
+    expect(parseCliArgs(['--dynamic'])).toMatchObject({
+      dynamic: true,
+      appConfig: false,
+    });
+  });
+
   test.each([
     [['--dyanmic'], 'Unknown option --dyanmic.'],
     [['-x'], 'Unknown option -x.'],
@@ -326,7 +332,18 @@ describe('parseCliArgs', () => {
     [['--path', 'a', '--path', 'b'], '--path is given more than once.'],
     [['--dynamic', '--dynamic'], '--dynamic is given more than once.'],
     [['--dynamic=yes'], '--dynamic does not take a value.'],
-    [['--app-config'], '--app-config requires --dynamic.'],
+    [
+      ['--app-config'],
+      'Unknown option --app-config. Use --dynamic-app-config instead.',
+    ],
+    [
+      ['--dynamic', '--app-config'],
+      'Unknown option --app-config. Use --dynamic-app-config instead.',
+    ],
+    [
+      ['--dynamic', '--dynamic-app-config'],
+      '--dynamic and --dynamic-app-config cannot be used together.',
+    ],
   ])('%j is rejected', (args, message) => {
     expect(() => parseCliArgs(args)).toThrow(new CliUsageError(message));
   });
@@ -371,7 +388,7 @@ describe('runCli', () => {
     for (const flag of [
       '--path',
       '--dynamic',
-      '--app-config',
+      '--dynamic-app-config',
       '--verbose',
       '--help',
       '-h',
@@ -391,12 +408,13 @@ describe('runCli', () => {
     expect(mockLinkBare).not.toHaveBeenCalled();
   });
 
-  test('--app-config without --dynamic builds nothing', async () => {
-    await expect(runCli(['--app-config'])).resolves.toBe(1);
+  test('the old --app-config flag points to --dynamic-app-config and builds nothing', async () => {
+    await expect(runCli(['--dynamic', '--app-config'])).resolves.toBe(1);
 
     expect(stderr).toHaveBeenCalledWith(
-      `--app-config requires --dynamic.\n\n${USAGE}`
+      `Unknown option --app-config. Use --dynamic-app-config instead.\n\n${USAGE}`
     );
+    expect(mockLoadDynamicSetsFromAppConfig).not.toHaveBeenCalled();
     expect(mockLoadNanoIconsConfig).not.toHaveBeenCalled();
     expect(mockBuildAllFonts).not.toHaveBeenCalled();
   });

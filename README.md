@@ -390,10 +390,10 @@ npx react-native-nano-icons --dynamic
 
 
 > [!TIP]
-> Using Expo [Continuous Native Generation (CNG)](https://docs.expo.dev/workflow/continuous-native-generation/) with the app config and expo plugin instead of `.nanoicons.json`? Just add `--app-config` flag to use your plugin input setup instead: 
+> Using Expo [Continuous Native Generation (CNG)](https://docs.expo.dev/workflow/continuous-native-generation/) with the app config and expo plugin instead of `.nanoicons.json`? Use `--dynamic-app-config` instead of `--dynamic` to read your plugin setup:
 > ```sh
 > # run from your app root
-> npx react-native-nano-icons --dynamic --app-config
+> npx react-native-nano-icons --dynamic-app-config
 > ```
 > This reads your config directly from `app.json` / `app.config.js` / `app.config.ts` (no separate `.nanoicons.json` needed). In a monorepo, run it from the app's folder or point it there with `--path <app root>`.
 
@@ -581,7 +581,7 @@ Returns a react-navigation `Icon`: `{ type: 'sfSymbol', name, renderingMode }` o
 ### CLI
 
 ```sh
-npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--app-config] [--help]
+npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--dynamic-app-config] [--help]
 ```
 
 | Flag                | Description                                                                                                                         |
@@ -589,7 +589,7 @@ npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--app-c
 | `--path <dir\|file>` | Where to read `.nanoicons.json`: a folder, or the `.nanoicons.json` file itself. Any other file is rejected. If that folder has a `package.json`, the CLI builds and links there. Otherwise it builds and links in the current directory. Default: current directory. |
 | `--verbose`         | Show per-SVG processing details and extra build and linking notes.                                                                  |
 | `--dynamic`         | Rebuild only icon sets with `linking: 'dynamic'` and skip native linking. See [Regenerating dynamic fonts only](#regenerating-dynamic-fonts-only). |
-| `--app-config`      | Read the config from the Expo app config (`app.json` / `app.config.js` / `app.config.ts`) instead of `.nanoicons.json`. Requires `--dynamic`. |
+| `--dynamic-app-config` | Like `--dynamic`, but reads the sets from the Expo app config (`app.json` / `app.config.js` / `app.config.ts`) instead of `.nanoicons.json`. |
 | `-h`, `--help`      | Print the usage and exit without building. |
 
 ---

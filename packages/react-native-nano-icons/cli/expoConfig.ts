@@ -23,7 +23,7 @@ export function loadDynamicSetsFromAppConfig(
   if (dynamicSets.length === 0) {
     throw new Error(
       `[react-native-nano-icons] No icon sets with linking: "dynamic" found.\n` +
-        `--dynamic --app-config only processes icon sets where linking is set to "dynamic".`
+        `--dynamic-app-config only processes icon sets where linking is set to "dynamic".`
     );
   }
 
@@ -51,7 +51,7 @@ function loadPluginOptions(projectRoot: string): NanoIconsPluginOptions {
   const configModule = resolveExpoConfigModule(projectRoot);
   if (!configModule) {
     throw new Error(
-      `[react-native-nano-icons] Could not find expo/config or @expo/config from ${projectRoot} — required for --dynamic --app-config.\n` +
+      `[react-native-nano-icons] Could not find expo/config or @expo/config from ${projectRoot} — required for --dynamic-app-config.\n` +
         `Run the command from your Expo app root, or pass --path <app root>.`
     );
   }
