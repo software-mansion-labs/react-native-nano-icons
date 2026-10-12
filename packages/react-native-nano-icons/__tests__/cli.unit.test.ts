@@ -5,6 +5,7 @@ const mockLinkBare = jest.fn();
 const mockLoadNanoIconsConfig = jest.fn();
 const mockLoadDynamicIconSets = jest.fn();
 const mockLoadDynamicSetsFromAppConfig = jest.fn();
+const mockCreateOraLogger = jest.fn();
 
 jest.mock('../cli/index', () => ({
   IconSetBuildError: jest.requireActual('../cli/build').IconSetBuildError,
@@ -14,7 +15,7 @@ jest.mock('../cli/index', () => ({
   loadDynamicIconSets: (...args: unknown[]) => mockLoadDynamicIconSets(...args),
   loadDynamicSetsFromAppConfig: (...args: unknown[]) =>
     mockLoadDynamicSetsFromAppConfig(...args),
-  createOraLogger: jest.fn(),
+  createOraLogger: (...args: unknown[]) => mockCreateOraLogger(...args),
 }));
 
 import fs from 'node:fs';
@@ -22,7 +23,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { IconSetBuildError } from '../cli/build';
 import type { NanoLogger } from '../cli/logger';
-import { main } from '../scripts/cli';
+import {
+  CliUsageError,
+  USAGE,
+  main,
+  parseCliArgs,
+  runCli,
+} from '../scripts/cli';
 
 const SETS = [{ inputDir: 'a' }, { inputDir: 'b' }, { inputDir: 'c' }];
 const BUILT = [
@@ -46,6 +53,10 @@ function silentLogger(): NanoLogger {
   };
 }
 
+function runMain(): Promise<void> {
+  return main(silentLogger(), parseCliArgs(process.argv.slice(2)));
+}
+
 describe('cli main', () => {
   const originalArgv = process.argv;
 
@@ -63,7 +74,7 @@ describe('cli main', () => {
   test('links every built set against the configured total', async () => {
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
-    await main(silentLogger());
+    await runMain();
 
     expect(mockLinkBare).toHaveBeenCalledWith(
       process.cwd(),
@@ -77,7 +88,7 @@ describe('cli main', () => {
     const error = new IconSetBuildError('1 icon set failed to build: B', BUILT);
     mockBuildAllFonts.mockRejectedValue(error);
 
-    await expect(main(silentLogger())).rejects.toBe(error);
+    await expect(runMain()).rejects.toBe(error);
 
     expect(mockLinkBare).toHaveBeenCalledWith(
       process.cwd(),
@@ -97,7 +108,7 @@ describe('cli main', () => {
       order.push('link');
     });
 
-    await main(silentLogger()).catch(() => order.push('throw'));
+    await runMain().catch(() => order.push('throw'));
 
     expect(order).toEqual(['build', 'link', 'throw']);
   });
@@ -107,9 +118,7 @@ describe('cli main', () => {
       new Error('Input directory does not exist')
     );
 
-    await expect(main(silentLogger())).rejects.toThrow(
-      'Input directory does not exist'
-    );
+    await expect(runMain()).rejects.toThrow('Input directory does not exist');
     expect(mockLinkBare).not.toHaveBeenCalled();
   });
 
@@ -149,7 +158,7 @@ describe('cli main', () => {
   test('without --path the current directory is the app root', async () => {
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
-    await main(silentLogger());
+    await runMain();
 
     expectFullRun(process.cwd(), process.cwd());
   });
@@ -159,7 +168,7 @@ describe('cli main', () => {
     process.argv = ['node', 'cli', '--path', app];
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
-    await main(silentLogger());
+    await runMain();
 
     expectFullRun(app, app);
   });
@@ -169,7 +178,7 @@ describe('cli main', () => {
     process.argv = ['node', 'cli', '--path', path.join(app, '.nanoicons.json')];
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
-    await main(silentLogger());
+    await runMain();
 
     expectFullRun(app, app);
   });
@@ -179,7 +188,7 @@ describe('cli main', () => {
     process.argv = ['node', 'cli', '--path', configFolder];
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
-    await main(silentLogger());
+    await runMain();
 
     expectFullRun(configFolder, process.cwd());
   });
@@ -194,7 +203,7 @@ describe('cli main', () => {
     ];
     mockBuildAllFonts.mockResolvedValue(BUILT);
 
-    await main(silentLogger());
+    await runMain();
 
     expectFullRun(configFolder, process.cwd());
   });
@@ -205,7 +214,7 @@ describe('cli main', () => {
     mockLoadDynamicIconSets.mockReturnValue([SETS[2]]);
     mockBuildAllFonts.mockResolvedValue([]);
 
-    await main(silentLogger());
+    await runMain();
 
     expect(mockLoadDynamicIconSets).toHaveBeenCalledWith(app);
     expect(mockBuildAllFonts).toHaveBeenCalledWith(
@@ -220,7 +229,7 @@ describe('cli main', () => {
     mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[2]]);
     mockBuildAllFonts.mockResolvedValue([]);
 
-    await main(silentLogger());
+    await runMain();
 
     expect(mockLoadDynamicSetsFromAppConfig).toHaveBeenCalledWith(
       process.cwd()
@@ -238,7 +247,7 @@ describe('cli main', () => {
     mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[2]]);
     mockBuildAllFonts.mockResolvedValue([]);
 
-    await main(silentLogger());
+    await runMain();
 
     expect(mockLoadDynamicSetsFromAppConfig).toHaveBeenCalledWith(app);
     expect(mockBuildAllFonts).toHaveBeenCalledWith(
@@ -254,7 +263,7 @@ describe('cli main', () => {
     mockLoadDynamicIconSets.mockReturnValue([SETS[2]]);
     mockBuildAllFonts.mockResolvedValue([]);
 
-    await main(silentLogger());
+    await runMain();
 
     expect(mockBuildAllFonts).toHaveBeenCalledWith(
       [SETS[2]],
@@ -262,5 +271,174 @@ describe('cli main', () => {
       expect.anything()
     );
     expect(mockLinkBare).not.toHaveBeenCalled();
+  });
+});
+
+describe('parseCliArgs', () => {
+  test('no arguments gives the defaults', () => {
+    expect(parseCliArgs([])).toEqual({
+      dynamic: false,
+      appConfig: false,
+      verbose: false,
+      help: false,
+    });
+  });
+
+  test('reads every flag', () => {
+    expect(
+      parseCliArgs([
+        '--path',
+        'apps/mobile',
+        '--dynamic',
+        '--app-config',
+        '--verbose',
+      ])
+    ).toEqual({
+      path: 'apps/mobile',
+      dynamic: true,
+      appConfig: true,
+      verbose: true,
+      help: false,
+    });
+  });
+
+  test('--path accepts an inline value, even one starting with a dash', () => {
+    expect(parseCliArgs(['--path=apps/mobile']).path).toBe('apps/mobile');
+    expect(parseCliArgs(['--path=-odd-folder']).path).toBe('-odd-folder');
+  });
+
+  test.each([['--help'], ['-h']])('%s asks for help', (flag) => {
+    expect(parseCliArgs([flag]).help).toBe(true);
+  });
+
+  test('help wins over anything else on the line', () => {
+    expect(parseCliArgs(['--bogus', 'extra', '--help']).help).toBe(true);
+    expect(parseCliArgs(['--app-config', '-h']).help).toBe(true);
+  });
+
+  test.each([
+    [['--dyanmic'], 'Unknown option --dyanmic.'],
+    [['-x'], 'Unknown option -x.'],
+    [['build'], 'Unexpected argument "build".'],
+    [['--', '--dynamic'], 'Unexpected argument "--dynamic".'],
+    [['--path'], '--path needs a value.'],
+    [['--path', '--dynamic'], '--path needs a value.'],
+    [['--path', 'a', '--path', 'b'], '--path is given more than once.'],
+    [['--dynamic', '--dynamic'], '--dynamic is given more than once.'],
+    [['--dynamic=yes'], '--dynamic does not take a value.'],
+    [['--app-config'], '--app-config requires --dynamic.'],
+  ])('%j is rejected', (args, message) => {
+    expect(() => parseCliArgs(args)).toThrow(new CliUsageError(message));
+  });
+});
+
+describe('runCli', () => {
+  const tempDirs: string[] = [];
+  let stdout: jest.SpyInstance;
+  let stderr: jest.SpyInstance;
+  let logger: NanoLogger & { fail: jest.Mock };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    stdout = jest.spyOn(console, 'log').mockImplementation(() => {});
+    stderr = jest.spyOn(console, 'error').mockImplementation(() => {});
+    logger = { ...silentLogger(), fail: jest.fn() };
+    mockCreateOraLogger.mockResolvedValue(logger);
+    mockLoadNanoIconsConfig.mockReturnValue({ iconSets: SETS });
+    mockBuildAllFonts.mockResolvedValue(BUILT);
+    mockLinkBare.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    stdout.mockRestore();
+    stderr.mockRestore();
+    for (const dir of tempDirs.splice(0)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('--help prints the usage and builds nothing', async () => {
+    await expect(runCli(['--help'])).resolves.toBe(0);
+
+    expect(stdout).toHaveBeenCalledWith(USAGE);
+    expect(stderr).not.toHaveBeenCalled();
+    expect(mockCreateOraLogger).not.toHaveBeenCalled();
+    expect(mockBuildAllFonts).not.toHaveBeenCalled();
+    expect(mockLinkBare).not.toHaveBeenCalled();
+  });
+
+  test('the usage lists every option the parser accepts', () => {
+    for (const flag of [
+      '--path',
+      '--dynamic',
+      '--app-config',
+      '--verbose',
+      '--help',
+      '-h',
+    ]) {
+      expect(USAGE).toContain(flag);
+    }
+  });
+
+  test('an unknown option prints the error and the usage, and builds nothing', async () => {
+    await expect(runCli(['--dyanmic'])).resolves.toBe(1);
+
+    expect(stderr).toHaveBeenCalledWith(
+      `Unknown option --dyanmic.\n\n${USAGE}`
+    );
+    expect(mockCreateOraLogger).not.toHaveBeenCalled();
+    expect(mockBuildAllFonts).not.toHaveBeenCalled();
+    expect(mockLinkBare).not.toHaveBeenCalled();
+  });
+
+  test('--app-config without --dynamic builds nothing', async () => {
+    await expect(runCli(['--app-config'])).resolves.toBe(1);
+
+    expect(stderr).toHaveBeenCalledWith(
+      `--app-config requires --dynamic.\n\n${USAGE}`
+    );
+    expect(mockLoadNanoIconsConfig).not.toHaveBeenCalled();
+    expect(mockBuildAllFonts).not.toHaveBeenCalled();
+  });
+
+  test('--verbose picks the verbose logger', async () => {
+    await runCli(['--verbose']);
+
+    expect(mockCreateOraLogger).toHaveBeenCalledWith('verbose');
+  });
+
+  test('a successful run exits with 0', async () => {
+    await expect(runCli([])).resolves.toBe(0);
+
+    expect(mockCreateOraLogger).toHaveBeenCalledWith('normal');
+    expect(mockLinkBare).toHaveBeenCalled();
+    expect(logger.fail).not.toHaveBeenCalled();
+  });
+
+  test('a failed build reports the error and exits with 1', async () => {
+    mockBuildAllFonts.mockRejectedValue(
+      new Error('Input directory does not exist')
+    );
+
+    await expect(runCli([])).resolves.toBe(1);
+
+    expect(logger.fail).toHaveBeenCalledWith('Input directory does not exist');
+  });
+
+  test('--path to a file other than .nanoicons.json is a usage error', async () => {
+    const dir = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'nano-cli-'))
+    );
+    tempDirs.push(dir);
+    const file = path.join(dir, 'icons.json');
+    fs.writeFileSync(file, '{}');
+
+    await expect(runCli(['--path', file])).resolves.toBe(1);
+
+    expect(logger.fail).toHaveBeenCalledWith(
+      `--path must be a folder or a .nanoicons.json file, got ${file}.\n\n${USAGE}`
+    );
+    expect(mockLoadNanoIconsConfig).not.toHaveBeenCalled();
+    expect(mockBuildAllFonts).not.toHaveBeenCalled();
   });
 });

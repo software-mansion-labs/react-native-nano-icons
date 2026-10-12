@@ -581,15 +581,16 @@ Returns a react-navigation `Icon`: `{ type: 'sfSymbol', name, renderingMode }` o
 ### CLI
 
 ```sh
-npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--app-config]
+npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--app-config] [--help]
 ```
 
 | Flag                | Description                                                                                                                         |
 | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------- |
-| `--path <dir\|file>` | Where to read `.nanoicons.json`: a folder, or the `.nanoicons.json` file itself. Other file names are not read. If that folder has a `package.json`, the CLI builds and links there. Otherwise it builds and links in the current directory. Default: current directory. |
+| `--path <dir\|file>` | Where to read `.nanoicons.json`: a folder, or the `.nanoicons.json` file itself. Any other file is rejected. If that folder has a `package.json`, the CLI builds and links there. Otherwise it builds and links in the current directory. Default: current directory. |
 | `--verbose`         | Show per-SVG processing details and extra build and linking notes.                                                                  |
 | `--dynamic`         | Rebuild only icon sets with `linking: 'dynamic'` and skip native linking. See [Regenerating dynamic fonts only](#regenerating-dynamic-fonts-only). |
-| `--app-config`      | Read the config from the Expo app config (`app.json` / `app.config.js` / `app.config.ts`) instead of `.nanoicons.json`. Works only with `--dynamic`; without it, the flag is ignored. |
+| `--app-config`      | Read the config from the Expo app config (`app.json` / `app.config.js` / `app.config.ts`) instead of `.nanoicons.json`. Requires `--dynamic`. |
+| `-h`, `--help`      | Print the usage and exit without building. |
 
 ---
 
