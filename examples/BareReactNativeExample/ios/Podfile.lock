@@ -2011,6 +2011,7 @@ PODS:
     - React-Core
     - React-debug
     - React-Fabric
+    - React-FabricComponents
     - React-featureflags
     - React-graphics
     - React-ImageManager
@@ -3556,7 +3557,7 @@ SPEC CHECKSUMS:
   React-logger: 2a182a9d48eea1bc58834649d4b8436994e179ad
   React-Mapbuffer: 486b7ebf69aa5cd9c2f0d4232d78ed8190e14004
   React-microtasksnativemodule: 6550ec51ff7ed24fe58830e5ef5d09629cf086c5
-  react-native-nano-icons: 641407fd8c8b9397a63eeeba2dba8a4098577274
+  react-native-nano-icons: 253f1b776416e931d56cd69961ba15dce134e5bd
   react-native-pager-view: 30099eba6fe1c89a4494b4d4e936220353d7a043
   react-native-release-profiler: 2aea539ed5fc567149f0d636e4af245ac45cb874
   react-native-safe-area-context: 54d812805f3c4e08a4580ad086cbde1d8780c2e4
