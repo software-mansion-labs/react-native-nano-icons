@@ -155,7 +155,7 @@
   },
   "author": "Stanisław Białecki <stanislaw.bialecki@swmansion.com> (https://github.com/stachbial)",
   "license": "MIT",
-  "homepage": "https://github.com/software-mansion-labs/react-native-nano-icons#readme",
+  "homepage": "https://nano-icons.swmansion.com/",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

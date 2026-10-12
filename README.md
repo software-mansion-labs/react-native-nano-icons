@@ -9,7 +9,7 @@
 </div>
 <br>
 
-[![npm version](https://img.shields.io/npm/v/react-native-nano-icons.svg)](https://www.npmjs.com/package/react-native-nano-icons?activeTab=readme) [![main](https://img.shields.io/github/actions/workflow/status/software-mansion-labs/react-native-nano-icons/run-jest-tests.yml?branch=main&label=main)](https://github.com/software-mansion-labs/react-native-nano-icons/actions/workflows/run-jest-tests.yml?query=branch%3Amain)
+[![npm version](https://img.shields.io/npm/v/react-native-nano-icons.svg)](https://www.npmjs.com/package/react-native-nano-icons?activeTab=readme) [![main](https://img.shields.io/github/actions/workflow/status/software-mansion-labs/react-native-nano-icons/run-jest-tests.yml?branch=main&label=main)](https://github.com/software-mansion-labs/react-native-nano-icons/actions/workflows/run-jest-tests.yml?query=branch%3Amain) [![website](https://img.shields.io/badge/website-nano--icons.swmansion.com-blue)](https://nano-icons.swmansion.com/)
 
 # High-performance icon rendering for React Native & Expo.
 
