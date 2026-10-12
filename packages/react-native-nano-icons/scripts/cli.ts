@@ -6,8 +6,8 @@
  *   -h, --help         Print usage and exit without building
  *   --verbose          Show per-SVG processing details and pipeline timing
  *   --path <dir|file>  An app folder (has a package.json): read the config, build and link there.
- *                      Any other folder or .nanoicons.json: read the config there, build and link
- *                      in the current directory. Default: cwd.
+ *                      Any other folder or .nanoicons.json: read the config there, link in the
+ *                      current directory. Paths in .nanoicons.json are relative to its folder. Default: cwd.
  *   --dynamic          Rebuild only icon sets with linking: 'dynamic'. Skips native linking —
  *                      use this for OTA font regeneration without running expo prebuild.
  *   --dynamic-app-config  Like --dynamic, but reads the config from the Expo app config
@@ -149,6 +149,7 @@ export async function main(
   const { dynamic, appConfig } = options;
 
   const { appRoot, configRoot } = resolveRoots(options.path);
+  const buildRoot = appConfig ? appRoot : configRoot;
 
   if (dynamic) {
     const source = appConfig ? 'Expo app config' : '.nanoicons.json';
@@ -162,7 +163,7 @@ export async function main(
       `Found ${dynamicIconSets.length} dynamic icon set(s) — skipping native linking.`
     );
 
-    await buildAllFonts(dynamicIconSets, appRoot, { logger });
+    await buildAllFonts(dynamicIconSets, buildRoot, { logger });
   } else {
     const config = loadNanoIconsConfig(configRoot);
     let buildError: IconSetBuildError | SymbolSetBuildError | undefined;
@@ -170,7 +171,7 @@ export async function main(
     if (config.iconSets?.length) {
       let built: BuiltFont[];
       try {
-        built = await buildAllFonts(config.iconSets, appRoot, { logger });
+        built = await buildAllFonts(config.iconSets, buildRoot, { logger });
       } catch (err) {
         if (!(err instanceof IconSetBuildError)) throw err;
         buildError = err;
@@ -183,7 +184,7 @@ export async function main(
     if (config.symbolSets?.length) {
       let builtSymbols: BuiltSymbolSet[];
       try {
-        builtSymbols = await buildAllSymbols(config.symbolSets, appRoot, {
+        builtSymbols = await buildAllSymbols(config.symbolSets, buildRoot, {
           logger,
         });
       } catch (err) {

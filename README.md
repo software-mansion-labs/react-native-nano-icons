@@ -129,7 +129,7 @@ Then run `npx expo prebuild` and rebuild the app once (e.g. `npx expo run:ios`).
 
 Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 
-1. **Config** – Add a `.nanoicons.json` with the same `iconSets` shape as the Expo plugin. Paths in it are relative to the app root.
+1. **Config** – Add a `.nanoicons.json` with the same `iconSets` shape as the Expo plugin. Paths in it are relative to its own folder.
 
    `.nanoicons.json`
 
@@ -149,7 +149,7 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
    npx react-native-nano-icons
    ```
 
-   If the config lives elsewhere in the app, pass it: `--path path/to/.nanoicons.json`. From outside the app (for example a monorepo root), pass the app folder: `--path apps/mobile`. If the config's folder has a `package.json`, the CLI builds and links there. Otherwise it builds and links in the current directory. See [all CLI flags](#cli).
+   If the config lives elsewhere in the app, pass it: `--path path/to/.nanoicons.json`. From outside the app (for example a monorepo root), pass the app folder: `--path apps/mobile`. If the config's folder has a `package.json`, the CLI links there. Otherwise it links in the current directory. See [all CLI flags](#cli).
 
    This works exactly like the config plugin, removing any necessity for manual Xcode/Android Studio font linking steps.
 
@@ -442,9 +442,9 @@ Each entry of `iconSets` (in the Expo plugin options or `.nanoicons.json`) gener
 
 | Property       | Type     | Required | Default        | Description                                                                                                                |
 | :------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`), relative to the project root. Subfolders are not read. |
+| `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`), relative to the folder of `.nanoicons.json` or the app config. Subfolders are not read. |
 | `fontFamily`   | `string` | No       | Folder Name    | The file name of the generated `.ttf` and `.glyphmap.json`. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). On iOS and Android, the font family registered at runtime is `glyphMap.m.f`: this name plus a hash of the icons and build settings (e.g. `ui-1a2b3c4d`), so each change gets a new family. On web, the family is this name. |
-| `outputDir`    | `string` | No       | Sibling `nanoicons` folder | Path where the `.ttf` and `.glyphmap.json` files are saved, relative to the project root. Defaults to a `nanoicons` folder next to `inputDir`. |
+| `outputDir`    | `string` | No       | Sibling `nanoicons` folder | Path where the `.ttf` and `.glyphmap.json` files are saved, relative to the folder of `.nanoicons.json` or the app config. Defaults to a `nanoicons` folder next to `inputDir`. |
 | `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
 | `safeZone`     | `number` | No       | `upm`          | Height, in font units, that each icon's `viewBox` is scaled to. The rest of the em square is padding. Must not exceed `upm`. |
 | `startUnicode` | `string \| number` | No | `0xe900` | The first Unicode codepoint for the icon glyphs. A string is parsed as hex (`"e900"` or `"0xe900"`). |
@@ -545,10 +545,10 @@ Each entry of `symbolSets` generates one set of [native symbols](#-native-symbol
 
 | Property     | Type      | Required | Default        | Description                                                                                              |
 | :----------- | :-------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------- |
-| `inputDir`   | `string`  | **Yes**  | —              | Path to the directory containing your `.svg` files, relative to the project root. Subfolders are not read. |
+| `inputDir`   | `string`  | **Yes**  | —              | Path to the directory containing your `.svg` files, relative to the folder of `.nanoicons.json` or the app config. Subfolders are not read. |
 | `name`       | `string`  | No       | Folder name    | Set name, used for output filenames and the generated typed manifest.                                    |
 | `prefix`     | `string`  | No       | `nano`         | Symbol-name prefix: `home.svg` → `nano.home` (iOS) / `nano_home` (Android). On Android, names are lowercased and other characters become `_`. Sets that share a prefix and a file name overwrite each other. |
-| `outputDir`  | `string`  | No       | Sibling `nanoicons` folder | Path where the generated artifacts are written, relative to the project root. Defaults to a `nanoicons` folder next to `inputDir`. |
+| `outputDir`  | `string`  | No       | Sibling `nanoicons` folder | Path where the generated artifacts are written, relative to the folder of `.nanoicons.json` or the app config. Defaults to a `nanoicons` folder next to `inputDir`. |
 
 ### `nativeNanoSymbol()`
 
@@ -586,7 +586,7 @@ npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--dynam
 
 | Flag                | Description                                                                                                                         |
 | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------- |
-| `--path <dir\|file>` | Where to read `.nanoicons.json`: a folder, or the `.nanoicons.json` file itself. Any other file is rejected. If that folder has a `package.json`, the CLI builds and links there. Otherwise it builds and links in the current directory. Default: current directory. |
+| `--path <dir\|file>` | Where to read `.nanoicons.json`: a folder, or the `.nanoicons.json` file itself. Any other file is rejected. Paths in the config resolve against its folder. If that folder has a `package.json`, the CLI links there. Otherwise it links in the current directory. Default: current directory. |
 | `--verbose`         | Show per-SVG processing details and extra build and linking notes.                                                                  |
 | `--dynamic`         | Rebuild only icon sets with `linking: 'dynamic'` and skip native linking. See [Regenerating dynamic fonts only](#regenerating-dynamic-fonts-only). |
 | `--dynamic-app-config` | Like `--dynamic`, but reads the sets from the Expo app config (`app.json` / `app.config.js` / `app.config.ts`) instead of `.nanoicons.json`. |

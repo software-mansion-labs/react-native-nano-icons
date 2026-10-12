@@ -6,9 +6,18 @@ const mockLoadNanoIconsConfig = jest.fn();
 const mockLoadDynamicIconSets = jest.fn();
 const mockLoadDynamicSetsFromAppConfig = jest.fn();
 const mockCreateOraLogger = jest.fn();
+const mockBuildAllSymbols = jest.fn();
+const mockLinkBareSymbols = jest.fn();
+const mockLinkBareAndroidDrawables = jest.fn();
 
 jest.mock('../cli/index', () => ({
   IconSetBuildError: jest.requireActual('../cli/build').IconSetBuildError,
+  SymbolSetBuildError: jest.requireActual('../cli/buildSymbols')
+    .SymbolSetBuildError,
+  buildAllSymbols: (...args: unknown[]) => mockBuildAllSymbols(...args),
+  linkBareSymbols: (...args: unknown[]) => mockLinkBareSymbols(...args),
+  linkBareAndroidDrawables: (...args: unknown[]) =>
+    mockLinkBareAndroidDrawables(...args),
   buildAllFonts: (...args: unknown[]) => mockBuildAllFonts(...args),
   linkBare: (...args: unknown[]) => mockLinkBare(...args),
   loadNanoIconsConfig: (...args: unknown[]) => mockLoadNanoIconsConfig(...args),
@@ -144,7 +153,7 @@ describe('cli main', () => {
     expect(mockLoadNanoIconsConfig).toHaveBeenCalledWith(configRoot);
     expect(mockBuildAllFonts).toHaveBeenCalledWith(
       SETS,
-      appRoot,
+      configRoot,
       expect.anything()
     );
     expect(mockLinkBare).toHaveBeenCalledWith(
@@ -183,7 +192,7 @@ describe('cli main', () => {
     expectFullRun(app, app);
   });
 
-  test('--path to a config folder reads the config there and builds and links in the current directory', async () => {
+  test('--path to a config folder resolves the config paths there and links in the current directory', async () => {
     const configFolder = makeFolder(false);
     process.argv = ['node', 'cli', '--path', configFolder];
     mockBuildAllFonts.mockResolvedValue(BUILT);
@@ -193,7 +202,7 @@ describe('cli main', () => {
     expectFullRun(configFolder, process.cwd());
   });
 
-  test('--path to a .nanoicons.json outside an app folder keeps the current directory as the app', async () => {
+  test('--path to a .nanoicons.json outside an app folder resolves its paths there and keeps the current directory as the app', async () => {
     const configFolder = makeFolder(false);
     process.argv = [
       'node',
@@ -206,6 +215,75 @@ describe('cli main', () => {
     await runMain();
 
     expectFullRun(configFolder, process.cwd());
+  });
+
+  test('--dynamic with --path to a config folder resolves the paths there', async () => {
+    const configFolder = makeFolder(false);
+    process.argv = ['node', 'cli', '--dynamic', '--path', configFolder];
+    mockLoadDynamicIconSets.mockReturnValue([SETS[2]]);
+    mockBuildAllFonts.mockResolvedValue([]);
+
+    await runMain();
+
+    expect(mockLoadDynamicIconSets).toHaveBeenCalledWith(configFolder);
+    expect(mockBuildAllFonts).toHaveBeenCalledWith(
+      [SETS[2]],
+      configFolder,
+      expect.anything()
+    );
+  });
+
+  test('symbol sets resolve against the config folder and link in the app', async () => {
+    const configFolder = makeFolder(false);
+    process.argv = ['node', 'cli', '--path', configFolder];
+    const symbolSets = [{ inputDir: 'tabs' }];
+    const builtSymbols = [{ name: 'tabs' }];
+    mockLoadNanoIconsConfig.mockReturnValue({ symbolSets });
+    mockBuildAllSymbols.mockResolvedValue(builtSymbols);
+    mockLinkBareSymbols.mockResolvedValue(undefined);
+    mockLinkBareAndroidDrawables.mockResolvedValue(undefined);
+
+    await runMain();
+
+    expect(mockBuildAllSymbols).toHaveBeenCalledWith(
+      symbolSets,
+      configFolder,
+      expect.anything()
+    );
+    expect(mockLinkBareSymbols).toHaveBeenCalledWith(
+      process.cwd(),
+      builtSymbols,
+      expect.anything()
+    );
+    expect(mockLinkBareAndroidDrawables).toHaveBeenCalledWith(
+      process.cwd(),
+      builtSymbols,
+      expect.anything()
+    );
+  });
+
+  test('--dynamic-app-config with --path to a config folder still reads and builds in the app', async () => {
+    const configFolder = makeFolder(false);
+    process.argv = [
+      'node',
+      'cli',
+      '--dynamic-app-config',
+      '--path',
+      configFolder,
+    ];
+    mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[2]]);
+    mockBuildAllFonts.mockResolvedValue([]);
+
+    await runMain();
+
+    expect(mockLoadDynamicSetsFromAppConfig).toHaveBeenCalledWith(
+      process.cwd()
+    );
+    expect(mockBuildAllFonts).toHaveBeenCalledWith(
+      [SETS[2]],
+      process.cwd(),
+      expect.anything()
+    );
   });
 
   test('--dynamic with --path to an app folder reads and builds there', async () => {
