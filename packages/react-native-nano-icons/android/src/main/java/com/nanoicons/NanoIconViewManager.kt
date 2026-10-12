@@ -100,9 +100,11 @@ class NanoIconViewManager :
 
   @ReactProp(name = "advanceWidth", defaultInt = 0)
   override fun setAdvanceWidth(view: NanoIconView, value: Int) {
+    view.setGlyphMetrics(value, view.unitsPerEm)
   }
 
   @ReactProp(name = "unitsPerEm", defaultInt = 0)
   override fun setUnitsPerEm(view: NanoIconView, value: Int) {
+    view.setGlyphMetrics(view.advanceWidth, value)
   }
 }

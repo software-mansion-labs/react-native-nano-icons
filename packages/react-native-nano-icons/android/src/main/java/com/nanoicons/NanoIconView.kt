@@ -31,6 +31,10 @@ class NanoIconView(context: Context) : View(context) {
   // Derived from the loaded font's metrics; recomputed on typeface change.
   private var textSizeFactor = 0f
   private var baselineFactor = 0f
+  var advanceWidth = 0
+    private set
+  var unitsPerEm = 0
+    private set
 
   init {
     // Transparent background, no default drawing
@@ -64,6 +68,14 @@ class NanoIconView(context: Context) : View(context) {
     // Only seeds a size for use before the first layout; bounds win after that.
     paint.textSize = size * resources.displayMetrics.density
     if (textSizeFactor <= 0f) updateFontFactors()
+    fitToBounds()
+    invalidate()
+  }
+
+  fun setGlyphMetrics(advanceWidth: Int, unitsPerEm: Int) {
+    if (advanceWidth == this.advanceWidth && unitsPerEm == this.unitsPerEm) return
+    this.advanceWidth = advanceWidth
+    this.unitsPerEm = unitsPerEm
     fitToBounds()
     invalidate()
   }
@@ -135,9 +147,15 @@ class NanoIconView(context: Context) : View(context) {
     baselineFactor = 1f - fontMetrics.descent / band
   }
 
-  // Font scale is derived from the bounds, not from the fontSize prop.
+  // Font scale is derived from the bounds, not from the fontSize prop. The glyph
+  // keeps its advanceWidth/unitsPerEm aspect ratio and is anchored at the
+  // top-left, so a box stretched along one axis (e.g. alignItems: 'stretch' in a
+  // row) renders the icon at its measured size instead of scaling it up.
   private fun fitToBounds() {
-    val h = height.toFloat()
+    var h = height.toFloat()
+    if (advanceWidth > 0 && unitsPerEm > 0) {
+      h = minOf(h, width.toFloat() * unitsPerEm / advanceWidth)
+    }
     if (h <= 0f || textSizeFactor <= 0f) return
     cachedBaseline = h * baselineFactor
     val size = h * textSizeFactor

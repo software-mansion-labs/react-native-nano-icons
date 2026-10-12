@@ -59,7 +59,10 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   CGColorRef _cachedTintCGColor;
   std::vector<bool> _tintable;
   CGFloat _fitScale;
+  CGFloat _drawHeight;
   CGPoint _baselinePosition;
+  int32_t _advanceWidth;
+  int32_t _unitsPerEm;
   BOOL _metricsValid;
 
   // Inline-in-Text detection — resolved once on first layout, cached until reparenting.
@@ -102,8 +105,11 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 
 #pragma mark - Metrics
 
-// Scale factor to fit the icon font's em square into the view height,
+// Scale factor to fit the icon font's em square into the view bounds,
 // and the CoreText baseline origin used for all glyph draws.
+// The glyph keeps its advanceWidth/unitsPerEm aspect ratio and is anchored at
+// the top-left, so a box stretched along one axis (e.g. alignItems: 'stretch'
+// in a row) renders the icon at its measured size instead of scaling it up.
 - (void)_updateMetrics {
   if (!_font) {
     _metricsValid = NO;
@@ -112,7 +118,12 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   CGFloat ascent = CTFontGetAscent(_font);
   CGFloat descent = CTFontGetDescent(_font);
   CGFloat totalHeight = ascent + descent;
-  _fitScale = (totalHeight > 0) ? (self.bounds.size.height / totalHeight) : 1.0;
+  CGSize size = self.bounds.size;
+  _drawHeight = size.height;
+  if (_advanceWidth > 0 && _unitsPerEm > 0) {
+    _drawHeight = MIN(_drawHeight, size.width * _unitsPerEm / _advanceWidth);
+  }
+  _fitScale = (totalHeight > 0) ? (_drawHeight / totalHeight) : 1.0;
   _baselinePosition = CGPointMake(0, descent);
   _metricsValid = YES;
 }
@@ -219,7 +230,7 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 
   CGContextSaveGState(context);
   // Flip to CoreText coordinates (Y-up) and apply fit scale.
-  CGContextTranslateCTM(context, 0, bounds.size.height);
+  CGContextTranslateCTM(context, 0, _drawHeight);
   CGContextScaleCTM(context, 1.0, -1.0);
   CGContextScaleCTM(context, _fitScale, _fitScale);
 
@@ -327,6 +338,14 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
     _font = NanoIconResolveFont(_fontFamily, _fontSize);
     _metricsValid = NO;
     fontChanged = YES;
+    needsRedraw = YES;
+  }
+
+  if (oldViewProps.advanceWidth != newViewProps.advanceWidth ||
+      oldViewProps.unitsPerEm != newViewProps.unitsPerEm) {
+    _advanceWidth = newViewProps.advanceWidth;
+    _unitsPerEm = newViewProps.unitsPerEm;
+    _metricsValid = NO;
     needsRedraw = YES;
   }
 
