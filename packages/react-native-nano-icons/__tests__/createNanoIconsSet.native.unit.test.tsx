@@ -1,5 +1,5 @@
 import { createElement, type ReactElement } from 'react';
-import { UIManager } from 'react-native';
+import { PixelRatio, UIManager } from 'react-native';
 
 jest.mock('../src/specs/NanoIconViewNativeComponent', () => ({
   __esModule: true,
@@ -101,14 +101,17 @@ describe('createIconSet (native) layer colors', () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
-  test('passes size and font scaling to native and leaves sizing to the shadow node', () => {
+  test('passes size and the font scale to native and leaves sizing to the shadow node', () => {
     const props = nativeProps({
       name: 'badge',
       size: 30,
       allowFontScaling: false,
     });
     expect(props['size']).toBe(30);
-    expect(props['allowFontScaling']).toBe(false);
+    expect(props['fontScale']).toBe(1);
+    expect(nativeProps({ name: 'badge' })['fontScale']).toBe(
+      PixelRatio.getFontScale()
+    );
     expect(props['advanceWidth']).toBe(1024);
     expect(props['unitsPerEm']).toBe(1024);
     expect(props['style']).toBeUndefined();

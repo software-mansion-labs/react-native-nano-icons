@@ -94,8 +94,8 @@ class NanoIconViewManager :
     view.setFontSize(value)
   }
 
-  @ReactProp(name = "allowFontScaling", defaultBoolean = true)
-  override fun setAllowFontScaling(view: NanoIconView, value: Boolean) {
+  @ReactProp(name = "fontScale", defaultFloat = 1f)
+  override fun setFontScale(view: NanoIconView, value: Float) {
   }
 
   @ReactProp(name = "advanceWidth", defaultInt = 0)

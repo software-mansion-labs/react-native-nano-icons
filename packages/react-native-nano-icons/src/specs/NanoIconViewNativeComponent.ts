@@ -9,7 +9,7 @@ export interface NativeProps extends ViewProps {
   color?: ColorValue;
   tintLayers: ReadonlyArray<Int32>;
   size: Float;
-  allowFontScaling: boolean;
+  fontScale: Float;
   advanceWidth: Int32;
   unitsPerEm: Int32;
 }

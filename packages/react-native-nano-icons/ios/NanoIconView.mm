@@ -4,7 +4,7 @@
 #import <React/RCTConversions.h>
 #import <React/RCTFabricComponentsPlugins.h>
 #import <react/renderer/components/RNNanoIconsSpec/NanoIconViewComponentDescriptor.h>
-#import <react/renderer/components/RNNanoIconsSpec/Props.h>
+#import <react/renderer/components/RNNanoIconsSpec/NanoIconProps.h>
 #import "NanoIconInlineBaseline.h"
 
 using namespace facebook::react;
@@ -77,7 +77,7 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 
 - (instancetype)initWithFrame:(CGRect)frame {
   if (self = [super initWithFrame:frame]) {
-    static const auto defaultProps = std::make_shared<const NanoIconViewProps>();
+    static const auto defaultProps = std::make_shared<const NanoIconProps>();
     _props = defaultProps;
     self.opaque = NO;
     self.backgroundColor = [UIColor clearColor];
@@ -314,8 +314,8 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
 }
 
 - (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps {
-  const auto &oldViewProps = static_cast<const NanoIconViewProps &>(*_props);
-  const auto &newViewProps = static_cast<const NanoIconViewProps &>(*props);
+  const auto &oldViewProps = static_cast<const NanoIconProps &>(*_props);
+  const auto &newViewProps = static_cast<const NanoIconProps &>(*props);
 
   BOOL fontChanged = NO;
   BOOL needsRedraw = NO;
@@ -406,7 +406,7 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   if (_font || _fontFamily.length == 0) return;
   _font = NanoIconResolveFont(_fontFamily, _fontSize);
   if (!_font) return;
-  const auto &viewProps = static_cast<const NanoIconViewProps &>(*_props);
+  const auto &viewProps = static_cast<const NanoIconProps &>(*_props);
   [self _mapGlyphs:viewProps.codepoints];
   _metricsValid = NO;
   [self _setNeedsRedraw];

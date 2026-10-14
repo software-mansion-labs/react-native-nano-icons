@@ -1,9 +1,10 @@
 import { memo, useMemo } from 'react';
-import { PixelRatio, UIManager, View } from 'react-native';
+import { UIManager, View } from 'react-native';
 import type { ColorValue } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
 import { shallowEqualColor } from './utils/shallowEqualColor';
+import { useFontScale } from './utils/fontScale';
 import { validateLayerColor } from './utils/validateLayerColor';
 import {
   DEFAULT_ICON_SIZE,
@@ -128,7 +129,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       testID,
       ref,
     }: IconProps<keyof GM['i']>) => {
-      const fontScale = allowFontScaling ? PixelRatio.getFontScale() : 1;
+      const fontScale = useFontScale(allowFontScaling);
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
       const scaledSize = size * fontScale;
       const width = (adv / unitsPerEm) * scaledSize;
@@ -178,7 +179,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           colors={layerColors}
           tintLayers={tintableLayers(layers, tintMode)}
           size={size}
-          allowFontScaling={allowFontScaling}
+          fontScale={fontScale}
           advanceWidth={adv}
           unitsPerEm={unitsPerEm}
           style={style}
