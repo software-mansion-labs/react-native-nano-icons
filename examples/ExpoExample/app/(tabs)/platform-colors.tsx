@@ -16,10 +16,12 @@ const IS_IOS = Platform.OS === 'ios';
 // DynamicColorIOS throws off iOS, so it may only be called behind this guard.
 const adaptive: ColorValue = IS_IOS
   ? DynamicColorIOS({ light: '#0a3161', dark: '#7aa7ff' })
-  : PlatformColor('?android:attr/colorForeground');
+  : Platform.OS === 'android'
+    ? PlatformColor('?android:attr/colorForeground')
+    : '#0a3161';
 
 const platformColors: { label: string; color: ColorValue }[] = Platform.select({
-  ios: [
+  ios: () => [
     {
       label: "PlatformColor('labelColor')",
       color: PlatformColor('labelColor'),
@@ -33,7 +35,7 @@ const platformColors: { label: string; color: ColorValue }[] = Platform.select({
       color: PlatformColor('systemBlueColor'),
     },
   ],
-  default: [
+  android: () => [
     {
       label: "PlatformColor('?attr/colorPrimary')",
       color: PlatformColor('?attr/colorPrimary'),
@@ -47,7 +49,8 @@ const platformColors: { label: string; color: ColorValue }[] = Platform.select({
       color: PlatformColor('@android:color/holo_blue_dark'),
     },
   ],
-});
+  default: () => [],
+})();
 
 // The same 24-layer palette index.tsx overrides person-walking with, except the
 // four shirt layers, which are adaptive — the other 20 stay static hex.
