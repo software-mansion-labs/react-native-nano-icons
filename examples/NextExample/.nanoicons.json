@@ -1,0 +1,10 @@
+{
+  "iconSets": [
+    {
+      "inputDir": "./icons",
+      "fontFamily": "NextIcons",
+      "outputDir": "./public/nanoicons",
+      "web": true
+    }
+  ]
+}

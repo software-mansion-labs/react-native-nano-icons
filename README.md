@@ -703,6 +703,7 @@ This repository is a yarn workspaces monorepo containing the library package and
 
 - **Bare React Native app:** [`examples/BareReactNativeExample/`](examples/BareReactNativeExample/)
 - **Expo app:** [`examples/ExpoExample/`](examples/ExpoExample/)
+- **Next.js app (web only):** [`examples/NextExample/`](examples/NextExample/)
 </details>
 
 #### Code of Conduct
