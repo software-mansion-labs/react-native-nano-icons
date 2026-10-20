@@ -208,6 +208,8 @@ export default function App() {
 }
 ```
 
+Icons without an `accessibilityLabel` are decorative, so screen readers skip them. Give a standalone icon a label, e.g. `<Icon name="heart" accessibilityLabel="Save" />`, to have it read as an image.
+
 See [all `<Icon>` props](#props).
 
 > [!NOTE]
@@ -510,6 +512,14 @@ createNanoIconSet(glyphMap, font?)
 
 Returns the [`<Icon>`](#icon) component.
 
+The glyphmap types are exported as `NanoGlyphMap`, `NanoGlyphMapInput`, `GlyphEntry` and `GlyphLayer`:
+
+```TypeScript
+import type { GlyphEntry } from 'react-native-nano-icons';
+
+const [advanceWidth, layers] = glyphMap.i.heart as GlyphEntry;
+```
+
 ### `<Icon>`
 
 The component returned by [`createNanoIconSet()`](#createnanoiconset).
@@ -525,11 +535,11 @@ The component returned by [`createNanoIconSet()`](#createnanoiconset).
 | `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                       |
 | `style`              | `StyleProp<ViewStyle>`       | `undefined`       | Style applied to the icon container.                                                                                                         |
 | `className` | `string` | `undefined` | Web only. CSS classes for the icon, e.g. Tailwind. |
-| `accessible`         | `boolean`                    | `undefined`       | Override the default accessibility behavior.                                                                                                 |
-| `accessibilityLabel` | `string`                     | Icon `name`       | Label announced by screen readers. Defaults to the icon name.                                                                                |
-| `accessibilityRole`  | `AccessibilityRole`          | `"image"`         | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text.                                                         |
-| `accessibilityElementsHidden` | `boolean` | `undefined` | iOS and web only. Hides the icon from screen readers. |
-| `importantForAccessibility` | `'auto' \| 'yes' \| 'no' \| 'no-hide-descendants'` | `undefined` | Android only. Controls whether screen readers reach the icon. |
+| `accessible`         | `boolean`                    | `false` without a label | Set `true` to expose an icon without a label to screen readers.                                                                     |
+| `accessibilityLabel` | `string`                     | `undefined`       | Label announced by screen readers. Without it, the icon is decorative and hidden from screen readers.                                       |
+| `accessibilityRole`  | `AccessibilityRole`          | `"image"` with a label | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text.                                                  |
+| `accessibilityElementsHidden` | `boolean` | `true` without a label | iOS and web only. Hides the icon from screen readers. |
+| `importantForAccessibility` | `'auto' \| 'yes' \| 'no' \| 'no-hide-descendants'` | `'no-hide-descendants'` without a label | Android only. Controls whether screen readers reach the icon. |
 | `testID`             | `string`                     | `undefined`       | Test identifier for e2e testing frameworks.                                                                                                  |
 | `ref`                | `Ref<View>`                  | `undefined`       | Ref to the underlying native view. On web, the container `<span>`.                                                                         |
 

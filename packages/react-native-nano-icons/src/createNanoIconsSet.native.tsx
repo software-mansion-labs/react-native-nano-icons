@@ -4,6 +4,8 @@ import type { ColorValue } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
 import { shallowEqualColor } from './utils/shallowEqualColor';
+import { areIconPropsEqual } from './utils/iconPropsEqual';
+import { iconAccessibilityProps } from './utils/iconAccessibility';
 import { useFontScale } from './utils/fontScale';
 import { validateLayerColor } from './utils/validateLayerColor';
 import {
@@ -123,7 +125,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       allowFontScaling = true,
       accessible,
       accessibilityLabel,
-      accessibilityRole = 'image',
+      accessibilityRole,
       accessibilityElementsHidden,
       importantForAccessibility,
       testID,
@@ -150,6 +152,14 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
         );
       }, [nameStr, color, tintMode]);
 
+      const accessibility = iconAccessibilityProps({
+        accessible,
+        accessibilityLabel,
+        accessibilityRole,
+        accessibilityElementsHidden,
+        importantForAccessibility,
+      });
+
       const nativeStyle = useMemo(
         () => [{ width, height: scaledSize }, style],
         [scaledSize, width, style]
@@ -162,11 +172,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           <View
             ref={ref}
             style={nativeStyle}
-            accessible={accessible}
-            accessibilityRole={accessibilityRole}
-            accessibilityLabel={accessibilityLabel ?? (name as string)}
-            accessibilityElementsHidden={accessibilityElementsHidden}
-            importantForAccessibility={importantForAccessibility}
+            {...accessibility}
             testID={testID}
           />
         );
@@ -183,22 +189,12 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           advanceWidth={adv}
           unitsPerEm={unitsPerEm}
           style={style}
-          accessible={accessible}
-          accessibilityRole={accessibilityRole}
-          accessibilityLabel={accessibilityLabel ?? (name as string)}
-          accessibilityElementsHidden={accessibilityElementsHidden}
-          importantForAccessibility={importantForAccessibility}
+          {...accessibility}
           testID={testID}
         />
       );
     },
-    (prev, next) =>
-      prev.name === next.name &&
-      prev.size === next.size &&
-      prev.allowFontScaling === next.allowFontScaling &&
-      prev.style === next.style &&
-      prev.tintMode === next.tintMode &&
-      shallowEqualColor(prev.color, next.color)
+    areIconPropsEqual
   );
 
   Icon.displayName = `NanoIcon(${fontFamilyBasename})`;

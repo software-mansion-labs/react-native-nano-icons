@@ -1,15 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { GlyphEntry } from 'react-native-nano-icons';
 
 import { glyphMap, Icon } from '../icons';
 
 type Row = { case: string; expected: string; actual: string };
 
-type Entry = [advance: number, layers: [codepoint: number, color: string][]];
-
-const entry = (name: keyof typeof glyphMap.i) =>
-  glyphMap.i[name] as unknown as Entry;
+const entry = (name: keyof typeof glyphMap.i) => glyphMap.i[name] as GlyphEntry;
 
 const css = `
 .size-64 { width: 64px; height: 64px; font-size: 64px; }
@@ -33,6 +31,13 @@ const computedColor = (color: string) => {
 };
 
 const flagRatio = entry('ic_us_flag')[0] / glyphMap.m.u;
+
+const accessibilityOf = (name: string) => {
+  const icon = iconOf(name);
+  return ['role', 'aria-label', 'aria-hidden']
+    .map((attribute) => `${attribute}=${icon.getAttribute(attribute) ?? '-'}`)
+    .join(' ');
+};
 
 function measure(): Row[] {
   const style = (el: Element) => getComputedStyle(el);
@@ -104,15 +109,45 @@ function measure(): Row[] {
       expected: '2px / 8px',
       actual: `${style(iconOf('shorthand')).marginLeft} / ${style(iconOf('shorthand')).marginRight}`,
     },
+    {
+      case: 'no accessibilityLabel: hidden from screen readers',
+      expected: 'role=- aria-label=- aria-hidden=true',
+      actual: accessibilityOf('decorative'),
+    },
+    {
+      case: 'accessibilityLabel: an img with that label',
+      expected: 'role=img aria-label=Star aria-hidden=-',
+      actual: accessibilityOf('labelled'),
+    },
+    {
+      case: 'accessibilityLabel changed after mount',
+      expected: 'role=img aria-label=Second aria-hidden=-',
+      actual: accessibilityOf('relabelled'),
+    },
+    {
+      case: 'accessible set to false after mount',
+      expected: 'role=- aria-label=- aria-hidden=true',
+      actual: accessibilityOf('hidden-later'),
+    },
   ];
 }
 
 export function Checks() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [label, setLabel] = useState('First');
+  const [accessible, setAccessible] = useState(true);
 
   useEffect(() => {
-    void document.fonts.ready.then(() => setRows(measure()));
+    setLabel('Second');
+    setAccessible(false);
   }, []);
+
+  useEffect(() => {
+    if (label !== 'Second') {
+      return;
+    }
+    void document.fonts.ready.then(() => setRows(measure()));
+  }, [label]);
 
   return (
     <>
@@ -152,6 +187,22 @@ export function Checks() {
           <Icon
             name="ic_circle"
             style={{ marginHorizontal: 8, marginLeft: 2 }}
+          />
+        </span>
+        <span data-case="decorative">
+          <Icon name="ic_star" />
+        </span>
+        <span data-case="labelled">
+          <Icon name="ic_star" accessibilityLabel="Star" />
+        </span>
+        <span data-case="relabelled">
+          <Icon name="ic_circle" accessibilityLabel={label} />
+        </span>
+        <span data-case="hidden-later">
+          <Icon
+            name="ic_square"
+            accessibilityLabel="Square"
+            accessible={accessible}
           />
         </span>
       </p>
