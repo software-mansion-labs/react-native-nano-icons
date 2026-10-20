@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { Image, Platform } from 'react-native';
+import { Image } from 'react-native';
 import { FONT_SOURCE_CODE, resolveFontIssue } from './fontIntegrity';
 import NanoIconsFontLoader from './nativeFontLoader';
 import { runtimeError } from './utils/runtimeLog';
@@ -56,29 +56,6 @@ export function resolveFontUri(font: unknown): string {
 }
 
 async function register(family: string, uri: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    // Browser FontFace API. Typed loosely so this compiles under both the RN-only
-    // lib config and a DOM-aware app config without depending on the DOM lib.
-    const g = globalThis as unknown as {
-      FontFace?: new (
-        family: string,
-        source: string
-      ) => {
-        load(): Promise<unknown>;
-      };
-      document?: { fonts?: { add(face: unknown): void } };
-    };
-    if (!g.FontFace || !g.document?.fonts) {
-      throw runtimeError(
-        'FontFace API unavailable; cannot load dynamic font on this platform.'
-      );
-    }
-    const face = new g.FontFace(family, `url(${uri})`);
-    await face.load();
-    g.document.fonts.add(face);
-    return;
-  }
-
   if (!NanoIconsFontLoader) {
     throw runtimeError(
       'Native font loader is unavailable (Expo Go or module not built). ' +

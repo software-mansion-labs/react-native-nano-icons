@@ -42,6 +42,7 @@ That’s it 🔬⚡️
 - [📚 Guides](#-multicolor-icons)
   - [🎨 Multicolor Icons](#-multicolor-icons)
   - [🧭 Native Symbols](#-native-symbols)
+  - [🌐 Web](#-web)
   - [☁️ OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking)
   - [🔁 Rebuilds & Font Integrity](#-rebuilds--font-integrity)
 - [📖 Reference](#-reference)
@@ -156,10 +157,7 @@ Bare apps don't have a prebuild step, so you run the same pipeline via the CLI:
 3. **Rebuild** – For iOS and Android, rebuild the native app once. On iOS, run `pod install` in `ios/` first. After that, the [Metro plugin](#4-add-the-metro-plugin) picks up SVG edits without a rebuild.
 
 > [!NOTE]
-> With `"web": true` on an icon set, the `my-icons` set also gets `assets/icons/nanoicons/my-icons.woff2` next to its `.ttf`. Link it on web like any regular font, named `my-icons`. If you want to `require()` it through Metro (e.g. with `expo-font`), add this to `metro.config.js`:
-> ```js
-> config.resolver.assetExts.push("woff2");
-> ```
+> With `"web": true` on an icon set, the `my-icons` set also gets `assets/icons/nanoicons/my-icons.woff2` next to its `.ttf`. See [Web](#-web) for loading it.
 
 > [!TIP]
 > For detailed build logs, run `npx react-native-nano-icons --verbose`, or set `EXPO_DEBUG=1` before `npx expo prebuild` or before starting Metro.
@@ -257,7 +255,7 @@ This makes the library well-suited for multicolor icons like country flags, bran
 - **Single string** — applies to all layers.
 - **Array** — each element maps to a layer. If the array is shorter than the number of layers, the last color is repeated.
 - **`tintMode="currentColor"`** — `color` applies only to layers drawn with `currentColor` in the SVG (e.g. `fill="currentColor"`), so hardcoded colors (flags, logos) are kept. An array maps onto those layers in order, with the last color repeated. An icon with no `currentColor` layers renders in its original colors.
-- **Omitted** — uses the original SVG colors stored in the glyphmap. `currentColor` layers render black on iOS and Android, and inherit the CSS text color on web.
+- **Omitted** — uses the original SVG colors stored in the glyphmap. `currentColor` layers render black on iOS and Android. On web, an icon drawn only in black or `currentColor` follows the CSS text color.
 - **Platform colors** — `PlatformColor(...)` and `DynamicColorIOS(...)` work as a single color and inside an array, and follow system appearance changes natively, without a re-render.
 - **Invalid colors** — an unparseable color string falls back to black. In development an error names the icon and layer. Not checked in Expo Go or on web.
 
@@ -333,6 +331,43 @@ One SVG covers both tab states:
 ```TypeScript
 tabBarIcon: ({ focused }) =>
   nativeNanoSymbol('heart', focused ? 'multicolor' : 'monochrome'),
+```
+
+---
+
+## 🌐 Web
+
+On web, icons render as `<span>` elements without `react-native` or `react-native-web`, also in React Server Components. Next.js, Vite and other bundlers get the web build from the package exports, with no alias or `.web.js` extension config.
+
+### Loading the font
+
+Set `"web": true` on the icon set and pass the URL of its `.woff2` to `createNanoIconSet`:
+
+```TypeScript
+// Icon.web.ts
+import { createNanoIconSet } from "react-native-nano-icons";
+import glyphMap from "./assets/icons/nanoicons/my-icons.glyphmap.json";
+
+export const Icon = createNanoIconSet(
+  glyphMap,
+  require("./assets/icons/nanoicons/my-icons.woff2")
+);
+```
+
+- **Expo:** `require()` gives the URL. Add `config.resolver.assetExts.push("woff2")` to `metro.config.js`.
+- **Next.js:** set `"outputDir": "./public/nanoicons"` and pass `"/nanoicons/my-icons.woff2"`.
+
+The icons add an `@font-face` rule with `font-display: block` and a font preload to the document `<head>`, also when rendered on the server, so icons stay empty instead of showing fallback glyphs until the font arrives. This needs React 19; with React 18 the rules render next to each icon. The font works the same for static and dynamic sets. On iOS and Android a static set ignores the font argument and warns, so keep the web font in a `.web.ts` file. A font loaded another way, e.g. with `expo-font` or a stylesheet, works too when it is registered under `fontFamily`.
+
+### Styling with CSS
+
+- **Size:** without `size`, an icon is `1em` tall and follows the CSS `font-size`; its width keeps the icon's proportions. `size` sets it in px.
+- **Color:** without `color`, an icon drawn only in black or `currentColor` follows the CSS `color`. Other icons keep their colors.
+- **`className`:** added to the icon's `<span class="nano-icon">`. The library's own rules have zero specificity, so any class overrides them.
+- **`style`:** React Native styles are converted to CSS, including arrays, `transform` arrays, `marginHorizontal` / `paddingVertical` and `*Start` / `*End`.
+
+```TypeScript
+<Icon name="heart" className="text-2xl lg:text-4xl text-red-500" />
 ```
 
 ---
@@ -443,13 +478,13 @@ Each entry of `iconSets` (in the Expo plugin options or `.nanoicons.json`) gener
 | Property       | Type     | Required | Default        | Description                                                                                                                |
 | :------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
 | `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`), relative to the folder of `.nanoicons.json` or the app config. Subfolders are not read. |
-| `fontFamily`   | `string` | No       | Folder Name    | The file name of the generated `.ttf` and `.glyphmap.json`. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). On iOS and Android, the font family registered at runtime is `glyphMap.m.f`: this name plus a hash of the icons and build settings (e.g. `ui-1a2b3c4d`), so each change gets a new family. On web, the family is this name. |
+| `fontFamily`   | `string` | No       | Folder Name    | The file name of the generated `.ttf` and `.glyphmap.json`. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). On iOS and Android, the font family registered at runtime is `glyphMap.m.f`: this name plus a hash of the icons and build settings (e.g. `ui-1a2b3c4d`), so each change gets a new family. On web, icons use `glyphMap.m.f` with this name as the fallback, so a font registered under this name works across rebuilds. |
 | `outputDir`    | `string` | No       | Sibling `nanoicons` folder | Path where the `.ttf` and `.glyphmap.json` files are saved, relative to the folder of `.nanoicons.json` or the app config. Defaults to a `nanoicons` folder next to `inputDir`. |
 | `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
 | `safeZone`     | `number` | No       | `upm`          | Height, in font units, that each icon's `viewBox` is scaled to. The rest of the em square is padding. Must not exceed `upm`. |
 | `startUnicode` | `string \| number` | No | `0xe900` | The first Unicode codepoint for the icon glyphs. A string is parsed as hex (`"e900"` or `"0xe900"`). |
 | `linking`      | `'static' \| 'dynamic'` | No | `'static'` | Delivery mode for the generated TTF. `'static'` bundles it into the native app. `'dynamic'` excludes it from native linking so the host app can deliver it at runtime (e.g. via an OTA update). See [OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking). |
-| `web`          | `boolean` | No      | `false`        | Also emit `<fontFamily>.woff2` into `outputDir`, rebuilt together with the `.ttf` on every change. It is never linked natively; link it on web like any other web font, under the family name `<fontFamily>`. |
+| `web`          | `boolean` | No      | `false`        | Also emit `<fontFamily>.woff2` into `outputDir`, rebuilt together with the `.ttf` on every change. It is never linked natively. On web, pass its URL to `createNanoIconSet`, see [Web](#-web). |
 
 <details>
 <summary>Default Dir Path Behavior</summary>
@@ -469,7 +504,7 @@ createNanoIconSet(glyphMap, font?)
 | Argument   | Default        | Description                                                                                                                                                                  |
 | :--------- | :------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `glyphMap` | **(required)** | The generated `.glyphmap.json`. Icon names are typed from it.                                                                                                                |
-| `font`     | `undefined`    | Font source for a set with `linking: 'dynamic'`: `require('./icons.ttf')`, `{ uri }`, or a path string. Ignored for static sets and on web. See [OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking). |
+| `font`     | `undefined`    | Font source for a set with `linking: 'dynamic'`: `require('./icons.ttf')`, `{ uri }`, or a path string. Ignored for static sets. See [OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking). On web, the font URL for any set, see [Web](#-web). |
 
 Returns the [`<Icon>`](#icon) component.
 
@@ -482,12 +517,12 @@ The component returned by [`createNanoIconSet()`](#createnanoiconset).
 | Prop                 | Type                         | Default           | Description                                                                                                                                  |
 | -------------------- | ---------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`               | `string`                     | **(required)**    | Icon name — corresponds to the original SVG filename. Fully typed from the glyphmap.                                                         |
-| `size`               | `number`                     | `12`              | Icon size in points.                                                                                                                         |
+| `size`               | `number`                     | `12`              | Icon size in points. On web the default is `1em`, so the icon follows the CSS `font-size`.                                                   |
 | `color`              | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
 | `tintMode`           | `'all' \| 'currentColor'`    | `'all'`           | Which layers `color` applies to: every layer, or only those drawn with `currentColor` (an icon without any keeps its original colors).                             |
 | `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                       |
-| `style`              | `ViewStyle`                  | `undefined`       | Style applied to the icon container.                                                                                                         |
-| `className` | `string` | `undefined` | Web only. Forwarded to the container element. |
+| `style`              | `StyleProp<ViewStyle>`       | `undefined`       | Style applied to the icon container.                                                                                                         |
+| `className` | `string` | `undefined` | Web only. Added to the container element next to `nano-icon`. |
 | `accessible`         | `boolean`                    | `undefined`       | Override the default accessibility behavior.                                                                                                 |
 | `accessibilityLabel` | `string`                     | Icon `name`       | Label announced by screen readers. Defaults to the icon name.                                                                                |
 | `accessibilityRole`  | `AccessibilityRole`          | `"image"`         | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text.                                                         |
@@ -506,7 +541,7 @@ Icon.loadFont(font?): Promise<void>
 | :------- | :--------------------------------------- | :------------------------------------------------------------------- |
 | `font`   | The `font` passed to `createNanoIconSet` | Font source: `require('./icons.ttf')`, `{ uri }`, or a path string. |
 
-Registers a dynamic set's font again, for example to retry a failed remote load when the network comes back (e.g. in a [NetInfo](https://github.com/react-native-netinfo/react-native-netinfo) listener), or to load the font later. A successful load resolves the set's [font integrity](#font-integrity-check) issue. The promise rejects if the font cannot be loaded. For static sets and on web, it is a no-op.
+Registers a dynamic set's font again, for example to retry a failed remote load when the network comes back (e.g. in a [NetInfo](https://github.com/react-native-netinfo/react-native-netinfo) listener), or to load the font later. A successful load resolves the set's [font integrity](#font-integrity-check) issue. The promise rejects if the font cannot be loaded. For static sets on iOS and Android, it is a no-op. On web, it registers the font under `fontFamily` for any set.
 
 ### `addFontIntegrityListener()`
 
