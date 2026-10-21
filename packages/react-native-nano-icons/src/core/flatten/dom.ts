@@ -1,5 +1,6 @@
 // Tags and attribute names use the "{namespace}local" convention.
 
+import * as xmldom from '@xmldom/xmldom';
 import { DOMParser, type Element as XmldomElement } from '@xmldom/xmldom';
 import { XML_AMP, XML_GT, XML_LT, XML_QUOT } from '../../utils/svgPatterns';
 
@@ -146,11 +147,12 @@ export function parseSvgDocument(content: string): XEl {
   }
 
   let parseError: string | null = null;
-  const parser = new DOMParser({
-    onError: (_level, message) => {
-      parseError = parseError ?? message;
-    },
-  });
+  const onError = (_level: string, message: string) => {
+    parseError = parseError ?? message;
+  };
+  const parser = new DOMParser(
+    'onErrorStopParsing' in xmldom ? { onError } : { errorHandler: onError }
+  );
   const doc = parser.parseFromString(text, 'text/xml');
   const root = doc.documentElement;
   if (!root || parseError) {
