@@ -35,6 +35,17 @@ function resolveInheritedFill(el: Element): string {
   return 'black';
 }
 
+function ancestorOpacity(el: Element): number {
+  let opacity = 1;
+  let current = el.parentNode;
+  while (current?.nodeType === ELEMENT_NODE) {
+    const value = attribute(current as Element, 'opacity');
+    if (value !== null) opacity *= parseFloat(value);
+    current = current.parentNode;
+  }
+  return opacity;
+}
+
 // bake opacity into the fill as an rgba(...)
 export function calculateOpColor(
   fill: string | null,
@@ -76,11 +87,12 @@ const parsePath = (p: Element): ParsedPath => {
   const op = attribute(p, 'opacity');
   const fillOp = attribute(p, 'fill-opacity');
   const fill = attribute(p, 'fill');
+  const groupOp = ancestorOpacity(p);
 
-  if (op !== null || fillOp !== null) {
+  if (op !== null || fillOp !== null || groupOp !== 1) {
     const opVal = op !== null ? parseFloat(op) : 1;
     const fillOpVal = fillOp !== null ? parseFloat(fillOp) : 1;
-    const combinedOpacity = opVal * fillOpVal;
+    const combinedOpacity = opVal * fillOpVal * groupOp;
     return {
       d,
       fill: calculateOpColor(fill, combinedOpacity, p),

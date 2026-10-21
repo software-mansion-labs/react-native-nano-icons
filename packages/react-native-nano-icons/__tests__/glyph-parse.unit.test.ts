@@ -152,6 +152,32 @@ describe('parseFlattenedSvg opacity integration', () => {
     expect(paths[0]!.fill).toBe('rgba(255,255,255,0.25)');
   });
 
+  test('group opacity applies to every path inside the group', () => {
+    const svg = `<svg viewBox="0 0 24 24">
+      <g opacity="0.15">
+        <path d="M0 0L12 12" fill="#001A72"/>
+        <path d="M12 12L24 24" fill="#001A72"/>
+      </g>
+      <path d="M0 24L24 0" fill="#001A72"/>
+    </svg>`;
+    const { paths } = parseFlattenedSvg(svg);
+    expect(paths.map((p) => p.fill)).toEqual([
+      'rgba(0,26,114,0.15)',
+      'rgba(0,26,114,0.15)',
+      '#001A72',
+    ]);
+  });
+
+  test('nested group opacities multiply with the path opacity', () => {
+    const svg = `<svg viewBox="0 0 24 24">
+      <g opacity="0.5"><g opacity="0.5">
+        <path d="M0 0L24 24" fill="red" opacity="0.5"/>
+      </g></g>
+    </svg>`;
+    const { paths } = parseFlattenedSvg(svg);
+    expect(paths[0]!.fill).toBe('rgba(255,0,0,0.125)');
+  });
+
   test('path without any opacity attr preserves original fill string', () => {
     const svg = `<svg viewBox="0 0 24 24">
       <path d="M0 0L24 24" fill="#123456"/>
