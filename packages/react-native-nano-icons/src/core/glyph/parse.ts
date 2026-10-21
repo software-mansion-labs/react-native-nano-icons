@@ -10,8 +10,6 @@ import {
 export type ParsedPath = {
   d: string;
   fill: string | null;
-  fillRule?: 'evenodd';
-  noMerge?: boolean;
   knockout?: boolean;
 };
 
@@ -78,12 +76,6 @@ const parsePath = (p: Element): ParsedPath => {
   const op = attribute(p, 'opacity');
   const fillOp = attribute(p, 'fill-opacity');
   const fill = attribute(p, 'fill');
-  // flattening may drop fill-rule but preserve clip-rule; treat either as evenodd
-  const fillRule =
-    p.getAttribute('fill-rule') === 'evenodd' ||
-    p.getAttribute('clip-rule') === 'evenodd'
-      ? ('evenodd' as const)
-      : undefined;
 
   if (op !== null || fillOp !== null) {
     const opVal = op !== null ? parseFloat(op) : 1;
@@ -92,14 +84,12 @@ const parsePath = (p: Element): ParsedPath => {
     return {
       d,
       fill: calculateOpColor(fill, combinedOpacity, p),
-      fillRule,
     };
   }
 
   return {
     d,
     fill,
-    fillRule,
   };
 };
 

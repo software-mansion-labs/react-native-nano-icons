@@ -258,11 +258,14 @@ describe('winding helpers', () => {
 
 describe('mergeSameColorPaths', () => {
   test('never merges a knockout with a same-color drawn path', () => {
-    const merged = mergeSameColorPaths([
-      { d: 'M0 0H1V1Z', fill: '#fff' },
-      { d: 'M2 0H3V1Z', fill: '#fff', knockout: true },
-      { d: 'M4 0H5V1Z', fill: '#fff', knockout: true },
-    ]);
+    const merged = mergeSameColorPaths(
+      [
+        { d: 'M0 0H1V1Z', fill: '#fff' },
+        { d: 'M2 0H3V1Z', fill: '#fff', knockout: true },
+        { d: 'M4 0H5V1Z', fill: '#fff', knockout: true },
+      ],
+      PathKit
+    );
     expect(merged).toEqual([
       { d: 'M0 0H1V1Z', fill: '#fff' },
       { d: 'M2 0H3V1Z M4 0H5V1Z', fill: '#fff', knockout: true },
