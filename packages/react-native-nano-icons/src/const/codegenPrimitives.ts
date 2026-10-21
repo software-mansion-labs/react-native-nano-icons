@@ -12,3 +12,4 @@
 // identifier name.
 export type Int32 = number;
 export type Float = number;
+export type WithDefault<Type, _Value extends Type> = Type | null | undefined;

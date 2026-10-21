@@ -1,5 +1,5 @@
 import { createElement, type ReactElement } from 'react';
-import { PixelRatio, UIManager } from 'react-native';
+import { PixelRatio, StyleSheet, UIManager } from 'react-native';
 
 jest.mock('../src/specs/NanoIconViewNativeComponent', () => ({
   __esModule: true,
@@ -48,6 +48,7 @@ const glyphMap = {
         [0xe902, 'currentColor'],
       ],
     ],
+    wide: [2044, [[0xe903, 'black']]],
   },
 } as const;
 
@@ -118,6 +119,19 @@ describe('createIconSet (native) layer colors', () => {
     expect(props['advanceWidth']).toBe(1024);
     expect(props['unitsPerEm']).toBe(1024);
     expect(props['style']).toBeUndefined();
+  });
+
+  test('the square frame sends the scale that fits the longer side of the glyph', () => {
+    expect(nativeProps({ name: 'wide' })['squareGlyphScale']).toBeUndefined();
+    expect(
+      nativeProps({ name: 'wide', frame: 'fit-glyph' })['squareGlyphScale']
+    ).toBeUndefined();
+    expect(
+      nativeProps({ name: 'badge', frame: 'square' })['squareGlyphScale']
+    ).toBe(1);
+    expect(
+      nativeProps({ name: 'wide', frame: 'square' })['squareGlyphScale']
+    ).toBe(0.5);
   });
 
   test('sends the tintable layer indices for the tint mode', () => {
@@ -205,5 +219,45 @@ describe.each([
     expect(icon.host()).toBe(before);
     icon.update({ name: 'message', style: [{ margin: 5 }] });
     expect(icon.host()).not.toBe(before);
+  });
+});
+
+describe('createJSIconSet square frame', () => {
+  const Icon = createJSIconSet(glyphMap);
+
+  function render(props: IconElementProps) {
+    let tree!: ReturnType<TestRendererModule['create']>;
+    TestRenderer.act(() => {
+      tree = TestRenderer.create(createElement(Icon, props));
+    });
+    const style = (type: string) =>
+      tree.root
+        .findAll((node) => node.type === type)
+        .map((node) => StyleSheet.flatten(node.props['style'] as never));
+    return { box: style('View')[0], layers: style('Text') };
+  }
+
+  test('the box is as wide as it is high', () => {
+    const { box } = render({
+      name: 'wide',
+      size: 24,
+      frame: 'square',
+      allowFontScaling: false,
+    });
+    expect(box).toMatchObject({ width: 24, height: 24 });
+  });
+
+  test('the glyph is scaled to fit and centered', () => {
+    const { layers } = render({
+      name: 'wide',
+      size: 24,
+      frame: 'square',
+      allowFontScaling: false,
+    });
+    expect(layers[0]).toMatchObject({
+      fontSize: 12,
+      left: '0.09765625%',
+      bottom: '25%',
+    });
   });
 });

@@ -32,6 +32,23 @@ const computedColor = (color: string) => {
 
 const flagRatio = entry('ic_us_flag')[0] / glyphMap.m.u;
 
+const squareOf = (name: string) => {
+  const box = iconOf(name).getBoundingClientRect();
+  const glyph = layersOf(name)[0]!.getBoundingClientRect();
+  const centered =
+    Math.abs(glyph.left + glyph.width / 2 - (box.left + box.width / 2)) < 0.5 &&
+    Math.abs(glyph.top + glyph.height / 2 - (box.top + box.height / 2)) < 0.5;
+  const inside =
+    glyph.left >= box.left - 0.5 &&
+    glyph.right <= box.right + 0.5 &&
+    glyph.top >= box.top - 0.5 &&
+    glyph.bottom <= box.bottom + 0.5;
+  return {
+    box: `${box.width}px × ${box.height}px`,
+    glyph: `${centered ? 'centered' : 'off-center'}, ${inside ? 'inside' : 'outside'}`,
+  };
+};
+
 const accessibilityOf = (name: string) => {
   const icon = iconOf(name);
   return ['role', 'aria-label', 'aria-hidden']
@@ -108,6 +125,16 @@ function measure(): Row[] {
       case: 'marginLeft beats marginHorizontal',
       expected: '2px / 8px',
       actual: `${style(iconOf('shorthand')).marginLeft} / ${style(iconOf('shorthand')).marginRight}`,
+    },
+    {
+      case: 'square frame on a wide icon: box',
+      expected: '40px × 40px',
+      actual: squareOf('square-wide').box,
+    },
+    {
+      case: 'square frame on a wide icon: glyph',
+      expected: 'centered, inside',
+      actual: squareOf('square-wide').glyph,
     },
     {
       case: 'no accessibilityLabel: hidden from screen readers',
@@ -188,6 +215,9 @@ export function Checks() {
             name="ic_circle"
             style={{ marginHorizontal: 8, marginLeft: 2 }}
           />
+        </span>
+        <span data-case="square-wide">
+          <Icon name="ic_us_flag" size={40} frame="square" />
         </span>
         <span data-case="decorative">
           <Icon name="ic_star" />

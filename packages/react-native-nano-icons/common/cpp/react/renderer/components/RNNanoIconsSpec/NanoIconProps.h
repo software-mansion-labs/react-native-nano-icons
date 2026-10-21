@@ -42,6 +42,7 @@ class NanoIconProps final : public ViewProps {
   Float fontScale{1.0};
   int advanceWidth{0};
   int unitsPerEm{0};
+  Float squareGlyphScale{0.0};
   bool hasStyleWidth{false};
   bool hasStyleHeight{false};
 

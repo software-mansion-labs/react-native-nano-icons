@@ -100,9 +100,16 @@ class NanoIconViewManager :
 
   @ReactProp(name = "advanceWidth", defaultInt = 0)
   override fun setAdvanceWidth(view: NanoIconView, value: Int) {
+    view.setAdvanceWidth(value)
   }
 
   @ReactProp(name = "unitsPerEm", defaultInt = 0)
   override fun setUnitsPerEm(view: NanoIconView, value: Int) {
+    view.setUnitsPerEm(value)
+  }
+
+  @ReactProp(name = "squareGlyphScale", defaultFloat = 0f)
+  override fun setSquareGlyphScale(view: NanoIconView, value: Float) {
+    view.setSquareGlyphScale(value)
   }
 }

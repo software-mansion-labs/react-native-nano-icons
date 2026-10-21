@@ -8,6 +8,7 @@ import {
   resolveGlyphEntry,
   createCharCache,
   createLayerColorResolver,
+  squareGlyphBox,
 } from './utils/glyphRuntime';
 import { configuredFontFamily } from './utils/fontIdentity';
 import { loadFontFromDevServer } from './devServerFont.web';
@@ -46,6 +47,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       : `${JSON.stringify(family)}, ${JSON.stringify(fontBasename)}`;
 
   const unitsPerEm = glyphMap.m.u;
+  const safeZone = glyphMap.m.z;
   const getChar = createCharCache();
   const fontUrl = webFontUrl(font);
 
@@ -69,6 +71,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       size,
       color,
       tintMode,
+      frame,
       style,
       accessible,
       accessibilityLabel,
@@ -80,13 +83,14 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       ref,
     }: IconProps<keyof GM['i']>) => {
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
+      const square = frame === 'square';
 
       if (fontUrl && !fontUrl.startsWith('data:')) {
         ReactDOM.preload?.(fontUrl, { as: 'font', crossOrigin: 'anonymous' });
       }
 
       const containerStyle = {
-        '--nano-icon-ratio': adv / unitsPerEm,
+        '--nano-icon-ratio': square ? 1 : adv / unitsPerEm,
         fontFamily,
         ...(size === undefined ? null : { fontSize: size }),
         ...resolveWebStyle(style),
@@ -94,6 +98,14 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
       const inheritColor = color == null && followsTextColor(layers);
       const resolveColor = createLayerColorResolver(color, tintMode, layers);
+      const box = square ? squareGlyphBox(adv, unitsPerEm, safeZone) : null;
+      const layerBoxStyle: CSSProperties | undefined = box
+        ? {
+            fontSize: `${box.scale}em`,
+            left: `${box.left * 100}%`,
+            bottom: `${box.bottom * 100}%`,
+          }
+        : undefined;
 
       const accessibility = iconAccessibilityProps({
         accessible,
@@ -136,8 +148,11 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
                 aria-hidden
                 style={
                   inheritColor
-                    ? undefined
-                    : { color: resolveColor(i, srcColor) as string }
+                    ? layerBoxStyle
+                    : {
+                        ...layerBoxStyle,
+                        color: resolveColor(i, srcColor) as string,
+                      }
                 }>
                 {getChar(codepoint)}
               </span>

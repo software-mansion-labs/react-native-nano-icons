@@ -9,6 +9,7 @@ import {
   resolveGlyphEntry,
   createCharCache,
   createLayerColorResolver,
+  squareGlyphBox,
 } from './utils/glyphRuntime';
 import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
 import { warnRuntime } from './utils/runtimeLog';
@@ -94,6 +95,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
   };
 
   const unitsPerEm = glyphMap.m.u;
+  const safeZone = glyphMap.m.z;
   const getChar = createCharCache();
 
   const Icon = memo(
@@ -104,6 +106,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       tintMode,
       style,
       allowFontScaling = true,
+      frame,
       accessible,
       accessibilityLabel,
       accessibilityRole,
@@ -115,7 +118,8 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       const fontScale = allowFontScaling ? PixelRatio.getFontScale() : 1;
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
       const scaledSize = size * fontScale;
-      const width = (adv / unitsPerEm) * scaledSize;
+      const square = frame === 'square';
+      const width = square ? scaledSize : (adv / unitsPerEm) * scaledSize;
 
       const pending = useDynamicFontPending(managed, fontBasename);
 
@@ -126,7 +130,15 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
         [scaledSize, width, style]
       );
 
-      const sizeStyle = useMemo(() => ({ fontSize: size }), [size]);
+      const sizeStyle = useMemo(() => {
+        if (!square) return { fontSize: size };
+        const box = squareGlyphBox(adv, unitsPerEm, safeZone);
+        return {
+          fontSize: size * box.scale,
+          left: `${box.left * 100}%` as const,
+          bottom: `${box.bottom * 100}%` as const,
+        };
+      }, [size, square, adv]);
       return (
         <View
           ref={ref}

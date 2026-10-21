@@ -47,6 +47,7 @@ const glyphMap = {
       ],
     ],
     message: [1024, [[0xe905, 'currentColor']]],
+    banner: [2044, [[0xe906, '#ff0000']]],
   },
 } as const;
 
@@ -139,6 +140,22 @@ describe('createIconSet (web)', () => {
     expect(render({ name: 'flag' }).containerStyle['--nano-icon-ratio']).toBe(
       1.5
     );
+  });
+
+  test('the square frame gives a square box and scales and centers the glyph', () => {
+    const banner = render({ name: 'banner', frame: 'square' });
+    expect(banner.containerStyle['--nano-icon-ratio']).toBe(1);
+    expect(banner.layerStyles).toEqual([
+      {
+        fontSize: '0.5em',
+        left: '0.09765625%',
+        bottom: '25%',
+        color: '#ff0000',
+      },
+    ]);
+    expect(render({ name: 'heart', frame: 'square' }).layerStyles).toEqual([
+      { fontSize: '1em', left: '0%', bottom: '0%' },
+    ]);
   });
 
   test('a black or currentColor icon follows the text colour', () => {
