@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { QUADRATIC_ERROR_BOUND_EM, toQuadraticPath } from '../font/quadratic';
+import { toQuadraticPath } from '../font/quadratic';
 import { shouldSkipPath } from '../glyph/parse';
 import { computePlacement, transformPathForFont } from '../glyph/placement';
 import type { PathKitModule } from '../pathkit/types';
@@ -14,6 +14,7 @@ export type IconTask = {
   fontFamily: string;
   upm: number;
   safeZone: number;
+  curveTolerance: number;
 };
 
 export type IconLog = [level: 'info' | 'warn' | 'fail', message: string];
@@ -95,7 +96,7 @@ export async function prepareIcon(
     });
     result.layers.push({
       fill: p.fill,
-      d: toQuadraticPath(placed, task.upm * QUADRATIC_ERROR_BOUND_EM),
+      d: toQuadraticPath(placed, task.upm * task.curveTolerance),
     });
   }
 

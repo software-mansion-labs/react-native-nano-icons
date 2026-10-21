@@ -23,7 +23,7 @@ export function preparedSvgCacheKey(
   if (task.kind === 'symbol') {
     return `symbol:${task.setName}:${task.file}:${task.prefix}:${contentHash}`;
   }
-  return `${task.file}:${task.upm}:${task.safeZone}:${contentHash}`;
+  return `${task.file}:${task.upm}:${task.safeZone}:${task.curveTolerance}:${contentHash}`;
 }
 
 export async function prepareIconsWithCache<T extends SvgPrepareTask>(

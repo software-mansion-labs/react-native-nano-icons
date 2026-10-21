@@ -7,6 +7,7 @@ import {
   parseCompileTtfFromGlyphsError,
   type FontGlyph,
 } from '../font/compile';
+import { QUADRATIC_ERROR_BOUND_EM } from '../font/quadratic';
 import { buildFontFamily } from '../../utils/fontIdentity';
 import type { GlyphLayer, NanoGlyphMap, NanoLogger } from '../types';
 import {
@@ -86,6 +87,7 @@ export async function runFontPipeline(
       fontFamily: config.fontFamily,
       upm: config.upm,
       safeZone: config.safeZone,
+      curveTolerance: config.curveTolerance ?? QUADRATIC_ERROR_BOUND_EM,
     })),
     options?.concurrency ?? defaultConcurrency(),
     options?.preparedSvgCache,

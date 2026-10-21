@@ -5,6 +5,7 @@ const path = require('path');
 export type FingerprintInputs = {
   upm: number;
   safeZone: number;
+  curveTolerance: number;
   startUnicode: number;
   version: string;
   toolchain: readonly string[];
@@ -35,6 +36,7 @@ export function fingerprintSvgDirSync(
   return hashSvgDir(dir, [
     inputs.upm,
     inputs.safeZone,
+    inputs.curveTolerance,
     inputs.startUnicode,
     inputs.version,
     inputs.toolchain,
