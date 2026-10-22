@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Run from your app root: npx react-native-nano-icons [--verbose] [--path <dir|file>] [--dynamic] [--dynamic-app-config] [--help]
+ * Run from your app root: npx react-native-nano-icons [--verbose] [--path <dir|file>] [--dynamic] [--dynamic-app-config] [--check] [--help]
  *
  * Flags:
  *   -h, --help         Print usage and exit without building
@@ -12,6 +12,8 @@
  *                      use this for OTA font regeneration without running expo prebuild.
  *   --dynamic-app-config  Like --dynamic, but reads the config from the Expo app config
  *                      (app.json / app.config.js / app.config.ts) instead of .nanoicons.json.
+ *   --check            Report the sets those flags would rebuild and exit with 1 if there are any.
+ *                      Builds, writes and links nothing.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,6 +26,8 @@ import {
   loadDynamicSetsFromAppConfig,
   buildAllFonts,
   buildAllSymbols,
+  checkAllFonts,
+  checkAllSymbols,
   IconSetBuildError,
   SymbolSetBuildError,
   linkBare,
@@ -31,6 +35,7 @@ import {
   linkBareAndroidDrawables,
   type BuiltFont,
   type BuiltSymbolSet,
+  type StaleSet,
 } from '../cli/index';
 
 export const USAGE = `Usage: npx react-native-nano-icons [options]
@@ -41,6 +46,8 @@ Options:
   --path <dir|file>     Folder with .nanoicons.json, or the file itself. Default: current directory.
   --dynamic             Rebuild only icon sets with linking: "dynamic". Skips native linking.
   --dynamic-app-config  Like --dynamic, but reads the sets from the Expo app config.
+  --check               Report the sets that would be rebuilt and exit with 1 if there are any.
+                        Builds, writes and links nothing.
   --verbose             Show per-SVG processing details.
   -h, --help            Show this help.`;
 
@@ -50,6 +57,7 @@ const OPTIONS = {
   path: { type: 'string' },
   dynamic: { type: 'boolean' },
   'dynamic-app-config': { type: 'boolean' },
+  check: { type: 'boolean' },
   verbose: { type: 'boolean' },
   help: { type: 'boolean', short: 'h' },
 } as const;
@@ -60,6 +68,7 @@ export type CliOptions = {
   path?: string;
   dynamic: boolean;
   appConfig: boolean;
+  check: boolean;
   verbose: boolean;
   help: boolean;
 };
@@ -82,6 +91,7 @@ export function parseCliArgs(args: string[]): CliOptions {
   const options: CliOptions = {
     dynamic: false,
     appConfig: false,
+    check: false,
     verbose: false,
     help: false,
   };
@@ -130,6 +140,7 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.dynamic = true;
       options.appConfig = true;
     }
+    if (token.name === 'check') options.check = true;
     if (token.name === 'verbose') options.verbose = true;
   }
 
@@ -146,7 +157,7 @@ export async function main(
   logger: NanoLogger,
   options: CliOptions
 ): Promise<void> {
-  const { dynamic, appConfig } = options;
+  const { dynamic, appConfig, check } = options;
 
   const { appRoot, configRoot } = resolveRoots(options.path);
   const buildRoot = appConfig ? appRoot : configRoot;
@@ -163,9 +174,23 @@ export async function main(
       `Found ${dynamicIconSets.length} dynamic icon set(s) — skipping native linking.`
     );
 
+    if (check) {
+      failIfStale(checkAllFonts(dynamicIconSets, buildRoot, { logger }));
+      return;
+    }
+
     await buildAllFonts(dynamicIconSets, buildRoot, { logger });
   } else {
     const config = loadNanoIconsConfig(configRoot);
+
+    if (check) {
+      failIfStale([
+        ...checkAllFonts(config.iconSets ?? [], buildRoot, { logger }),
+        ...checkAllSymbols(config.symbolSets ?? [], buildRoot, { logger }),
+      ]);
+      return;
+    }
+
     let buildError: IconSetBuildError | SymbolSetBuildError | undefined;
 
     if (config.iconSets?.length) {
@@ -199,6 +224,14 @@ export async function main(
 
     if (buildError) throw buildError;
   }
+}
+
+function failIfStale(stale: StaleSet[]): void {
+  if (!stale.length) return;
+  const names = stale.map((set) => set.name).join(', ');
+  throw new Error(
+    `${stale.length} set${stale.length === 1 ? ' is' : 's are'} out of date: ${names}. Run the same command without --check to rebuild ${stale.length === 1 ? 'it' : 'them'}.`
+  );
 }
 
 function resolveRoots(target: string | undefined): {

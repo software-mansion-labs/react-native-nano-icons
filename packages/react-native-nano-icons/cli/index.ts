@@ -1,11 +1,14 @@
 export {
   buildAllFonts,
+  checkAllFonts,
   IconSetBuildError,
   type IconSetConfig,
   type BuiltFont,
+  type StaleSet,
 } from './build';
 export {
   buildAllSymbols,
+  checkAllSymbols,
   SymbolSetBuildError,
   type SymbolSetConfig,
   type BuiltSymbolSet,

@@ -6,7 +6,7 @@ import path from 'node:path';
 
 jest.mock('../src/core/pipeline/index');
 
-import { buildAllFonts, type IconSetConfig } from '../cli/build';
+import { buildAllFonts, checkAllFonts, type IconSetConfig } from '../cli/build';
 import type { NanoLogger } from '../cli/logger';
 import { getFingerprintSync } from '../src/utils/fingerPrint';
 import * as packageVersionModule from '../src/utils/packageVersion';
@@ -708,5 +708,171 @@ describe('buildAllFonts — safeZone follows upm', () => {
       '[react-native-nano-icons] safeZone (1020) of "TestFont" must not exceed upm (512).'
     );
     expect(mockRunPipeline).not.toHaveBeenCalled();
+  });
+});
+
+describe('checkAllFonts', () => {
+  let inputDir: string;
+  let outputDir: string;
+  let inputHash: string;
+
+  beforeEach(() => {
+    inputDir = makeTmpDir();
+    outputDir = makeTmpDir();
+    writeSvgs(inputDir);
+    inputHash = getFingerprintSync(inputDir, DEFAULT_INPUTS);
+    mockRunPipeline.mockReset();
+  });
+
+  afterEach(() => {
+    fs.rmSync(inputDir, { recursive: true, force: true });
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  });
+
+  function makeIconSet(extra?: Partial<IconSetConfig>): IconSetConfig {
+    return { inputDir, outputDir, fontFamily: FONT_FAMILY, ...extra };
+  }
+
+  function outputSnapshot(): Record<string, string> {
+    return Object.fromEntries(
+      fs
+        .readdirSync(outputDir)
+        .map((file) => [
+          file,
+          fs.readFileSync(path.join(outputDir, file), 'utf8'),
+        ])
+    );
+  }
+
+  test('an up-to-date set is not reported', () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([]);
+  });
+
+  test('a set a build would skip is up to date, one it would rebuild is not', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    const other = makeTmpDir();
+    fs.writeFileSync(path.join(other, 'other.svg'), SAMPLE_SVG);
+    try {
+      const sets = [
+        makeIconSet(),
+        { inputDir: other, outputDir: other, fontFamily: 'Other' },
+      ];
+      expect(checkAllFonts(sets, os.tmpdir())).toEqual([
+        { name: 'Other', reason: 'Other.ttf is missing' },
+      ]);
+    } finally {
+      fs.rmSync(other, { recursive: true, force: true });
+    }
+  });
+
+  test('a missing file is named', () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    fs.unlinkSync(path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`));
+    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+      { name: FONT_FAMILY, reason: `${FONT_FAMILY}.glyphmap.json is missing` },
+    ]);
+  });
+
+  test.each([
+    [
+      'an edited SVG',
+      () => fs.writeFileSync(path.join(inputDir, 'icon.svg'), `${SAMPLE_SVG} `),
+    ],
+    [
+      'a new library version',
+      () =>
+        jest
+          .spyOn(packageVersionModule, 'packageVersion')
+          .mockReturnValue('0.0.0-other'),
+    ],
+    [
+      'a new toolchain version',
+      () =>
+        jest
+          .spyOn(packageVersionModule, 'fontToolchainVersions')
+          .mockReturnValue(['@xmldom/xmldom@0.0.0']),
+    ],
+  ])('%s makes the set out of date', (_label, change) => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    change();
+    try {
+      expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+        {
+          name: FONT_FAMILY,
+          reason: 'its SVGs, options or installed versions changed',
+        },
+      ]);
+    } finally {
+      jest.restoreAllMocks();
+    }
+  });
+
+  test('a changed option makes the set out of date', () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    expect(checkAllFonts([makeIconSet({ upm: 2048 })], os.tmpdir())).toEqual([
+      {
+        name: FONT_FAMILY,
+        reason: 'its SVGs, options or installed versions changed',
+      },
+    ]);
+  });
+
+  test('a changed linking mode makes the set out of date', () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    expect(
+      checkAllFonts([makeIconSet({ linking: 'dynamic' })], os.tmpdir())
+    ).toEqual([
+      { name: FONT_FAMILY, reason: 'its linking changed to "dynamic"' },
+    ]);
+  });
+
+  test('turning web output on or off makes the set out of date', () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', false);
+    fs.writeFileSync(path.join(outputDir, `${FONT_FAMILY}.woff2`), 'fake');
+    expect(checkAllFonts([makeIconSet({ web: true })], os.tmpdir())).toEqual([
+      { name: FONT_FAMILY, reason: 'web output was turned on' },
+    ]);
+
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', true);
+    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+      { name: FONT_FAMILY, reason: 'web output was turned off' },
+    ]);
+  });
+
+  test('a web set without its woff2 names the woff2', () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', true);
+    fs.unlinkSync(path.join(outputDir, `${FONT_FAMILY}.woff2`));
+    expect(checkAllFonts([makeIconSet({ web: true })], os.tmpdir())).toEqual([
+      { name: FONT_FAMILY, reason: `${FONT_FAMILY}.woff2 is missing` },
+    ]);
+  });
+
+  test('nothing is built or written, whatever the state', () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, 'stale-hash');
+    const before = outputSnapshot();
+
+    checkAllFonts([makeIconSet()], os.tmpdir());
+
+    expect(outputSnapshot()).toEqual(before);
+    expect(mockRunPipeline).not.toHaveBeenCalled();
+  });
+
+  test('each out-of-date set is logged with its reason', () => {
+    const fail = jest.fn();
+    const logger = {
+      start: () => {},
+      update: () => {},
+      succeed: () => {},
+      fail,
+      info: () => {},
+      warn: () => {},
+    } satisfies NanoLogger;
+
+    checkAllFonts([makeIconSet()], os.tmpdir(), { logger });
+
+    expect(fail).toHaveBeenCalledWith(
+      `${FONT_FAMILY}.ttf is out of date: ${FONT_FAMILY}.ttf is missing`
+    );
   });
 });
