@@ -118,6 +118,38 @@ export function syncAndroidFontAssets(
   }
 }
 
+/**
+ * Why the copy of a static font linked into the app's android/ or ios/ project differs from the generated TTF, if it does.
+ */
+export function staleLinkedFont(
+  projectRoot: string,
+  family: string,
+  ttfPath: string
+): string | undefined {
+  const copies = [
+    ...(fs.existsSync(path.join(projectRoot, 'android'))
+      ? [path.join(projectRoot, ANDROID_FONTS_DIR, `${family}.ttf`)]
+      : []),
+    ...(findIosApp(projectRoot)
+      ? [
+          path.join(
+            projectRoot,
+            'ios',
+            IOS_NANOICONS_FONTS_DIR,
+            path.basename(ttfPath)
+          ),
+        ]
+      : []),
+  ];
+  const ttf = fs.readFileSync(ttfPath);
+  for (const copy of copies) {
+    const relative = path.relative(projectRoot, copy);
+    if (!fs.existsSync(copy)) return `${relative} is missing`;
+    if (!fs.readFileSync(copy).equals(ttf)) return `${relative} is out of date`;
+  }
+  return undefined;
+}
+
 async function linkAndroid(
   projectRoot: string,
   staticFonts: BuiltFont[],

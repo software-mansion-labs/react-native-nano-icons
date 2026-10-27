@@ -360,7 +360,7 @@ describe('cli main', () => {
       expect(mockCheckAllFonts).toHaveBeenCalledWith(
         SETS,
         process.cwd(),
-        expect.anything()
+        expect.objectContaining({ appRoot: process.cwd() })
       );
       expect(mockCheckAllSymbols).toHaveBeenCalledWith(
         SYMBOL_SETS,

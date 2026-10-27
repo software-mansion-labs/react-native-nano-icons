@@ -12,8 +12,8 @@
  *                      use this for OTA font regeneration without running expo prebuild.
  *   --dynamic-app-config  Like --dynamic, but reads the config from the Expo app config
  *                      (app.json / app.config.js / app.config.ts) instead of .nanoicons.json.
- *   --check            Report the sets those flags would rebuild and exit with 1 if there are any.
- *                      Builds, writes and links nothing.
+ *   --check            Report the sets those flags would rebuild or whose linked fonts are out of date,
+ *                      and exit with 1 if there are any. Builds, writes and links nothing.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,8 +46,8 @@ Options:
   --path <dir|file>     Folder with .nanoicons.json, or the file itself. Default: current directory.
   --dynamic             Rebuild only icon sets with linking: "dynamic". Skips native linking.
   --dynamic-app-config  Like --dynamic, but reads the sets from the Expo app config.
-  --check               Report the sets that would be rebuilt and exit with 1 if there are any.
-                        Builds, writes and links nothing.
+  --check               Report the sets that would be rebuilt or whose linked fonts are out of
+                        date, and exit with 1 if there are any. Builds, writes and links nothing.
   --verbose             Show per-SVG processing details.
   -h, --help            Show this help.`;
 
@@ -185,7 +185,10 @@ export async function main(
 
     if (check) {
       failIfStale([
-        ...checkAllFonts(config.iconSets ?? [], buildRoot, { logger }),
+        ...checkAllFonts(config.iconSets ?? [], buildRoot, {
+          logger,
+          appRoot,
+        }),
         ...checkAllSymbols(config.symbolSets ?? [], buildRoot, { logger }),
       ]);
       return;

@@ -454,7 +454,7 @@ Running `npx expo prebuild` or the CLI regenerates an icon set when its SVGs or 
 > - **Bare React Native** – run `npx react-native-nano-icons`. The [Metro plugin](#4-add-the-metro-plugin) sends rebuilt fonts to the running dev app, but it does not link them into the native project.
 > - **Expo** – EAS Build runs `npx expo prebuild` for you when `ios/` and `android/` are not committed. Otherwise, or without EAS, run `npx expo prebuild` yourself.
 
-To fail CI when the committed files are out of date, run the CLI with `--check`. It names each set a build would regenerate and why, writes nothing, and exits with 1:
+To fail CI when the committed files are out of date, run the CLI with `--check`. It names each set a build would regenerate or whose font copies in `ios/` and `android/` are out of date, and why, writes nothing, and exits with 1:
 
 ```sh
 npx react-native-nano-icons --check
@@ -673,7 +673,7 @@ npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--dynam
 | `--verbose`         | Show per-SVG processing details and extra build and linking notes.                                                                  |
 | `--dynamic`         | Rebuild only icon sets with `linking: 'dynamic'` and skip native linking. See [Regenerating dynamic fonts only](#regenerating-dynamic-fonts-only). |
 | `--dynamic-app-config` | Like `--dynamic`, but reads the sets from the Expo app config (`app.json` / `app.config.js` / `app.config.ts`) instead of `.nanoicons.json`. |
-| `--check`           | Report the sets a build would regenerate, with the reason, and exit with 1 if there are any. Builds, writes and links nothing. Checks the sets the same command without `--check` would build, so `--check --dynamic` checks only the dynamic sets. |
+| `--check`           | Report the sets a build would regenerate or whose font copies in `ios/` and `android/` are out of date, with the reason, and exit with 1 if there are any. Builds, writes and links nothing. Checks the sets the same command without `--check` would build, so `--check --dynamic` checks only the dynamic sets. |
 | `-h`, `--help`      | Print the usage and exit without building. |
 
 ---

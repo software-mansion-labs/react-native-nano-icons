@@ -59,6 +59,56 @@ describe('check against a real build', () => {
     expect(checkAllSymbols(symbolSets, projectRoot)).toEqual([]);
   });
 
+  test('a static font whose linked copy is missing or differs is out of date', () => {
+    const family = JSON.parse(
+      fs.readFileSync(
+        path.join(projectRoot, 'out', 'CheckIcons.glyphmap.json'),
+        'utf8'
+      )
+    ).m.f;
+    const ttf = path.join(projectRoot, 'out', 'CheckIcons.ttf');
+    const fontsDir = path.join(
+      projectRoot,
+      'android/app/src/main/assets/fonts'
+    );
+    const androidCopy = path.join(fontsDir, `${family}.ttf`);
+    const iosCopy = path.join(
+      projectRoot,
+      'ios/nanoicons-fonts/CheckIcons.ttf'
+    );
+    const check = () =>
+      checkAllFonts(iconSets, projectRoot, { appRoot: projectRoot });
+
+    fs.mkdirSync(fontsDir, { recursive: true });
+    fs.mkdirSync(path.join(projectRoot, 'ios/App.xcodeproj'), {
+      recursive: true,
+    });
+    fs.mkdirSync(path.dirname(iosCopy));
+    try {
+      expect(check()).toEqual([
+        {
+          name: 'CheckIcons',
+          reason: `android/app/src/main/assets/fonts/${family}.ttf is missing`,
+        },
+      ]);
+
+      fs.copyFileSync(ttf, androidCopy);
+      fs.writeFileSync(iosCopy, 'old font');
+      expect(check()).toEqual([
+        {
+          name: 'CheckIcons',
+          reason: 'ios/nanoicons-fonts/CheckIcons.ttf is out of date',
+        },
+      ]);
+
+      fs.copyFileSync(ttf, iosCopy);
+      expect(check()).toEqual([]);
+    } finally {
+      fs.rmSync(path.join(projectRoot, 'android'), { recursive: true });
+      fs.rmSync(path.join(projectRoot, 'ios'), { recursive: true });
+    }
+  });
+
   test('an edited SVG makes its set out of date, and nothing is written', () => {
     const before = snapshot(projectRoot);
     for (const dir of ['icons', 'symbols']) {

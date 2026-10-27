@@ -8,6 +8,7 @@ import {
 } from '../src/core/pipeline/index';
 import { QUADRATIC_ERROR_BOUND_EM } from '../src/core/font/quadratic';
 import type { NanoLogger } from './logger';
+import { staleLinkedFont } from './link';
 import { fingerprintSvgDirSync } from '../src/utils/fingerPrint';
 import {
   fontToolchainVersions,
@@ -210,12 +211,13 @@ function resolveIconSet(
 
 /**
  * Report the icon sets whose generated files are out of date, without building or writing anything.
- * A set is out of date when a build would regenerate it.
+ * A set is out of date when a build would regenerate it. With `appRoot`, a static set is also out of date
+ * when its font linked into that app's android/ or ios/ project differs from the generated TTF.
  */
 export function checkAllFonts(
   iconSets: IconSetConfig[],
   projectRoot: string,
-  options?: { logger?: NanoLogger; withWeb?: boolean }
+  options?: { logger?: NanoLogger; withWeb?: boolean; appRoot?: string }
 ): StaleSet[] {
   const versions = {
     version: packageVersion(),
@@ -235,6 +237,18 @@ export function checkAllFonts(
         `${resolved.fontFamily}.ttf is out of date: ${state.staleBecause}`
       );
       stale.push({ name: resolved.fontFamily, reason: state.staleBecause });
+      continue;
+    }
+    if (options?.appRoot && resolved.linking === 'static') {
+      const reason = staleLinkedFont(
+        options.appRoot,
+        state.family,
+        resolved.ttfPath
+      );
+      if (reason) {
+        options.logger?.fail(reason);
+        stale.push({ name: resolved.fontFamily, reason });
+      }
     }
   }
   return stale;
