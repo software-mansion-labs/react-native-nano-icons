@@ -41,15 +41,17 @@ export type IconProps<Name> = {
    * @platform `Web` only - no-op on native.
    */
   className?: string;
-} & Pick<TextProps, 'allowFontScaling'> &
-  Pick<
-    ViewProps,
-    | 'style'
-    | 'testID'
-    | 'accessible'
-    | 'accessibilityRole'
-    | 'importantForAccessibility'
-  >;
+} & Partial<
+  Pick<TextProps, 'allowFontScaling'> &
+    Pick<
+      ViewProps,
+      | 'style'
+      | 'testID'
+      | 'accessible'
+      | 'accessibilityRole'
+      | 'importantForAccessibility'
+    >
+>;
 
 export type IconComponent<GM extends NanoGlyphMapInput> = React.FC<
   IconProps<keyof GM['i']>
