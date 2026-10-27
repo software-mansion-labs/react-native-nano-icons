@@ -6,6 +6,7 @@ import { parseFlattenedSvg, type ParsedPath } from '../glyph/parse';
 import { preprocessSvg, validateSvg } from '../glyph/validate';
 import { convertEvenoddToWinding } from '../pathkit/evenodd';
 import type { PathKitModule } from '../pathkit/types';
+import { canonicalWinding } from '../pathkit/winding';
 import { KNOCKOUT_ATTRIBUTE, markKnockoutFills } from '../symbols/knockout';
 import type { NanoLogger } from '../types';
 
@@ -101,6 +102,16 @@ export async function prepareSvgLayers(opts: {
       p.d = convertEvenoddToWinding(pathkit, p.d);
       delete p.fillRule;
       p.noMerge = true;
+    } else {
+      // Flattening only runs path ops on paths that need them (evenodd,
+      // strokes, transforms, clips), so a plain nonzero path keeps whatever
+      // contour directions it was drawn with. Orient it like the converted
+      // paths: merging concatenates paths, and an overlap between paths of
+      // opposite winding sums to zero, punching a hole. Rasterizers that
+      // embolden glyphs (macOS font smoothing) also offset each contour
+      // along its direction, so a contour wound against the rest of its
+      // glyph renders thinner instead of bolder.
+      p.d = canonicalWinding(pathkit, p.d);
     }
   }
 

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- two bars in one nonzero path, the first clockwise, the second counter-clockwise -->
+  <path d="M4 4H20V8H4Z M4 16V20H20V16Z" fill="black"/>
+</svg>

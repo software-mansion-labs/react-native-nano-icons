@@ -171,6 +171,83 @@ describe('Pipeline E2E — evenodd holes', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Nonzero winding — contours oriented regardless of how the SVG drew them
+// ---------------------------------------------------------------------------
+
+describe('Pipeline E2E — nonzero contour orientation', () => {
+  const srcDir = path.join(TEST_ICONS, 'winding');
+  const names = ['mixed_direction.svg', 'opposite_overlap.svg'];
+  let res: RunResult;
+
+  type Point = [number, number];
+
+  beforeAll(async () => {
+    res = await runOnSubset({
+      fontFamily: 'FeatWinding',
+      icons: names.map((name) => ({ srcDir, name })),
+    });
+  }, 180_000);
+
+  afterAll(() => cleanup(res?.outputDir, res?.tempDir));
+
+  // the fixtures are all straight lines, so the points are the outline
+  function contoursOf(iconName: string): Point[][] {
+    const { Font } =
+      require('fonteditor-core') as typeof import('fonteditor-core');
+    const font = Font.create(fs.readFileSync(res.ttfPath), { type: 'ttf' });
+    const codepoint = res.glyphmap.i[iconName]![1][0]![0];
+    const glyph = (font.get().glyf ?? []).find((g) =>
+      g.unicode?.includes(codepoint)
+    );
+    return (glyph?.contours ?? []).map((c) => c.map((p): Point => [p.x, p.y]));
+  }
+
+  function signedArea(poly: Point[]): number {
+    let a = 0;
+    for (let i = 0; i < poly.length; i++) {
+      const [x1, y1] = poly[i]!;
+      const [x2, y2] = poly[(i + 1) % poly.length]!;
+      a += x1 * y2 - x2 * y1;
+    }
+    return a / 2;
+  }
+
+  function windingAt(contours: Point[][], [px, py]: Point): number {
+    let w = 0;
+    for (const poly of contours) {
+      for (let i = 0; i < poly.length; i++) {
+        const [x1, y1] = poly[i]!;
+        const [x2, y2] = poly[(i + 1) % poly.length]!;
+        if (y1 <= py !== y2 <= py) {
+          const x = x1 + ((py - y1) * (x2 - x1)) / (y2 - y1);
+          if (x > px) w += y2 > y1 ? 1 : -1;
+        }
+      }
+    }
+    return w;
+  }
+
+  test('contours drawn in opposite directions come out in one direction', () => {
+    const contours = contoursOf('mixed_direction');
+    expect(contours).toHaveLength(2);
+    const directions = new Set(contours.map((c) => Math.sign(signedArea(c))));
+    expect(directions.size).toBe(1);
+  });
+
+  test('same-colour paths of opposite winding stay filled where they overlap', () => {
+    const contours = contoursOf('opposite_overlap');
+    const xs = contours.flat().map(([x]) => x);
+    const ys = contours.flat().map(([, y]) => y);
+    // the squares span 2..22 and overlap around 12, the middle of the glyph
+    const middle: Point = [
+      (Math.min(...xs) + Math.max(...xs)) / 2,
+      (Math.min(...ys) + Math.max(...ys)) / 2,
+    ];
+    expect(windingAt(contours, middle)).not.toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Mask rejection — unsupported icon skipped, valid sibling kept
 // ---------------------------------------------------------------------------
 

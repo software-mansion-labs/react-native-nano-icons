@@ -8,7 +8,7 @@ exports[`forged symbol snapshots allWhite: template and both drawables 1`] = `
     android:viewportWidth="60"
     android:viewportHeight="60">
   <group android:translateX="0" android:translateY="0">
-    <path android:fillColor="#000000" android:pathData="M0,0 L40,0 L40,40 L0,40 L0,0 Z M20,20 L60,20 L60,60 L20,60 L20,20 Z"/>
+    <path android:fillColor="#000000" android:pathData="M0 0 L40 0 L40 40 L0 40 L0 0 Z M20 20 L60 20 L60 60 L20 60 L20 20 Z"/>
   </group>
 </vector>
 ",
@@ -18,7 +18,7 @@ exports[`forged symbol snapshots allWhite: template and both drawables 1`] = `
     android:viewportWidth="60"
     android:viewportHeight="60">
   <group android:translateX="0" android:translateY="0">
-    <path android:fillColor="#ffffff" android:pathData="M0,0 L40,0 L40,40 L0,40 L0,0 Z M20,20 L60,20 L60,60 L20,60 L20,20 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M0 0 L40 0 L40 40 L0 40 L0 0 Z M20 20 L60 20 L60 60 L20 60 L20 20 Z"/>
   </group>
 </vector>
 ",
@@ -61,13 +61,13 @@ exports[`forged symbol snapshots allWhite: template and both drawables 1`] = `
   </g>
   <g id="Symbols">
     <g id="Ultralight-S" transform="matrix(1.167,0,0,1.167,230,76)">
-      <path class="monochrome-0 multicolor-0:custom" d="M0,0 L40,0 L40,40 L0,40 L0,0 Z M20,20 L60,20 L60,60 L20,60 L20,20 Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M0 0 L40 0 L40 40 L0 40 L0 0 Z M20 20 L60 20 L60 60 L20 60 L20 20 Z"/>
     </g>
     <g id="Regular-S" transform="matrix(1.167,0,0,1.167,430,76)">
-      <path class="monochrome-0 multicolor-0:custom" d="M0,0 L40,0 L40,40 L0,40 L0,0 Z M20,20 L60,20 L60,60 L20,60 L20,20 Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M0 0 L40 0 L40 40 L0 40 L0 0 Z M20 20 L60 20 L60 60 L20 60 L20 20 Z"/>
     </g>
     <g id="Black-S" transform="matrix(1.167,0,0,1.167,630,76)">
-      <path class="monochrome-0 multicolor-0:custom" d="M0,0 L40,0 L40,40 L0,40 L0,0 Z M20,20 L60,20 L60,60 L20,60 L20,20 Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M0 0 L40 0 L40 40 L0 40 L0 0 Z M20 20 L60 20 L60 60 L20 60 L20 20 Z"/>
     </g>
   </g>
 </svg>
@@ -332,7 +332,7 @@ exports[`forged symbol snapshots twotone: template and both drawables 1`] = `
     android:viewportWidth="80"
     android:viewportHeight="80">
   <group android:translateX="-10" android:translateY="-10">
-    <path android:fillColor="#000000" android:pathData="M10 10L90 10L90 90L10 90L10 10Z"/>
+    <path android:fillColor="#000000" android:pathData="M90 10L90 90L10 90L10 10L90 10Z"/>
   </group>
 </vector>
 ",
@@ -342,8 +342,8 @@ exports[`forged symbol snapshots twotone: template and both drawables 1`] = `
     android:viewportWidth="80"
     android:viewportHeight="80">
   <group android:translateX="-10" android:translateY="-10">
-    <path android:fillColor="#000000" android:fillAlpha="0.3" android:pathData="M20 20L20 80L80 80L80 20L20 20Z"/>
-    <path android:fillColor="#000000" android:pathData="M90 10L10 10L10 90L90 90L90 10ZM20 80L20 20L80 20L80 80L20 80Z"/>
+    <path android:fillColor="#000000" android:fillAlpha="0.3" android:pathData="M20 80L80 80L80 20L20 20L20 80Z"/>
+    <path android:fillColor="#000000" android:pathData="M90 90L90 10L10 10L10 90L90 90ZM80 80L20 80L20 20L80 20L80 80Z"/>
   </group>
 </vector>
 ",
@@ -388,16 +388,16 @@ exports[`forged symbol snapshots twotone: template and both drawables 1`] = `
   </g>
   <g id="Symbols">
     <g id="Ultralight-S" transform="matrix(0.875,0,0,0.875,221.25,67.25)">
-      <path class="monochrome-0 multicolor-0:custom" d="M20 20L20 80L80 80L80 20L20 20Z"/>
-      <path class="monochrome-1 multicolor-1:custom" d="M90 10L10 10L10 90L90 90L90 10ZM20 80L20 20L80 20L80 80L20 80Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M20 80L80 80L80 20L20 20L20 80Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M90 90L90 10L10 10L10 90L90 90ZM80 80L20 80L20 20L80 20L80 80Z"/>
     </g>
     <g id="Regular-S" transform="matrix(0.875,0,0,0.875,421.25,67.25)">
-      <path class="monochrome-0 multicolor-0:custom" d="M20 20L20 80L80 80L80 20L20 20Z"/>
-      <path class="monochrome-1 multicolor-1:custom" d="M90 10L10 10L10 90L90 90L90 10ZM20 80L20 20L80 20L80 80L20 80Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M20 80L80 80L80 20L20 20L20 80Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M90 90L90 10L10 10L10 90L90 90ZM80 80L20 80L20 20L80 20L80 80Z"/>
     </g>
     <g id="Black-S" transform="matrix(0.875,0,0,0.875,621.25,67.25)">
-      <path class="monochrome-0 multicolor-0:custom" d="M20 20L20 80L80 80L80 20L20 20Z"/>
-      <path class="monochrome-1 multicolor-1:custom" d="M90 10L10 10L10 90L90 90L90 10ZM20 80L20 20L80 20L80 80L20 80Z"/>
+      <path class="monochrome-0 multicolor-0:custom" d="M20 80L80 80L80 20L20 20L20 80Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M90 90L90 10L10 10L10 90L90 90ZM80 80L20 80L20 20L80 20L80 80Z"/>
     </g>
   </g>
 </svg>
@@ -413,7 +413,7 @@ exports[`forged symbol snapshots whiteKnockout: template and both drawables 1`] 
     android:viewportWidth="60"
     android:viewportHeight="100">
   <group android:translateX="0" android:translateY="0">
-    <path android:fillColor="#000000" android:pathData="M60 0 L60 100 L0 100 L0 0 L60 0 Z M10 90 L50 90 L50 50 L10 50 L10 90 Z M10 30 L30 30 L30 10 L10 10 L10 30 Z M40 80 L20 80 L20 60 L40 60 L40 80 Z"/>
+    <path android:fillColor="#000000" android:pathData="M60 0 L60 100 L0 100 L0 0 L60 0 Z M10 90 L50 90 L50 50 L10 50 L10 90 Z M10 30 L30 30 L30 10 L10 10 L10 30 Z M20 60 L40 60 L40 80 L20 80 L20 60 Z"/>
   </group>
 </vector>
 ",
@@ -424,7 +424,7 @@ exports[`forged symbol snapshots whiteKnockout: template and both drawables 1`] 
     android:viewportHeight="100">
   <group android:translateX="0" android:translateY="0">
     <path android:fillColor="#001a72" android:pathData="M0 0 L60 0 L60 100 L0 100 L0 0 Z"/>
-    <path android:fillColor="#ffffff" android:pathData="M50 90 L50 50 L10 50 L10 90 L50 90 Z M30 10 L10 10 L10 30 L30 30 L30 10 Z M20 80 L20 60 L40 60 L40 80 L20 80 Z"/>
+    <path android:fillColor="#ffffff" android:pathData="M50 90 L50 50 L10 50 L10 90 L50 90 Z M30 10 L10 10 L10 30 L30 30 L30 10 Z M40 80 L20 80 L20 60 L40 60 L40 80 Z"/>
   </group>
 </vector>
 ",
@@ -470,15 +470,15 @@ exports[`forged symbol snapshots whiteKnockout: template and both drawables 1`] 
   <g id="Symbols">
     <g id="Ultralight-S" transform="matrix(0.7,0,0,0.7,244,76)">
       <path class="monochrome-0 multicolor-0:custom" d="M0 0 L60 0 L60 100 L0 100 L0 0 Z"/>
-      <path class="monochrome-1 multicolor-1:custom" d="M50 90 L50 50 L10 50 L10 90 L50 90 Z M30 10 L10 10 L10 30 L30 30 L30 10 Z M20 80 L20 60 L40 60 L40 80 L20 80 Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M50 90 L50 50 L10 50 L10 90 L50 90 Z M30 10 L10 10 L10 30 L30 30 L30 10 Z M40 80 L20 80 L20 60 L40 60 L40 80 Z"/>
     </g>
     <g id="Regular-S" transform="matrix(0.7,0,0,0.7,444,76)">
       <path class="monochrome-0 multicolor-0:custom" d="M0 0 L60 0 L60 100 L0 100 L0 0 Z"/>
-      <path class="monochrome-1 multicolor-1:custom" d="M50 90 L50 50 L10 50 L10 90 L50 90 Z M30 10 L10 10 L10 30 L30 30 L30 10 Z M20 80 L20 60 L40 60 L40 80 L20 80 Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M50 90 L50 50 L10 50 L10 90 L50 90 Z M30 10 L10 10 L10 30 L30 30 L30 10 Z M40 80 L20 80 L20 60 L40 60 L40 80 Z"/>
     </g>
     <g id="Black-S" transform="matrix(0.7,0,0,0.7,644,76)">
       <path class="monochrome-0 multicolor-0:custom" d="M0 0 L60 0 L60 100 L0 100 L0 0 Z"/>
-      <path class="monochrome-1 multicolor-1:custom" d="M50 90 L50 50 L10 50 L10 90 L50 90 Z M30 10 L10 10 L10 30 L30 30 L30 10 Z M20 80 L20 60 L40 60 L40 80 L20 80 Z"/>
+      <path class="monochrome-1 multicolor-1:custom" d="M50 90 L50 50 L10 50 L10 90 L50 90 Z M30 10 L10 10 L10 30 L30 30 L30 10 Z M40 80 L20 80 L20 60 L40 60 L40 80 Z"/>
     </g>
   </g>
 </svg>
