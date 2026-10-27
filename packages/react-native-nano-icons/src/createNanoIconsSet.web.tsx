@@ -23,8 +23,9 @@ const STYLE_PRECEDENCE = 'react-native-nano-icons';
 const BASE_CSS =
   `:where(.${ICON_CLASS}){display:inline-block;position:relative;` +
   'width:calc(var(--nano-icon-ratio,1)*1em);height:1em;line-height:0;vertical-align:middle}' +
-  `:where(.${ICON_CLASS}>span){position:absolute;left:0;bottom:0;` +
-  'font-weight:normal;font-style:normal;line-height:1;white-space:pre}';
+  `.${ICON_CLASS}>span{position:absolute;left:0;bottom:0;color:inherit;` +
+  'font-family:inherit;font-size:inherit;font-weight:normal;font-style:normal;' +
+  'line-height:1;white-space:pre}';
 
 const TEXT_COLORS = new Set([
   'black',

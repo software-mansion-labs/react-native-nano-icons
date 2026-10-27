@@ -357,13 +357,13 @@ export const Icon = createNanoIconSet(
 - **Expo:** `require()` gives the URL. Add `config.resolver.assetExts.push("woff2")` to `metro.config.js`.
 - **Next.js:** set `"outputDir": "./public/nanoicons"` and pass `"/nanoicons/my-icons.woff2"`.
 
-The icons add an `@font-face` rule with `font-display: block` and a font preload to the document `<head>`, also when rendered on the server, so icons stay empty instead of showing fallback glyphs until the font arrives. This needs React 19; with React 18 the rules render next to each icon. The font works the same for static and dynamic sets. On iOS and Android a static set ignores the font argument and warns, so keep the web font in a `.web.ts` file. A font loaded another way, e.g. with `expo-font` or a stylesheet, works too when it is registered under `fontFamily`.
+The icons add an `@font-face` rule with `font-display: block` and a font preload to the document `<head>`, also when rendered on the server, so icons stay empty instead of showing fallback glyphs until the font arrives. This needs React 19. With React 18 the rules render next to each icon, and server rendering is not supported. The font works the same for static and dynamic sets. On iOS and Android a static set ignores the font argument and warns, so keep the web font in a `.web.ts` file. A font loaded another way, e.g. with `expo-font` or a stylesheet, works too when it is registered under `fontFamily`.
 
 ### Styling with CSS
 
 - **Size:** without `size`, an icon is `1em` tall and follows the CSS `font-size`; its width keeps the icon's proportions. `size` sets it in px.
 - **Color:** without `color`, an icon drawn only in black or `currentColor` follows the CSS `color`. Other icons keep their colors.
-- **`className`:** added to the icon's `<span class="nano-icon">`. The library's own rules have zero specificity, so any class overrides them.
+- **`className`:** added to the icon's `<span class="nano-icon">`. The library's rules for this span have zero specificity, so any class overrides them.
 - **`style`:** React Native styles are converted to CSS, including arrays, `transform` arrays, `marginHorizontal` / `paddingVertical` and `*Start` / `*End`.
 
 ```TypeScript

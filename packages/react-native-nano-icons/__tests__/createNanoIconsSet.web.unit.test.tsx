@@ -107,6 +107,13 @@ describe('createIconSet (web)', () => {
     expect(container.props['className']).toBe('nano-icon');
   });
 
+  test('the layer rule has class specificity, so element rules of the app do not override it', () => {
+    const css = render({ name: 'heart' }).styles[0]!['children'];
+    expect(css).toMatch(
+      /(^|\})\.nano-icon>span\{[^}]*font-family:inherit;font-size:inherit;/
+    );
+  });
+
   test('className is added next to the base class', () => {
     expect(
       render({ name: 'heart', className: 'size-64' }).container.props[
