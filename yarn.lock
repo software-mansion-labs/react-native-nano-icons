@@ -7135,10 +7135,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xmldom/xmldom-0.8@npm:@xmldom/xmldom@0.8.12":
-  version: 0.8.12
-  resolution: "@xmldom/xmldom@npm:0.8.12"
-  checksum: 10c0/b733c84292d1bee32ef21a05aba8f9063456b51a54068d0b4a1abf5545156ee0b9894b7ae23775b5881b11c35a8a03871d1b514fb7e1b11654cdbee57e1c2707
+"@xmldom/xmldom-0.8@npm:@xmldom/xmldom@0.8.15":
+  version: 0.8.15
+  resolution: "@xmldom/xmldom@npm:0.8.15"
+  checksum: 10c0/59d09b85824b684fba5a0a224d5b43abea1a0d745e8d8b8136a7013e996eb6da122fdbb3deb32ed1621923a10e1937b1f7917cea43481d9d5b976e8c1ff836c1
   languageName: node
   linkType: hard
 
@@ -7149,7 +7149,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xmldom/xmldom@npm:^0.8.12 || ^0.9.10":
+"@xmldom/xmldom@npm:^0.8.15 || ^0.9.12":
   version: 0.9.12
   resolution: "@xmldom/xmldom@npm:0.9.12"
   checksum: 10c0/0a9ef38e203213717dde8d16c62743c26c37eb4195aeb4f286550a0aec2145c063a6c3633f253c29f75202f922d7c961d1acaad4dd93e5db1ef05c813354d178
@@ -16996,8 +16996,8 @@ __metadata:
     "@types/react-dom": "npm:~19.1.0"
     "@types/svg2ttf": "npm:^5.0.3"
     "@types/xcode": "npm:^3.0.0"
-    "@xmldom/xmldom": "npm:^0.8.12 || ^0.9.10"
-    "@xmldom/xmldom-0.8": "npm:@xmldom/xmldom@0.8.12"
+    "@xmldom/xmldom": "npm:^0.8.15 || ^0.9.12"
+    "@xmldom/xmldom-0.8": "npm:@xmldom/xmldom@0.8.15"
     babel-plugin-module-resolver: "npm:^5.0.2"
     chalk: "npm:^5.6.2"
     cubic2quad: "npm:^1.2.1"

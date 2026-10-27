@@ -54,7 +54,7 @@ beforeAll(async () => {
 
 test('the versions under test are 0.9 and 0.8', () => {
   expect(v09.xmldomVersion).toMatch(/^0\.9\./);
-  expect(v08.xmldomVersion).toBe('0.8.12');
+  expect(v08.xmldomVersion).toBe('0.8.15');
 });
 
 describe.each([

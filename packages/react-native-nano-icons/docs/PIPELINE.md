@@ -378,7 +378,7 @@ Checks if `parent` is a `ReactTextView`. If so, reads the text layout paint's `f
 | `pathkit-wasm` | ^1.0.0 | Skia path geometry (WASM) |
 | `svg2ttf` | ^6.0.3 | SVG font → TTF conversion |
 | `fonteditor-core` | ^2.6.3 | TTF metric correction |
-| `@xmldom/xmldom` | ^0.9.10 | XML DOM parsing in Node.js |
+| `@xmldom/xmldom` | ^0.8.15 \|\| ^0.9.12 | XML DOM parsing in Node.js |
 
 ---
 
