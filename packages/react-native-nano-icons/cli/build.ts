@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { inspect } from 'util';
 import {
   runFontPipeline,
   type PreparedSvgCache,
@@ -161,7 +162,7 @@ export async function buildAllFonts(
     const curveTolerance = set.curveTolerance ?? QUADRATIC_ERROR_BOUND_EM;
     if (!Number.isFinite(curveTolerance) || curveTolerance <= 0) {
       throw new Error(
-        `[react-native-nano-icons] curveTolerance (${curveTolerance}) of "${fontFamily}" must be a positive number.`
+        `[react-native-nano-icons] curveTolerance (${inspect(curveTolerance)}) of "${fontFamily}" must be a positive number.`
       );
     }
 

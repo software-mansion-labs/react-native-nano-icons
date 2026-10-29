@@ -124,6 +124,15 @@ describe('buildAllFonts — skip/rebuild logic', () => {
     }
   );
 
+  test('a curveTolerance string is quoted in the error', async () => {
+    await expect(
+      buildAllFonts(
+        [{ ...makeIconSet(), curveTolerance: '0.001' as unknown as number }],
+        os.tmpdir()
+      )
+    ).rejects.toThrow(`curveTolerance ('0.001') of "${FONT_FAMILY}"`);
+  });
+
   test('runFontPipeline is not called when output files exist with matching hash', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
     await buildAllFonts([makeIconSet()], os.tmpdir());
