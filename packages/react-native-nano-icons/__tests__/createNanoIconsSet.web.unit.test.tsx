@@ -148,13 +148,17 @@ describe('createIconSet (web)', () => {
     expect(banner.layerStyles).toEqual([
       {
         fontSize: '0.5em',
-        left: '0.09765625%',
-        bottom: '25%',
+        left: 'calc(50% - 0.998046875em)',
+        bottom: 'calc(50% - 0.5em)',
         color: '#ff0000',
       },
     ]);
     expect(render({ name: 'heart', frame: 'square' }).layerStyles).toEqual([
-      { fontSize: '1em', left: '0%', bottom: '0%' },
+      {
+        fontSize: '1em',
+        left: 'calc(50% - 0.5em)',
+        bottom: 'calc(50% - 0.5em)',
+      },
     ]);
   });
 

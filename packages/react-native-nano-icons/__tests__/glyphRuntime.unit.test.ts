@@ -200,27 +200,24 @@ describe('glyphRuntime', () => {
   });
 
   describe('squareGlyphBox', () => {
-    test('a narrow glyph keeps its size and is centered horizontally', () => {
+    test('a narrow glyph keeps its size', () => {
       expect(squareGlyphBox(512, 1024, 1020)).toEqual({
         scale: 1,
-        left: 0.25,
-        bottom: 0,
+        width: 0.5,
       });
     });
 
-    test('a wide glyph fits the safe zone and is centered vertically', () => {
+    test('a wide glyph fits the safe zone', () => {
       expect(squareGlyphBox(2044, 1024, 1020)).toEqual({
         scale: 0.5,
-        left: 0.0009765625,
-        bottom: 0.25,
+        width: 0.998046875,
       });
     });
 
     test('a glyph one em wide is unchanged', () => {
       expect(squareGlyphBox(1024, 1024, 1020)).toEqual({
         scale: 1,
-        left: 0,
-        bottom: 0,
+        width: 1,
       });
     });
   });

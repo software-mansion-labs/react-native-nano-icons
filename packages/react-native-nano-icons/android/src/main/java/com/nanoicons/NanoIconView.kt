@@ -156,7 +156,7 @@ class NanoIconView(context: Context) : View(context) {
   private fun fitToBounds() {
     val h = height.toFloat()
     if (h <= 0f || textSizeFactor <= 0f) return
-    val glyphHeight = if (squareGlyphScale > 0f) h * squareGlyphScale else h
+    val glyphHeight = if (squareGlyphScale > 0f) minOf(width, height) * squareGlyphScale else h
     cachedBaseline = (h - glyphHeight) / 2 + glyphHeight * baselineFactor
     val size = glyphHeight * textSizeFactor
     if (paint.textSize != size) paint.textSize = size
@@ -169,7 +169,7 @@ class NanoIconView(context: Context) : View(context) {
     canvas.save()
     canvas.clipRect(0f, 0f, width.toFloat(), height.toFloat())
     val left = if (squareGlyphScale > 0f && unitsPerEm > 0) {
-      (width - height * squareGlyphScale * advanceWidth / unitsPerEm) / 2
+      (width - minOf(width, height) * squareGlyphScale * advanceWidth / unitsPerEm) / 2
     } else {
       0f
     }

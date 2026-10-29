@@ -223,8 +223,8 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   CGContextScaleCTM(context, 1.0, -1.0);
   const auto &viewProps = static_cast<const NanoIconProps &>(*_props);
   if (viewProps.squareGlyphScale > 0 && viewProps.unitsPerEm > 0) {
-    CGFloat glyphScale = viewProps.squareGlyphScale;
-    CGFloat glyphHeight = bounds.size.height * glyphScale;
+    CGFloat glyphHeight = MIN(bounds.size.width, bounds.size.height) * viewProps.squareGlyphScale;
+    CGFloat glyphScale = glyphHeight / bounds.size.height;
     CGFloat glyphWidth = glyphHeight * viewProps.advanceWidth / viewProps.unitsPerEm;
     CGContextTranslateCTM(context, (bounds.size.width - glyphWidth) / 2, (bounds.size.height - glyphHeight) / 2);
     CGContextScaleCTM(context, glyphScale, glyphScale);

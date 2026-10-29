@@ -102,8 +102,8 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       const layerBoxStyle: CSSProperties | undefined = box
         ? {
             fontSize: `${box.scale}em`,
-            left: `${box.left * 100}%`,
-            bottom: `${box.bottom * 100}%`,
+            left: `calc(50% - ${adv / unitsPerEm / 2}em)`,
+            bottom: 'calc(50% - 0.5em)',
           }
         : undefined;
 

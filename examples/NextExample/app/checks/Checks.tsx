@@ -137,6 +137,11 @@ function measure(): Row[] {
       actual: squareOf('square-wide').glyph,
     },
     {
+      case: 'square frame in a 40 × 40 style box: glyph',
+      expected: 'centered, inside',
+      actual: squareOf('square-styled').glyph,
+    },
+    {
       case: 'no accessibilityLabel: hidden from screen readers',
       expected: 'role=- aria-label=- aria-hidden=true',
       actual: accessibilityOf('decorative'),
@@ -218,6 +223,14 @@ export function Checks() {
         </span>
         <span data-case="square-wide">
           <Icon name="ic_us_flag" size={40} frame="square" />
+        </span>
+        <span data-case="square-styled">
+          <Icon
+            name="ic_us_flag"
+            size={24}
+            frame="square"
+            style={{ width: 40, height: 40 }}
+          />
         </span>
         <span data-case="decorative">
           <Icon name="ic_star" />

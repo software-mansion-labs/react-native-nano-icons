@@ -135,10 +135,12 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
         const box = squareGlyphBox(adv, unitsPerEm, safeZone);
         return {
           fontSize: size * box.scale,
-          left: `${box.left * 100}%` as const,
-          bottom: `${box.bottom * 100}%` as const,
+          left: '50%' as const,
+          bottom: '50%' as const,
+          marginLeft: (-box.width * scaledSize) / 2,
+          marginBottom: (-box.scale * scaledSize) / 2,
         };
-      }, [size, square, adv]);
+      }, [size, scaledSize, square, adv]);
       return (
         <View
           ref={ref}

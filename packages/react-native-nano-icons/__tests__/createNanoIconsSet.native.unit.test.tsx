@@ -256,8 +256,31 @@ describe('createJSIconSet square frame', () => {
     });
     expect(layers[0]).toMatchObject({
       fontSize: 12,
-      left: '0.09765625%',
-      bottom: '25%',
+      left: '50%',
+      bottom: '50%',
+      marginLeft: -11.9765625,
+      marginBottom: -6,
     });
+  });
+
+  test('the glyph is centered in a box set by the style', () => {
+    const { layers } = render({
+      name: 'wide',
+      size: 24,
+      frame: 'square',
+      allowFontScaling: false,
+      style: { width: 40, height: 40 },
+    });
+    const layer = layers[0]!;
+    const offset = (inset: unknown, margin: unknown) =>
+      (parseFloat(String(inset)) / 100) * 40 + Number(margin ?? 0);
+    const glyphHeight = Number(layer.fontSize);
+    const glyphWidth = (glyphHeight * 2044) / 1024;
+    expect(offset(layer.left, layer.marginLeft) + glyphWidth / 2).toBeCloseTo(
+      20
+    );
+    expect(
+      offset(layer.bottom, layer.marginBottom) + glyphHeight / 2
+    ).toBeCloseTo(20);
   });
 });
