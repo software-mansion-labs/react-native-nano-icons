@@ -184,13 +184,10 @@ export async function main(
     const config = loadNanoIconsConfig(configRoot);
 
     if (check) {
-      failIfStale([
-        ...checkAllFonts(config.iconSets ?? [], buildRoot, {
-          logger,
-          appRoot,
-        }),
-        ...checkAllSymbols(config.symbolSets ?? [], buildRoot, { logger }),
-      ]);
+      failIfStale(
+        checkAllFonts(config.iconSets ?? [], buildRoot, { logger, appRoot }),
+        checkAllSymbols(config.symbolSets ?? [], buildRoot, { logger })
+      );
       return;
     }
 
@@ -229,11 +226,14 @@ export async function main(
   }
 }
 
-function failIfStale(stale: StaleSet[]): void {
-  if (!stale.length) return;
-  const names = stale.map((set) => set.name).join(', ');
+function failIfStale(fonts: StaleSet[], symbols: StaleSet[] = []): void {
+  const names = [
+    ...fonts.map((set) => `${set.name}.ttf`),
+    ...symbols.map((set) => `${set.name} symbols`),
+  ];
+  if (!names.length) return;
   throw new Error(
-    `${stale.length} set${stale.length === 1 ? ' is' : 's are'} out of date: ${names}. Run the same command without --check to rebuild ${stale.length === 1 ? 'it' : 'them'}.`
+    `${names.length} set${names.length === 1 ? ' is' : 's are'} out of date: ${names.join(', ')}. Run the same command without --check to rebuild ${names.length === 1 ? 'it' : 'them'}.`
   );
 }
 

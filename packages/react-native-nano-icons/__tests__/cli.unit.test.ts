@@ -387,7 +387,21 @@ describe('cli main', () => {
       ]);
 
       await expect(runMain()).rejects.toThrow(
-        '2 sets are out of date: A, tabicons. Run the same command without --check to rebuild them.'
+        '2 sets are out of date: A.ttf, tabicons symbols. Run the same command without --check to rebuild them.'
+      );
+    });
+
+    test('an icon set and a symbol set with the same name are told apart', async () => {
+      process.argv = ['node', 'cli', '--check'];
+      mockCheckAllFonts.mockReturnValue([
+        { name: 'Ico', reason: 'Ico.ttf is missing' },
+      ]);
+      mockCheckAllSymbols.mockReturnValue([
+        { name: 'Ico', reason: 'Ico.symbolmap.json is missing' },
+      ]);
+
+      await expect(runMain()).rejects.toThrow(
+        '2 sets are out of date: Ico.ttf, Ico symbols. Run the same command without --check to rebuild them.'
       );
     });
 
@@ -398,7 +412,7 @@ describe('cli main', () => {
       ]);
 
       await expect(runMain()).rejects.toThrow(
-        '1 set is out of date: A. Run the same command without --check to rebuild it.'
+        '1 set is out of date: A.ttf. Run the same command without --check to rebuild it.'
       );
     });
 
@@ -623,7 +637,7 @@ describe('runCli', () => {
     await expect(runCli(['--check'])).resolves.toBe(1);
 
     expect(logger.fail).toHaveBeenCalledWith(
-      '1 set is out of date: A. Run the same command without --check to rebuild it.'
+      '1 set is out of date: A.ttf. Run the same command without --check to rebuild it.'
     );
     expect(mockBuildAllFonts).not.toHaveBeenCalled();
   });
