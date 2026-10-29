@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
+const CRLF = /\r\n/g;
+
 export type FingerprintInputs = {
   upm: number;
   safeZone: number;
@@ -65,7 +67,7 @@ function hashSvgDir(dir: string, settings: unknown[]): SvgDirFingerprint {
 
   for (const file of files) {
     const filePath = path.join(dir, file);
-    const content = fs.readFileSync(filePath);
+    const content = fs.readFileSync(filePath, 'utf8').replace(CRLF, '\n');
     // Hash both path and content
     hash.update(file);
     hash.update(content);

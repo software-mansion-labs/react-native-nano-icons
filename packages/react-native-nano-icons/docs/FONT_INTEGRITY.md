@@ -5,7 +5,7 @@ Legend: `✔` silent · `⚠` dev warning + issue recorded · `△` dev warning 
 ## Build identity
 
 ```
-fingerprint = sha256( svg names + contents , upm , safeZone , curveTolerance , startUnicode , library version ,
+fingerprint = sha256( svg names + contents (CRLF read as LF) , upm , safeZone , curveTolerance , startUnicode , library version ,
                       installed versions of @xmldom/xmldom, cubic2quad, fonteditor-core, pathkit-wasm, svg2ttf )
 family      = <fontFamily>-<hash8>          → glyphMap.m.f  ==  TTF name table
 files       = <fontFamily>.ttf / .glyphmap.json   (unchanged)
