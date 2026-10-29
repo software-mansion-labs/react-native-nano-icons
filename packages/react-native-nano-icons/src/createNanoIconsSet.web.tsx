@@ -76,6 +76,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       accessibilityLabel,
       accessibilityRole,
       accessibilityElementsHidden,
+      importantForAccessibility,
       testID,
       className,
       ref,
@@ -101,6 +102,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
         accessibilityLabel,
         accessibilityRole,
         accessibilityElementsHidden,
+        importantForAccessibility,
       });
       const isHidden =
         accessibility.accessible === false ||
@@ -125,7 +127,9 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
             className={className ? `${ICON_CLASS} ${className}` : ICON_CLASS}
             style={containerStyle}
             role={isHidden ? undefined : role}
-            aria-label={isHidden ? undefined : accessibilityLabel}
+            aria-label={
+              isHidden ? undefined : accessibilityLabel || (name as string)
+            }
             aria-hidden={isHidden || undefined}
             data-testid={testID}>
             {layers.map(([codepoint, srcColor], i) => (

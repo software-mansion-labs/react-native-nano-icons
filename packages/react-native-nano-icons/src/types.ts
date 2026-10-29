@@ -26,8 +26,10 @@ export type IconProps<Name> = {
    */
   tintMode?: TintMode;
   /**
-   * Label announced by screen readers. Without it and without `accessible`,
-   * the icon is decorative and hidden from screen readers.
+   * Label announced by screen readers. Without it, the icon is decorative and
+   * hidden from screen readers, unless `accessible`, `accessibilityRole`,
+   * `importantForAccessibility="yes"` or `accessibilityElementsHidden={false}`
+   * exposes it. On web, an exposed icon without a label is named after `name`.
    */
   accessibilityLabel?: string;
   /**

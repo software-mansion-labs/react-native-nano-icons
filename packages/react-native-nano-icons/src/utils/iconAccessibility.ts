@@ -16,7 +16,13 @@ export function iconAccessibilityProps({
   accessibilityElementsHidden,
   importantForAccessibility,
 }: IconAccessibilityProps): IconAccessibilityProps {
-  if (accessibilityLabel || accessible === true) {
+  if (
+    accessibilityLabel ||
+    accessible === true ||
+    accessibilityElementsHidden === false ||
+    importantForAccessibility === 'yes' ||
+    (accessibilityRole !== undefined && accessibilityRole !== 'none')
+  ) {
     return {
       accessible,
       accessibilityLabel,

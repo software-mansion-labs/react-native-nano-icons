@@ -33,6 +33,39 @@ describe('iconAccessibilityProps', () => {
     });
   });
 
+  test('an explicit opt-in without a label exposes the icon', () => {
+    expect(
+      iconAccessibilityProps({ importantForAccessibility: 'yes' })
+    ).toEqual({
+      accessible: undefined,
+      accessibilityLabel: undefined,
+      accessibilityRole: 'image',
+      accessibilityElementsHidden: undefined,
+      importantForAccessibility: 'yes',
+    });
+    expect(
+      iconAccessibilityProps({ accessibilityElementsHidden: false })
+    ).toMatchObject({
+      accessible: undefined,
+      accessibilityElementsHidden: false,
+      importantForAccessibility: undefined,
+    });
+    expect(
+      iconAccessibilityProps({ accessibilityRole: 'button' })
+    ).toMatchObject({
+      accessible: undefined,
+      accessibilityRole: 'button',
+      accessibilityElementsHidden: undefined,
+      importantForAccessibility: undefined,
+    });
+  });
+
+  test('the none role keeps an icon without a label hidden', () => {
+    expect(iconAccessibilityProps({ accessibilityRole: 'none' })).toMatchObject(
+      { accessible: false, accessibilityElementsHidden: true }
+    );
+  });
+
   test('explicit props win over the defaults', () => {
     expect(
       iconAccessibilityProps({

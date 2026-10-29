@@ -276,6 +276,29 @@ describe('createIconSet (web)', () => {
     expect(container.props['aria-hidden']).toBeUndefined();
   });
 
+  test('accessible without a label makes the icon an img named after the icon', () => {
+    const { container } = render({ name: 'heart', accessible: true });
+    expect(container.props).toMatchObject({
+      role: 'img',
+      'aria-label': 'heart',
+    });
+    expect(container.props['aria-hidden']).toBeUndefined();
+  });
+
+  test('an explicit opt-in exposes an icon without a label', () => {
+    expect(
+      render({ name: 'heart', importantForAccessibility: 'yes' }).container
+        .props
+    ).toMatchObject({ role: 'img', 'aria-label': 'heart' });
+    expect(
+      render({ name: 'heart', accessibilityElementsHidden: false }).container
+        .props
+    ).toMatchObject({ role: 'img', 'aria-label': 'heart' });
+    expect(
+      render({ name: 'heart', accessibilityRole: 'button' }).container.props
+    ).toMatchObject({ role: 'button', 'aria-label': 'heart' });
+  });
+
   test('a changed accessibility prop re-renders the icon', () => {
     const Icon = createIconSet(glyphMap);
     let tree!: ReturnType<TestRendererModule['create']>;
