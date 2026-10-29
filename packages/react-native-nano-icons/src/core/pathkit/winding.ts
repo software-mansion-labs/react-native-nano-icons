@@ -99,8 +99,13 @@ function boxOf(points: readonly Point[]): Box {
   return box;
 }
 
-function boxesOverlap(a: Box, b: Box): boolean {
-  return a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+function boxesOverlap(a: Box, b: Box, margin = 0): boolean {
+  return (
+    a[0] <= b[2] + margin &&
+    b[0] <= a[2] + margin &&
+    a[1] <= b[3] + margin &&
+    b[1] <= a[3] + margin
+  );
 }
 
 function distanceToSegment(p: Point, a: Point, b: Point): number {
@@ -117,10 +122,73 @@ function distanceToSegment(p: Point, a: Point, b: Point): number {
   return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
 }
 
-function onBoundary(p: Point, polygon: readonly Point[]): boolean {
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    if (distanceToSegment(p, polygon[j]!, polygon[i]!) <= BOUNDARY_TOLERANCE) {
-      return true;
+function cross(o: Point, a: Point, b: Point): number {
+  return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+}
+
+function segmentsTouch(a: Point, b: Point, c: Point, d: Point): boolean {
+  if (
+    Math.sign(cross(a, b, c)) * Math.sign(cross(a, b, d)) < 0 &&
+    Math.sign(cross(c, d, a)) * Math.sign(cross(c, d, b)) < 0
+  ) {
+    return true;
+  }
+  return (
+    distanceToSegment(a, c, d) <= BOUNDARY_TOLERANCE ||
+    distanceToSegment(b, c, d) <= BOUNDARY_TOLERANCE ||
+    distanceToSegment(c, a, b) <= BOUNDARY_TOLERANCE ||
+    distanceToSegment(d, a, b) <= BOUNDARY_TOLERANCE
+  );
+}
+
+function distance(a: Point, b: Point): number {
+  return Math.hypot(a[0] - b[0], a[1] - b[1]);
+}
+
+function ringOf(polyline: readonly Point[]): Point[] {
+  const ring: Point[] = [];
+  for (const p of polyline) {
+    const last = ring[ring.length - 1];
+    if (!last || distance(p, last) > BOUNDARY_TOLERANCE) ring.push(p);
+  }
+  if (
+    ring.length > 1 &&
+    distance(ring[0]!, ring[ring.length - 1]!) <= BOUNDARY_TOLERANCE
+  ) {
+    ring.pop();
+  }
+  return ring;
+}
+
+type Edge = { ring: number; index: number; a: Point; b: Point; box: Box };
+
+function contoursTouch(rings: readonly Point[][]): boolean {
+  const edges: Edge[] = [];
+  for (const [ring, points] of rings.entries()) {
+    if (points.length < 3) continue;
+    for (const [index, a] of points.entries()) {
+      const b = points[(index + 1) % points.length]!;
+      edges.push({ ring, index, a, b, box: boxOf([a, b]) });
+    }
+  }
+  edges.sort((e, f) => e.box[0] - f.box[0]);
+
+  const adjacent = (e: Edge, f: Edge) => {
+    if (e.ring !== f.ring) return false;
+    const gap = Math.abs(e.index - f.index);
+    return gap === 1 || gap === rings[e.ring]!.length - 1;
+  };
+  for (const [i, edge] of edges.entries()) {
+    for (let j = i + 1; j < edges.length; j++) {
+      const other = edges[j]!;
+      if (other.box[0] > edge.box[2] + BOUNDARY_TOLERANCE) break;
+      if (
+        boxesOverlap(edge.box, other.box, BOUNDARY_TOLERANCE) &&
+        !adjacent(edge, other) &&
+        segmentsTouch(edge.a, edge.b, other.a, other.b)
+      ) {
+        return true;
+      }
     }
   }
   return false;
@@ -128,20 +196,10 @@ function onBoundary(p: Point, polygon: readonly Point[]): boolean {
 
 type Outline = { area: number; polygon: Point[]; box: Box };
 
-function relation(
-  inner: Outline,
-  outer: Outline
-): 'inside' | 'outside' | 'crossing' {
-  if (!boxesOverlap(inner.box, outer.box)) return 'outside';
-  let inside = 0;
-  let outside = 0;
-  for (const p of inner.polygon) {
-    if (onBoundary(p, outer.polygon)) continue;
-    if (pointInPolygon(p[0], p[1], outer.polygon)) inside++;
-    else outside++;
-    if (inside > 0 && outside > 0) return 'crossing';
-  }
-  return inside > 0 ? 'inside' : 'outside';
+function isInside(inner: Outline, outer: Outline): boolean {
+  if (!boxesOverlap(inner.box, outer.box)) return false;
+  const [x, y] = inner.polygon[0]!;
+  return pointInPolygon(x, y, outer.polygon);
 }
 
 export type WindingAnalysis = {
@@ -159,11 +217,14 @@ export function analyzeWinding(
   const contours = splitContours(conicsToCubics(path.toCmds(), V), V);
   path.delete?.();
 
-  const outlines = contours.map((contour): Outline | null => {
-    const closed = ensureClosed(contour, V);
-    const area = approxSignedAreaFromContourCmds(closed, V);
+  const closed = contours.map((contour) => ensureClosed(contour, V));
+  const rings = closed.map((contour) => ringOf(contourToPolyline(contour, V)));
+  if (contoursTouch(rings)) return null;
+
+  const outlines = closed.map((contour, i): Outline | null => {
+    const area = approxSignedAreaFromContourCmds(contour, V);
     if (area === 0) return null;
-    const polygon = contourToPolyline(closed, V);
+    const polygon = rings[i]!;
     return { area, polygon, box: boxOf(polygon) };
   });
 
@@ -179,9 +240,7 @@ export function analyzeWinding(
     let parent: number | null = null;
     for (const [j, other] of outlines.entries()) {
       if (!other || j === i) continue;
-      const r = relation(outline, other);
-      if (r === 'crossing') return null;
-      if (r === 'inside') {
+      if (isInside(outline, other)) {
         depth++;
         if (
           parent === null ||
