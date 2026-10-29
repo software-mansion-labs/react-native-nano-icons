@@ -6,6 +6,8 @@ import path from 'node:path';
 
 import { buildAllFonts, checkAllFonts } from '../cli/build';
 import { buildAllSymbols, checkAllSymbols } from '../cli/buildSymbols';
+import type { NanoLogger } from '../cli/logger';
+import * as packageVersionModule from '../src/utils/packageVersion';
 
 const TEST_ICONS = path.resolve(__dirname, '..', 'test_icons');
 
@@ -52,12 +54,47 @@ describe('check against a real build', () => {
     fs.rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  test('freshly built sets are up to date', () => {
-    expect(checkAllFonts(iconSets, projectRoot)).toEqual([]);
-    expect(checkAllSymbols(symbolSets, projectRoot)).toEqual([]);
+  test('freshly built sets are up to date', async () => {
+    expect(await checkAllFonts(iconSets, projectRoot)).toEqual([]);
+    expect(await checkAllSymbols(symbolSets, projectRoot)).toEqual([]);
   });
 
-  test('a static font whose linked copy is missing or differs is out of date', () => {
+  test('a new toolchain version that builds the same files keeps the sets up to date, and nothing is written', async () => {
+    const before = snapshot(projectRoot);
+    const succeed = jest.fn();
+    const logger = {
+      start: () => {},
+      update: () => {},
+      succeed,
+      fail: () => {},
+      info: () => {},
+      warn: () => {},
+    } satisfies NanoLogger;
+    jest
+      .spyOn(packageVersionModule, 'fontToolchainVersions')
+      .mockReturnValue(['@xmldom/xmldom@0.0.0']);
+    try {
+      expect(await checkAllFonts(iconSets, projectRoot, { logger })).toEqual(
+        []
+      );
+      expect(
+        await checkAllSymbols(symbolSets, projectRoot, { logger })
+      ).toEqual([]);
+    } finally {
+      jest.restoreAllMocks();
+    }
+    expect(succeed.mock.calls).toEqual([
+      [
+        'CheckIcons.ttf is up to date: its inputs changed, but it builds the same',
+      ],
+      [
+        'tabs symbols are up to date: their inputs changed, but they build the same',
+      ],
+    ]);
+    expect(snapshot(projectRoot)).toEqual(before);
+  }, 120_000);
+
+  test('a static font whose linked copy is missing or differs is out of date', async () => {
     const family = JSON.parse(
       fs.readFileSync(
         path.join(projectRoot, 'out', 'CheckIcons.glyphmap.json'),
@@ -83,7 +120,7 @@ describe('check against a real build', () => {
     });
     fs.mkdirSync(path.dirname(iosCopy));
     try {
-      expect(check()).toEqual([
+      expect(await check()).toEqual([
         {
           name: 'CheckIcons',
           reason: `android/app/src/main/assets/fonts/${family}.ttf is missing`,
@@ -92,7 +129,7 @@ describe('check against a real build', () => {
 
       fs.copyFileSync(ttf, androidCopy);
       fs.writeFileSync(iosCopy, 'old font');
-      expect(check()).toEqual([
+      expect(await check()).toEqual([
         {
           name: 'CheckIcons',
           reason: 'ios/nanoicons-fonts/CheckIcons.ttf is out of date',
@@ -100,27 +137,30 @@ describe('check against a real build', () => {
       ]);
 
       fs.copyFileSync(ttf, iosCopy);
-      expect(check()).toEqual([]);
+      expect(await check()).toEqual([]);
     } finally {
       fs.rmSync(path.join(projectRoot, 'android'), { recursive: true });
       fs.rmSync(path.join(projectRoot, 'ios'), { recursive: true });
     }
   });
 
-  test('an edited SVG makes its set out of date, and nothing is written', () => {
+  test('an edited SVG makes its set out of date, and nothing is written', async () => {
     const before = snapshot(projectRoot);
     for (const dir of ['icons', 'symbols']) {
-      fs.appendFileSync(path.join(projectRoot, dir, 'home.svg'), '\n');
+      fs.copyFileSync(
+        path.join(TEST_ICONS, 'swm_icons', 'outline', 'Air.svg'),
+        path.join(projectRoot, dir, 'home.svg')
+      );
     }
     const edited = snapshot(projectRoot);
 
-    expect(checkAllFonts(iconSets, projectRoot)).toEqual([
+    expect(await checkAllFonts(iconSets, projectRoot)).toEqual([
       {
         name: 'CheckIcons',
         reason: 'its SVGs, options or installed versions changed',
       },
     ]);
-    expect(checkAllSymbols(symbolSets, projectRoot)).toEqual([
+    expect(await checkAllSymbols(symbolSets, projectRoot)).toEqual([
       {
         name: 'tabs',
         reason: 'its SVGs, prefix or installed versions changed',

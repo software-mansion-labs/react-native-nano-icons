@@ -10,6 +10,7 @@ import type { SymbolTask } from '../src/core/pipeline/prepareSymbol';
 import type { PreparedSvgCache } from '../src/core/pipeline/preparedSvgCache';
 import type { NanoLogger } from './logger';
 import type { StaleSet } from './build';
+import { buildsSameOutputs } from './sameOutputs';
 import { fingerprintSymbolDirSync } from '../src/utils/fingerPrint';
 import { toOriginalDrawableResourceName } from '../src/utils/naming';
 import {
@@ -40,6 +41,7 @@ export class SymbolSetBuildError extends Error {
 }
 
 const DEFAULT_PREFIX = 'nano';
+const INPUTS_CHANGED = 'its SVGs, prefix or installed versions changed';
 
 type SymbolOutputState = { built: BuiltSymbolSet } | { staleBecause: string };
 
@@ -71,9 +73,7 @@ function currentSymbolOutput(
   }
 
   if (!symbolmap?.m?.h || symbolmap.m.h !== inputHash) {
-    return {
-      staleBecause: 'its SVGs, prefix or installed versions changed',
-    };
+    return { staleBecause: INPUTS_CHANGED };
   }
 
   const symbols = symbolmap.s ?? {};
@@ -139,27 +139,39 @@ function resolveSymbolSet(
 }
 
 /**
- * Report the symbol sets whose generated files are out of date, without building or writing anything.
- * A set is out of date when a build would regenerate it.
+ * Report the symbol sets whose generated files are out of date, without writing anything to the project.
+ * A set is out of date when a build would change its generated files. When only its input fingerprint changed,
+ * the set is built into a temp dir and compared with them.
  */
-export function checkAllSymbols(
+export async function checkAllSymbols(
   symbolSets: SymbolSetConfig[],
   projectRoot: string,
   options?: { logger?: NanoLogger }
-): StaleSet[] {
+): Promise<StaleSet[]> {
   const versions = {
     version: packageVersion(),
     toolchain: fontToolchainVersions(),
   };
   const stale: StaleSet[] = [];
   for (const set of symbolSets) {
-    const { name, outputDir, inputHash } = resolveSymbolSet(
-      set,
-      projectRoot,
-      versions
-    );
+    const { inputDir, name, prefix, outputDir, inputHash, svgHashByFile } =
+      resolveSymbolSet(set, projectRoot, versions);
     const state = currentSymbolOutput(inputHash, outputDir, name);
-    if ('staleBecause' in state) {
+    if (
+      'staleBecause' in state &&
+      state.staleBecause === INPUTS_CHANGED &&
+      (await buildsSameOutputs(outputDir, `${name}.symbolmap.json`, (dir) =>
+        runSymbolPipeline(
+          { name, prefix },
+          { inputDir, outputDir: dir },
+          { inputHash, svgHashByFile }
+        )
+      ))
+    ) {
+      options?.logger?.succeed(
+        `${name} symbols are up to date: their inputs changed, but they build the same`
+      );
+    } else if ('staleBecause' in state) {
       options?.logger?.fail(
         `${name} symbols are out of date: ${state.staleBecause}`
       );

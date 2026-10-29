@@ -4,8 +4,11 @@ const BUILD_SUFFIX = new RegExp(`-${BUILD_HASH}$`);
 const BUILD_FONT_FILE = new RegExp(`-${BUILD_HASH}\\.ttf$`);
 const REGEX_SPECIALS = /[.*+?^${}()|[\]\\]/g;
 
-export function buildFontFamily(fontFamily: string, inputHash: string): string {
-  return `${fontFamily}-${inputHash.slice(0, BUILD_HASH_LENGTH)}`;
+export function buildFontFamily(
+  fontFamily: string,
+  contentHash: string
+): string {
+  return `${fontFamily}-${contentHash.slice(0, BUILD_HASH_LENGTH)}`;
 }
 
 export function configuredFontFamily(family: string): string {

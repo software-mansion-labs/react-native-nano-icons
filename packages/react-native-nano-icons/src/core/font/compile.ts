@@ -1,8 +1,4 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 import { forceTtfMetrics } from './metrics';
-import { writeFileAtomic } from '../pipeline/config';
 import svg2ttf from 'svg2ttf';
 import { woff2 } from 'fonteditor-core';
 import { GLYPH_CODEPOINT, XML_AMP, XML_QUOT } from '../../utils/svgPatterns';
@@ -73,14 +69,13 @@ export function parseCompileTtfFromGlyphsError(
  */
 export async function compileTtfFromGlyphs(opts: {
   glyphs: FontGlyph[];
-  outTtfPath: string;
   fontName: string;
   upm: number;
   ascent: number;
   descent: number;
   lineGap?: number;
 }): Promise<Buffer> {
-  const { glyphs, outTtfPath, fontName, upm, ascent, descent } = opts;
+  const { glyphs, fontName, upm, ascent, descent } = opts;
   const lineGap = opts.lineGap ?? 0;
 
   if (glyphs.length === 0) throw new Error('No glyphs to compile');
@@ -96,11 +91,7 @@ export async function compileTtfFromGlyphs(opts: {
   const ttfRaw = svg2ttf(svgFontString, { ts: 0 });
   const rawBuf = Buffer.from(ttfRaw.buffer);
 
-  const fixedBuf = forceTtfMetrics(rawBuf, upm, ascent, descent, lineGap);
-
-  fs.mkdirSync(path.dirname(outTtfPath), { recursive: true });
-  writeFileAtomic(outTtfPath, fixedBuf);
-  return fixedBuf;
+  return forceTtfMetrics(rawBuf, upm, ascent, descent, lineGap);
 }
 
 let woff2Ready: Promise<unknown> | undefined;

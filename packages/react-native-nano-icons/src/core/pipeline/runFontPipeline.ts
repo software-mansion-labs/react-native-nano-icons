@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
@@ -57,13 +58,10 @@ export async function runFontPipeline(
   );
 
   const inputHash = options?.inputHash;
-  const family = inputHash
-    ? buildFontFamily(config.fontFamily, inputHash)
-    : config.fontFamily;
 
   const glyphMap: NanoGlyphMap = {
     m: {
-      f: family,
+      f: config.fontFamily,
       u: config.upm,
       z: config.safeZone,
       s: config.startUnicode,
@@ -128,19 +126,31 @@ export async function runFontPipeline(
   logger?.info(`Compiling TTF…`);
   const ttfPath = path.join(paths.outputDir, `${config.fontFamily}.ttf`);
 
-  let ttfBuffer: Buffer | undefined;
-  try {
-    ttfBuffer = await compileTtfFromGlyphs({
+  const compile = (fontName: string) =>
+    compileTtfFromGlyphs({
       glyphs: allGlyphs,
-      outTtfPath: ttfPath,
-      fontName: family,
+      fontName,
       upm: config.upm,
       ascent: config.upm,
       descent: 0,
     });
+
+  let family = config.fontFamily;
+  let ttfBuffer: Buffer | undefined;
+  try {
+    ttfBuffer = await compile(family);
+    if (inputHash) {
+      family = buildFontFamily(
+        config.fontFamily,
+        crypto.createHash('sha256').update(ttfBuffer).digest('hex')
+      );
+      ttfBuffer = await compile(family);
+    }
   } catch (err: unknown) {
     parseCompileTtfFromGlyphsError(err, codepointToIcon);
   }
+  glyphMap.m.f = family;
+  if (ttfBuffer) writeFileAtomic(ttfPath, ttfBuffer);
 
   let woff2Path: string | undefined;
   if (config.web && ttfBuffer) {

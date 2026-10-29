@@ -261,7 +261,8 @@ describe('Pipeline E2E — inputHash embedding', () => {
     expect(glyphmap.m.h).toBe(INPUT_HASH);
   });
 
-  test('glyphmap m.f carries the first 8 hash characters', () => {
-    expect(glyphmap.m.f).toBe(`${FONT_FAMILY}-deadbeef`);
+  test('glyphmap m.f carries an 8-character hash of the font, not the inputHash', () => {
+    expect(glyphmap.m.f).toMatch(new RegExp(`^${FONT_FAMILY}-[0-9a-f]{8}$`));
+    expect(glyphmap.m.f).not.toBe(`${FONT_FAMILY}-deadbeef`);
   });
 });

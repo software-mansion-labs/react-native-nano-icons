@@ -454,7 +454,7 @@ Running `npx expo prebuild` or the CLI regenerates an icon set when its SVGs or 
 > - **Bare React Native** – run `npx react-native-nano-icons`. The [Metro plugin](#4-add-the-metro-plugin) sends rebuilt fonts to the running dev app, but it does not link them into the native project.
 > - **Expo** – EAS Build runs `npx expo prebuild` for you when `ios/` and `android/` are not committed. Otherwise, or without EAS, run `npx expo prebuild` yourself.
 
-To fail CI when the committed files are out of date, run the CLI with `--check`. It names each set a build would regenerate or whose font copies in `ios/` and `android/` are out of date, and why, writes nothing, and exits with 1:
+To fail CI when the committed files are out of date, run the CLI with `--check`. It names each set whose files a build would change or whose font copies in `ios/` and `android/` are out of date, and why, writes nothing, and exits with 1. When only the library or tool versions changed, it builds the set in a temp folder and compares, so an upgrade that builds the same files passes:
 
 ```sh
 npx react-native-nano-icons --check
@@ -504,7 +504,7 @@ Each entry of `iconSets` (in the Expo plugin options or `.nanoicons.json`) gener
 | Property       | Type     | Required | Default        | Description                                                                                                                |
 | :------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
 | `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`), relative to the folder of `.nanoicons.json` or the app config. Subfolders are not read. |
-| `fontFamily`   | `string` | No       | Folder Name    | The file name of the generated `.ttf` and `.glyphmap.json`. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). On iOS and Android, the font family registered at runtime is `glyphMap.m.f`: this name plus a hash of the icons and build settings (e.g. `ui-1a2b3c4d`), so each change gets a new family. On web, you can also register the font yourself under this name. |
+| `fontFamily`   | `string` | No       | Folder Name    | The file name of the generated `.ttf` and `.glyphmap.json`. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). On iOS and Android, the font family registered at runtime is `glyphMap.m.f`: this name plus a hash of the built font (e.g. `ui-1a2b3c4d`), so each change to the font gets a new family. On web, you can also register the font yourself under this name. |
 | `outputDir`    | `string` | No       | Sibling `nanoicons` folder | Path where the `.ttf` and `.glyphmap.json` files are saved, relative to the folder of `.nanoicons.json` or the app config. Defaults to a `nanoicons` folder next to `inputDir`. |
 | `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
 | `safeZone`     | `number` | No       | `upm`          | Height, in font units, that each icon's `viewBox` is scaled to. The rest of the em square is padding. Must not exceed `upm`. |
@@ -673,7 +673,7 @@ npx react-native-nano-icons [--path <dir|file>] [--verbose] [--dynamic] [--dynam
 | `--verbose`         | Show per-SVG processing details and extra build and linking notes.                                                                  |
 | `--dynamic`         | Rebuild only icon sets with `linking: 'dynamic'` and skip native linking. See [Regenerating dynamic fonts only](#regenerating-dynamic-fonts-only). |
 | `--dynamic-app-config` | Like `--dynamic`, but reads the sets from the Expo app config (`app.json` / `app.config.js` / `app.config.ts`) instead of `.nanoicons.json`. |
-| `--check`           | Report the sets a build would regenerate or whose font copies in `ios/` and `android/` are out of date, with the reason, and exit with 1 if there are any. Builds, writes and links nothing. Checks the sets the same command without `--check` would build, so `--check --dynamic` checks only the dynamic sets. |
+| `--check`           | Report the sets whose files a build would change or whose font copies in `ios/` and `android/` are out of date, with the reason, and exit with 1 if there are any. Writes and links nothing in the project. Checks the sets the same command without `--check` would build, so `--check --dynamic` checks only the dynamic sets. |
 | `-h`, `--help`      | Print the usage and exit without building. |
 
 ---
