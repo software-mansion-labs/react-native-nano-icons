@@ -4,8 +4,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-process.env.NANO_PACKAGE_ROOT = path.resolve(__dirname, '..');
-
 import { buildAllFonts, checkAllFonts } from '../cli/build';
 import { buildAllSymbols, checkAllSymbols } from '../cli/buildSymbols';
 
