@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import { loadPathKit } from './helpers/geometry';
@@ -110,3 +111,20 @@ test.each(ICONS)(
     expect(on08).toEqual(on09);
   }
 );
+
+test('a leading byte order mark prepares to the same layers on both versions', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nano-bom-'));
+  const filePath = path.join(dir, 'bom.svg');
+  fs.writeFileSync(filePath, `\uFEFF${svg('<path d="M0 0H1V1Z"/>')}`);
+  const opts = { filePath, fileLabel: 'bom.svg', pathkit: PathKit };
+  try {
+    const [on09, on08] = await Promise.all([
+      v09.prepare.prepareSvgLayers(opts),
+      v08.prepare.prepareSvgLayers(opts),
+    ]);
+    expect(on09?.paths).toHaveLength(1);
+    expect(on08).toEqual(on09);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

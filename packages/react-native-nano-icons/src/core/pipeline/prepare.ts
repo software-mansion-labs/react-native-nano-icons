@@ -50,7 +50,10 @@ export async function prepareSvgLayers(opts: {
 }): Promise<PreparedSvg | null> {
   const { filePath, fileLabel, pathkit, logger } = opts;
 
-  const rawContent = await fsp.readFile(filePath, 'utf-8');
+  const rawContent = (await fsp.readFile(filePath, 'utf-8')).replace(
+    /^\uFEFF/,
+    ''
+  );
 
   const validation = validateSvg(rawContent);
   if (validation.valid === false) {
