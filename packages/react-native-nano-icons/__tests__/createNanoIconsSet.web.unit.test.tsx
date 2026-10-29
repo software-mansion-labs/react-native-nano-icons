@@ -96,11 +96,11 @@ describe('createIconSet (web)', () => {
     );
   });
 
-  test('base rules come from one hoisted stylesheet', () => {
+  test('base rules come from one hoisted stylesheet, named by a hash of the rules', () => {
     const { styles, container } = render({ name: 'heart' });
     expect(styles).toHaveLength(1);
     expect(styles[0]).toMatchObject({
-      href: 'react-native-nano-icons',
+      href: expect.stringMatching(/^react-native-nano-icons:[0-9a-z]+$/),
       precedence: 'react-native-nano-icons',
     });
     expect(styles[0]!['children']).toContain(':where(.nano-icon)');

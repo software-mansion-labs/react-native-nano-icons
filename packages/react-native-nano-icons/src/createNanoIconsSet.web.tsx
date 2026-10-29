@@ -26,6 +26,7 @@ const BASE_CSS =
   `.${ICON_CLASS}>span{position:absolute;left:0;bottom:0;color:inherit;` +
   'font-family:inherit;font-size:inherit;font-weight:normal;font-style:normal;' +
   'line-height:1;white-space:pre}';
+const BASE_HREF = `${STYLE_HREF}:${shortHash(BASE_CSS)}`;
 
 const TEXT_COLORS = new Set([
   'black',
@@ -136,7 +137,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
       return (
         <>
-          <style href={STYLE_HREF} precedence={STYLE_PRECEDENCE}>
+          <style href={BASE_HREF} precedence={STYLE_PRECEDENCE}>
             {BASE_CSS}
           </style>
           {fontFace ? (
