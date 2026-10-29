@@ -33,6 +33,32 @@ test('transform arrays become a CSS transform', () => {
   });
 });
 
+test('a 16-value matrix becomes matrix3d', () => {
+  const matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 10, 0, 0, 1];
+  expect(resolveWebStyle({ transform: [{ matrix }] })).toEqual({
+    transform: `matrix3d(${matrix.join(',')})`,
+  });
+});
+
+test('a border width without a border style draws a solid border, as in React Native', () => {
+  expect(resolveWebStyle({ borderWidth: 1 })).toEqual({
+    borderWidth: 1,
+    borderStyle: 'solid',
+  });
+  expect(resolveWebStyle({ borderTopWidth: 2, borderLeftWidth: 0 })).toEqual({
+    borderTopWidth: 2,
+    borderTopStyle: 'solid',
+    borderLeftWidth: 0,
+    borderLeftStyle: 'solid',
+  });
+  expect(
+    resolveWebStyle({ borderBottomWidth: 2, borderStyle: 'dashed' })
+  ).toEqual({ borderBottomWidth: 2, borderStyle: 'dashed' });
+  expect(resolveWebStyle({ borderWidth: undefined })).toEqual({
+    borderWidth: undefined,
+  });
+});
+
 test('string transforms pass through', () => {
   expect(resolveWebStyle({ transform: 'rotate(1turn)' })).toEqual({
     transform: 'rotate(1turn)',

@@ -51,7 +51,10 @@ function expandBox(style: StyleRecord, prop: 'margin' | 'padding'): void {
 function transformFunction(entry: unknown): string {
   const [type, value] = Object.entries(entry as StyleRecord)[0] ?? [];
   if (type === undefined) return '';
-  if (Array.isArray(value)) return `${type}(${value.join(',')})`;
+  if (Array.isArray(value)) {
+    const name = type === 'matrix' && value.length === 16 ? 'matrix3d' : type;
+    return `${name}(${value.join(',')})`;
+  }
   if (typeof value === 'number' && !type.startsWith('scale')) {
     return `${type}(${value}px)`;
   }
@@ -86,6 +89,17 @@ export function resolveWebStyle(style: unknown): CSSProperties | undefined {
   }
   if (typeof flat.lineHeight === 'number') {
     flat.lineHeight = `${flat.lineHeight}px`;
+  }
+  if (flat.borderStyle === undefined) {
+    if (flat.borderWidth != null) {
+      flat.borderStyle = 'solid';
+    } else {
+      for (const side of SIDES) {
+        if (flat[`border${side}Width`] != null) {
+          flat[`border${side}Style`] = 'solid';
+        }
+      }
+    }
   }
 
   return flat as CSSProperties;
