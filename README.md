@@ -495,6 +495,22 @@ function AppIcon(props: IconProps) {
 
 For every scenario and its message, see [FONT_INTEGRITY.md](packages/react-native-nano-icons/docs/FONT_INTEGRITY.md).
 
+### Expo fingerprint
+
+[`@expo/fingerprint`](https://docs.expo.dev/versions/latest/sdk/fingerprint/), which EAS Update's `fingerprint` runtime version policy uses, does not see the fonts and symbols the plugin builds into the app. Add them in `fingerprint.config.js`:
+
+```js
+// fingerprint.config.js
+const { nanoIconsFingerprintSources } = require('react-native-nano-icons/fingerprint');
+
+/** @type {import('expo/fingerprint').Config} */
+module.exports = {
+  extraSources: nanoIconsFingerprintSources(__dirname),
+};
+```
+
+Each icon set with `linking: 'static'` and each symbol set adds its fingerprint: its SVGs, its options, and the installed library and font dependency versions. When one of them changes, the app fingerprint changes too, so an update is not sent to binaries built with the old fonts. Dynamic sets are left out, because the update delivers them.
+
 ---
 
 ## 📖 Reference

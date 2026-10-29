@@ -35,6 +35,12 @@ type NanoIconsPluginOptions = {
   symbolSets?: SymbolSetConfig[];
 };
 
+const PLUGIN_NAMES: unknown[] = [
+  'react-native-nano-icons',
+  'react-native-nano-icons/app.plugin',
+  'react-native-nano-icons/app.plugin.js',
+];
+
 export function loadIconSetsFromAppConfig(
   projectRoot: string
 ): IconSetConfig[] {
@@ -48,6 +54,23 @@ export function loadSymbolSetsFromAppConfig(
 }
 
 function loadPluginOptions(projectRoot: string): NanoIconsPluginOptions {
+  const options = findPluginOptions(projectRoot);
+  if (!options) {
+    throw new Error(
+      `[react-native-nano-icons] Plugin "react-native-nano-icons" not found in app config.\n` +
+        `Add it to your app.json or app.config.js/ts under the "plugins" key.`
+    );
+  }
+  return options;
+}
+
+/**
+ * The plugin options in the Expo app config, `{}` when the plugin is listed without options,
+ * or `undefined` when it is not listed.
+ */
+export function findPluginOptions(
+  projectRoot: string
+): NanoIconsPluginOptions | undefined {
   const configModule = resolveExpoConfigModule(projectRoot);
   if (!configModule) {
     throw new Error(
@@ -60,20 +83,11 @@ function loadPluginOptions(projectRoot: string): NanoIconsPluginOptions {
   const { exp } = getConfig(projectRoot, { skipSDKVersionRequirement: true });
   const plugins: unknown[] = Array.isArray(exp.plugins) ? exp.plugins : [];
 
-  const entry = plugins.find(
-    (p): p is [string, NanoIconsPluginOptions] =>
-      Array.isArray(p) && p[0] === 'react-native-nano-icons'
+  const entry = plugins.find((p) =>
+    PLUGIN_NAMES.includes(Array.isArray(p) ? p[0] : p)
   );
-
-  if (!entry) {
-    throw new Error(
-      `[react-native-nano-icons] Plugin "react-native-nano-icons" not found in app config.\n` +
-        `Add it to your app.json or app.config.js/ts under the "plugins" key.`
-    );
-  }
-
-  const [, options] = entry;
-  return options;
+  if (!entry) return undefined;
+  return (Array.isArray(entry) ? entry[1] : undefined) ?? {};
 }
 
 function resolveExpoConfigModule(projectRoot: string): string | undefined {

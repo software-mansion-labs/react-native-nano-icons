@@ -132,6 +132,11 @@
         "default": "./lib/commonjs/cli/index.js"
       }
     },
+    "./fingerprint": {
+      "source": "./cli/fingerprint.ts",
+      "types": "./lib/commonjs/cli/fingerprint.d.ts",
+      "default": "./lib/commonjs/cli/fingerprint.js"
+    },
     "./pipeline": {
       "source": "./src/core/pipeline/index.ts",
       "require": {

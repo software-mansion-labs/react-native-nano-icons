@@ -249,6 +249,28 @@ async function familyIfBuiltTheSame(
 }
 
 /**
+ * The input fingerprint of each icon set: the value a build stores in its glyphmap as `m.h`.
+ */
+export function fingerprintIconSets(
+  iconSets: IconSetConfig[],
+  projectRoot: string
+): { fontFamily: string; hash: string }[] {
+  const versions = {
+    version: packageVersion(),
+    toolchain: fontToolchainVersions(),
+  };
+  return iconSets.map((set) => {
+    const { fontFamily, inputHash } = resolveIconSet(
+      set,
+      projectRoot,
+      true,
+      versions
+    );
+    return { fontFamily, hash: inputHash };
+  });
+}
+
+/**
  * Report the icon sets whose generated files are out of date, without writing anything to the project.
  * A set is out of date when a build would change its generated files. When only its input fingerprint changed,
  * the set is built into a temp dir and compared with them. With `appRoot`, a static set is also out of date

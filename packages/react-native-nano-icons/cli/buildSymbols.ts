@@ -145,6 +145,23 @@ function resolveSymbolSet(
 }
 
 /**
+ * The input fingerprint of each symbol set: the value a build stores in its symbolmap as `m.h`.
+ */
+export function fingerprintSymbolSets(
+  symbolSets: SymbolSetConfig[],
+  projectRoot: string
+): { name: string; hash: string }[] {
+  const versions = {
+    version: packageVersion(),
+    toolchain: fontToolchainVersions(),
+  };
+  return symbolSets.map((set) => {
+    const { name, inputHash } = resolveSymbolSet(set, projectRoot, versions);
+    return { name, hash: inputHash };
+  });
+}
+
+/**
  * Report the symbol sets whose generated files are out of date, without writing anything to the project.
  * A set is out of date when a build would change its generated files. When only its input fingerprint changed,
  * the set is built into a temp dir and compared with them. With `existingOnly`, sets without a symbolmap are skipped.
