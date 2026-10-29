@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import { DOMParser, type Element } from '@xmldom/xmldom';
+import { flattenSvg } from '../src/core/flatten/index';
 import {
   calculateOpColor,
   parseFlattenedSvg,
@@ -8,7 +9,9 @@ import {
   shouldSkipPath,
 } from '../src/core/glyph/parse';
 import { preprocessSvg, validateSvg } from '../src/core/glyph/validate';
+import type { PathKitModule } from '../src/core/pathkit/types';
 import { parseColor } from '../src/utils/parse';
+import { loadPathKit } from './helpers/geometry';
 
 // ---------------------------------------------------------------------------
 // parseColor
@@ -192,6 +195,31 @@ describe('parseFlattenedSvg opacity integration', () => {
     </svg>`;
     const { paths } = parseFlattenedSvg(svg);
     expect(paths[0]!.fill).toBeNull();
+  });
+});
+
+describe('opacity after flattenSvg', () => {
+  const RED = '<path fill="#f00" d="M0 0H10V10H0Z"/>';
+  let PathKit: PathKitModule;
+
+  beforeAll(async () => {
+    PathKit = await loadPathKit();
+  });
+
+  const fills = (body: string) =>
+    parseFlattenedSvg(
+      flattenSvg(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${body}</svg>`,
+        PathKit
+      )
+    ).paths.map((p) => p.fill);
+
+  test.each(['', 'inherit'])('a group opacity of %p is ignored', (opacity) => {
+    expect(fills(`<g opacity="${opacity}">${RED}${RED}</g>`)).toEqual([
+      '#f00',
+      '#f00',
+    ]);
+    expect(fills(`<g opacity="${opacity}">${RED}</g>`)).toEqual(['#f00']);
   });
 });
 

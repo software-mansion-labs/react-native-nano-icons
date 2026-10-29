@@ -32,7 +32,8 @@ function clamp(value: number, minv = 0.0, maxv = 1.0): number {
 }
 
 function elOpacity(el: XEl): number {
-  return clamp(numberAttrib(el, 'opacity', 1));
+  const opacity = numberAttrib(el, 'opacity', 1);
+  return Number.isFinite(opacity) ? clamp(opacity) : 1;
 }
 
 // Groups with 0 < opacity < 1 and >1 child must be retained.
