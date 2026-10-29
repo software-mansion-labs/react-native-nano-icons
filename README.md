@@ -51,6 +51,7 @@ That’s it 🔬⚡️
   - [`<Icon>`](#icon)
   - [`addFontIntegrityListener()`](#addfontintegritylistener)
   - [`getFontIntegrityIssues()`](#getfontintegrityissues)
+  - [`useFontIntegrityIssue()`](#usefontintegrityissue)
   - [`symbolSets` options](#symbolsets-options)
   - [`nativeNanoSymbol()`](#nativenanosymbol)
   - [CLI](#cli)
@@ -471,6 +472,17 @@ addFontIntegrityListener((issue, status) => {
 });
 ```
 
+In release builds, a static set is checked synchronously by `createNanoIconSet`, so `getFontIntegrityIssues()` already lists its issue before the first render. Dynamic sets, and static sets in development builds, where a missing font is first fetched from Metro, are checked asynchronously. To render a fallback when an issue is found, use [`useFontIntegrityIssue()`](#usefontintegrityissue):
+
+```tsx
+import { useFontIntegrityIssue } from 'react-native-nano-icons';
+
+function AppIcon(props: IconProps) {
+  const issue = useFontIntegrityIssue(glyphMap.m.f);
+  return issue ? <SvgIcon {...props} /> : <Icon {...props} />;
+}
+```
+
 For every scenario and its message, see [FONT_INTEGRITY.md](packages/react-native-nano-icons/docs/FONT_INTEGRITY.md).
 
 ---
@@ -588,6 +600,18 @@ Returns the current issues. Each issue has:
 - `linking`: `'static'` or `'dynamic'`.
 - `message`: the warning text.
 - `cause`: the load error behind a dynamic font failure, when there is one.
+
+### `useFontIntegrityIssue()`
+
+```TypeScript
+useFontIntegrityIssue(family: string): FontIntegrityIssue | undefined
+```
+
+| Argument | Default        | Description                                          |
+| :------- | :------------- | :--------------------------------------------------- |
+| `family` | **(required)** | The font family the glyphmap refers to: `glyphMap.m.f`. |
+
+Returns the set's current issue, with the [`getFontIntegrityIssues()`](#getfontintegrityissues) shape, or `undefined`. The component re-renders when an issue is found or resolved. On web it always returns `undefined`.
 
 ### `symbolSets` options
 

@@ -47,15 +47,19 @@ web ─────────────────────────�
                                                Metro + withNanoIcons register m.f from /__nanoicons/; nothing checked
 font check ──────────────────────────────────── the lookup the icon view draws with; a system fallback never counts, and
                                                views that drew nothing pick the font up once it registers
+sync font check (isFontAvailable) ───────────── iOS: the same lookup; Android: a font this library registered, or a
+                                               fonts/<m.f>.ttf|.otf asset that loads (ReactFontManager isn't thread-safe)
 native module present
 ├─ isFontRegistered missing (binary older than JS)
 │                                            ✖ "…older version of react-native-nano-icons. Rebuild the app."   once per session
+├─ isFontAvailable missing (binary older than JS) static sets checked asynchronously, as below
 ├─ static set
 │  ├─ font argument passed ──────────────── △ "…built with static linking, so the font passed … is ignored."
-│  ├─ font named m.f resident ───────────── ✔
+│  ├─ font named m.f resident ───────────── ✔ checked synchronously inside createNanoIconSet (isFontAvailable)
 │  └─ not resident (fonts rebuilt, app not)
 │     ├─ dev build, Metro with withNanoIcons ✔ fetched from Metro at /__nanoicons/<m.f>.ttf and registered, nothing recorded
 │     └─ otherwise ─────────────────────── ▢ ⚠ "…missing or out of date… Regenerate the icon fonts…"
+│                                            release build: recorded inside createNanoIconSet, listeners called after it returns
 └─ dynamic set
    ├─ m.f already registered in this process ✔ icons render, nothing recorded, whatever the font argument
    │                                          (expo-font, an earlier load; registrations live until the process exits)
@@ -76,6 +80,7 @@ release build ───── ⚠ △ lines silent · issues still recorded
 addFontIntegrityListener((issue, status) => …)
                           ─────── 'found' on a new issue · 'resolved' when it is dropped · replays current issues as 'found'
 getFontIntegrityIssues() ─────── current issues: { fontFamily, family, linking, message, cause? }[]
+useFontIntegrityIssue(m.f) ───── the set's current issue or undefined · re-renders on 'found' and 'resolved'
 ```
 
 ## Producing the states

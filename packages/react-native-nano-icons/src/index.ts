@@ -6,6 +6,7 @@ export {
 export {
   addFontIntegrityListener,
   getFontIntegrityIssues,
+  useFontIntegrityIssue,
   type FontIntegrityIssue,
   type FontIntegrityStatus,
 } from './fontIntegrity';

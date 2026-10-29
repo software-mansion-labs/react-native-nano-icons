@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import NanoIconsFontLoader from './nativeFontLoader';
 import { configuredFontFamily } from './utils/fontIdentity';
 import { errorRuntime, LOG_PREFIX, warnRuntime } from './utils/runtimeLog';
@@ -27,6 +28,10 @@ function hasNativeCheck(): boolean {
   return typeof NanoIconsFontLoader?.isFontRegistered === 'function';
 }
 
+function hasSyncCheck(): boolean {
+  return typeof NanoIconsFontLoader?.isFontAvailable === 'function';
+}
+
 export function isFontRegistered(family: string): Promise<boolean> {
   if (!NanoIconsFontLoader || !hasNativeCheck()) return Promise.resolve(false);
   return NanoIconsFontLoader.isFontRegistered(family);
@@ -51,11 +56,24 @@ export async function checkFontIntegrity(
 
   if (await isFontRegistered(family)) return;
 
-  recordIssue(
-    family,
-    linking,
+  recordIssue(family, linking, missingFontMessage(family));
+}
+
+export function checkStaticFontNow(family: string): boolean {
+  if (!NanoIconsFontLoader || !hasSyncCheck()) return false;
+  if (NanoIconsFontLoader.isFontAvailable(family)) return true;
+  if (__DEV__) return false;
+  if (!checked.has(family)) {
+    checked.add(family);
+    recordIssue(family, 'static', missingFontMessage(family), undefined, true);
+  }
+  return true;
+}
+
+function missingFontMessage(family: string): string {
+  return (
     `Icon font "${configuredFontFamily(family)}" is missing or out of date, so its icons will render blank. ` +
-      'Regenerate the icon fonts with the react-native-nano-icons CLI.'
+    'Regenerate the icon fonts with the react-native-nano-icons CLI.'
   );
 }
 
@@ -134,7 +152,8 @@ function recordIssue(
   family: string,
   linking: 'static' | 'dynamic',
   message: string,
-  cause?: unknown
+  cause?: unknown,
+  notifyLater = false
 ): void {
   const issue: FontIntegrityIssue = {
     fontFamily: configuredFontFamily(family),
@@ -145,7 +164,16 @@ function recordIssue(
   };
   issues.set(family, issue);
   if (__DEV__) warnRuntime(message, ...causeDetail(cause));
-  for (const listener of listeners) listener(issue, 'found');
+  if (!notifyLater) {
+    for (const listener of listeners) listener(issue, 'found');
+    return;
+  }
+  const subscribed = [...listeners];
+  void Promise.resolve().then(() => {
+    for (const listener of subscribed) {
+      if (listeners.has(listener)) listener(issue, 'found');
+    }
+  });
 }
 
 export function resolveFontIssue(family: string): void {
@@ -165,6 +193,20 @@ export function addFontIntegrityListener(listener: Listener): () => void {
 
 export function getFontIntegrityIssues(): FontIntegrityIssue[] {
   return [...issues.values()];
+}
+
+function subscribe(onChange: () => void): () => void {
+  const listener: Listener = () => onChange();
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function useFontIntegrityIssue(
+  family: string
+): FontIntegrityIssue | undefined {
+  return useSyncExternalStore(subscribe, () => issues.get(family));
 }
 
 export function __resetFontIntegrityForTests(): void {

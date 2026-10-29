@@ -11,3 +11,9 @@ export function addFontIntegrityListener(
 export function getFontIntegrityIssues(): FontIntegrityIssue[] {
   return [];
 }
+
+export function useFontIntegrityIssue(
+  _family: string
+): FontIntegrityIssue | undefined {
+  return undefined;
+}
