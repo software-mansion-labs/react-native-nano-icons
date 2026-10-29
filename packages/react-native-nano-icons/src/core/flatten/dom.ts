@@ -136,6 +136,8 @@ function convertElement(node: XmldomElement): XEl {
   return el;
 }
 
+const XMLDOM_08_MESSAGE_DECORATION = /^\[xmldom \w+\]\t|\n@[^\n]*$/g;
+
 export function parseSvgDocument(content: string): XEl {
   let text = content;
   // svgs are fond of not declaring xlink
@@ -148,7 +150,8 @@ export function parseSvgDocument(content: string): XEl {
 
   let parseError: string | null = null;
   const onError = (_level: string, message: string) => {
-    parseError = parseError ?? message;
+    parseError =
+      parseError ?? message.replace(XMLDOM_08_MESSAGE_DECORATION, '');
   };
   const parser = new DOMParser(
     'onErrorStopParsing' in xmldom ? { onError } : { errorHandler: onError }

@@ -93,6 +93,12 @@ describe.each([
     expect(() => m.dom.parseSvgDocument('<svg><g></svg>')).toThrow();
     expect(() => m.dom.parseSvgDocument('<svg>&nope;</svg>')).toThrow();
   });
+
+  test('a parse error carries only the parser message', () => {
+    expect(() => m.dom.parseSvgDocument('<svg>&nope;</svg>')).toThrow(
+      /^Unable to parse SVG: entity not found:&nope;$/
+    );
+  });
 });
 
 test.each(ICONS)(
