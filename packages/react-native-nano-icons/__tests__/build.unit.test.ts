@@ -319,6 +319,16 @@ describe('buildAllFonts — skip/rebuild logic', () => {
     expect(mockRunPipeline).toHaveBeenCalledTimes(1);
   });
 
+  test('runFontPipeline is called when the glyphmap is not valid JSON', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    fs.writeFileSync(
+      path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
+      '<<<<<<< HEAD'
+    );
+    await buildAllFonts([makeIconSet()], os.tmpdir());
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+  });
+
   test('inputHash is passed to runFontPipeline', async () => {
     await buildAllFonts([makeIconSet()], os.tmpdir());
     expect(mockRunPipeline).toHaveBeenCalledWith(
@@ -771,6 +781,20 @@ describe('checkAllFonts', () => {
     fs.unlinkSync(path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`));
     expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
       { name: FONT_FAMILY, reason: `${FONT_FAMILY}.glyphmap.json is missing` },
+    ]);
+  });
+
+  test('a glyphmap that is not valid JSON is named', () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    fs.writeFileSync(
+      path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
+      '<<<<<<< HEAD'
+    );
+    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+      {
+        name: FONT_FAMILY,
+        reason: `${FONT_FAMILY}.glyphmap.json is not valid JSON`,
+      },
     ]);
   });
 

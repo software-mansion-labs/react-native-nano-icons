@@ -7,6 +7,7 @@ import {
   type SvgWorkerPool,
 } from '../src/core/pipeline/index';
 import { QUADRATIC_ERROR_BOUND_EM } from '../src/core/font/quadratic';
+import type { NanoGlyphMap } from '../src/core/types';
 import type { NanoLogger } from './logger';
 import { staleLinkedFont } from './link';
 import { fingerprintSvgDirSync } from '../src/utils/fingerPrint';
@@ -81,7 +82,14 @@ function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
     return { staleBecause: `${path.basename(missing)} is missing` };
   }
 
-  const glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
+  let glyphmap: NanoGlyphMap;
+  try {
+    glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
+  } catch {
+    return {
+      staleBecause: `${path.basename(glyphmapPath)} is not valid JSON`,
+    };
+  }
   const storedHash: string | undefined = glyphmap?.m?.h;
   const storedFamily: string | undefined = glyphmap?.m?.f;
   const storedLinking: 'static' | 'dynamic' =
