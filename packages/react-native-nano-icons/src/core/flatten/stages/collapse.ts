@@ -21,8 +21,20 @@ import { Affine2D } from '../transform';
 import { addToDefs, removeOrphanedGradients } from './defs';
 import { strokeToPaths } from './stroke';
 
+function moveRootOpacityToGroup(root: XEl): void {
+  const opacity = root.attrib.get('opacity');
+  if (opacity === undefined) return;
+  const group = new XEl(svgTag('g'), [['opacity', opacity]]);
+  for (const child of [...root.children]) {
+    group.append(child);
+  }
+  root.append(group);
+  root.attrib.delete('opacity');
+}
+
 export function collapse(doc: SvgDocument): void {
   doc.syncTree();
+  moveRootOpacityToGroup(doc.root);
 
   // Reversed: we want leaves first. Materialize BEFORE mutating.
   const toProcess = [...doc.breadthFirst()].reverse();

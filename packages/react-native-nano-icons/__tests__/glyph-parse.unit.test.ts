@@ -222,10 +222,10 @@ describe('opacity after flattenSvg', () => {
     PathKit = await loadPathKit();
   });
 
-  const fills = (body: string) =>
+  const fills = (body: string, rootAttrs = '') =>
     parseFlattenedSvg(
       flattenSvg(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${body}</svg>`,
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"${rootAttrs}>${body}</svg>`,
         PathKit
       )
     ).paths.map((p) => p.fill);
@@ -244,6 +244,21 @@ describe('opacity after flattenSvg', () => {
         `<g opacity="0.5" fill="transparent"><path d="M0 0H20V20H0Z"/>${RED}</g>`
       )
     ).toEqual(['transparent', 'rgba(255,0,0,0.5)']);
+  });
+
+  test('a root opacity applies to every path', () => {
+    expect(fills(RED, ' opacity="0.5"')).toEqual(['rgba(255,0,0,0.5)']);
+    expect(
+      fills(`${RED}<g opacity="0.5">${RED}${RED}</g>`, ' opacity="0.5"')
+    ).toEqual([
+      'rgba(255,0,0,0.5)',
+      'rgba(255,0,0,0.25)',
+      'rgba(255,0,0,0.25)',
+    ]);
+    expect(fills(`${RED}${RED}`, ' style="opacity:0.5"')).toEqual([
+      'rgba(255,0,0,0.5)',
+      'rgba(255,0,0,0.5)',
+    ]);
   });
 });
 
