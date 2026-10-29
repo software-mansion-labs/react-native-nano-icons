@@ -7,7 +7,7 @@ Complete documentation of how SVG icons are converted into Apple **custom SF Sym
 ## Overview
 
 ```
-SVG files → flatten (PathKit-backed) → parse paths → evenodd conversion → same-color merge
+SVG files → flatten (PathKit-backed) → parse paths → same-color merge
           → [DIVERGENCE FROM FONT PIPELINE]
           → cap-band placement → symbol template SVG (3 variable sources + annotations)
           → <prefix>.<icon>.symbolset (template + Contents.json)
@@ -38,7 +38,7 @@ Native bottom-tab libraries (react-native-screens `Tabs`, expo-router `NativeTab
 
 | Area | Change |
 |---|---|
-| `src/core/pipeline/prepare.ts` | Shared per-file SVG stages (validate → flatten → parse → evenodd → merge). Both pipelines reuse identical preprocessing. |
+| `src/core/pipeline/prepare.ts` | Shared per-file SVG stages (validate → flatten → parse → merge). Both pipelines reuse identical preprocessing. |
 | `src/core/symbols/template.ts` | **New.** SF Symbol template emitter: skeleton geometry, cap-band placement math, variant groups, margin guides, rendering-mode annotations. |
 | `src/core/symbols/contents.ts` | **New.** `Contents.json` emitters (symbolset + catalog root). |
 | `src/core/pipeline/runSymbolPipeline.ts` | **New.** Symbol pipeline orchestrator: per-icon symbolset emission, typed manifest, symbolmap. |
@@ -123,14 +123,13 @@ iOS tab bars prefer a filled variant for the selected state, looked up by the `n
 
 **`prepareSvgLayers({ filePath, fileLabel, pathkit, logger })`** — **File:** `src/core/pipeline/prepare.ts`
 
-This is the font pipeline's steps 2a–2h, extracted verbatim (see [PIPELINE.md](PIPELINE.md) for full detail):
+This is the font pipeline's steps 2a–2e, extracted verbatim (see [PIPELINE.md](PIPELINE.md) for full detail):
 
 1. **Validate** — reject `<mask>` / `<filter>`
 2. **Preprocess** — ensure `xmlns`
 3. **Flatten** (`src/core/flatten/`) — resolves `<use>`/`<clipPath>`/transforms, **converts strokes to fills**, everything becomes `<path>`
-4. **Parse** — viewBox + per-path `{ d, fill, fillRule? }`, opacity baked into `rgba()` fills
-5. **Convert evenodd to nonzero winding** (containment-based algorithm; converted paths marked `noMerge`)
-6. **Merge consecutive same-color paths** into compound layers (z-order preserved)
+4. **Parse** — viewBox + per-path `{ d, fill }`, opacity baked into `rgba()` fills
+5. **Merge consecutive same-color paths** into compound layers (z-order preserved, winding aligned first)
 
 Returns `{ viewBox, paths }` — z-ordered, same-color-merged, nonzero-winding **layers**.
 
