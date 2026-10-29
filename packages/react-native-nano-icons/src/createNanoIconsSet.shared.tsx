@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react';
 import { PixelRatio, Platform, Text, View, type TextProps } from 'react-native';
 import type { NanoGlyphMapInput } from './core/types';
 import type { IconComponent, IconProps } from './types';
-import { shallowEqualColor } from './utils/shallowEqualColor';
 import { areIconPropsEqual } from './utils/iconPropsEqual';
 import { iconAccessibilityProps } from './utils/iconAccessibility';
 import {
@@ -22,7 +21,6 @@ import {
 import { configuredFontFamily } from './utils/fontIdentity';
 
 export type { IconComponent, IconProps };
-export { shallowEqualColor };
 
 /**
  * Warn when the `font` argument and the glyphmap's linking mode are inconsistent.

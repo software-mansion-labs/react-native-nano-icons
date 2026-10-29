@@ -2,7 +2,6 @@ import { memo, type CSSProperties } from 'react';
 import * as ReactDOM from 'react-dom';
 import type { NanoGlyphMapInput } from './core/types';
 import type { IconComponent, IconProps } from './types';
-import { shallowEqualColor } from './utils/shallowEqualColor';
 import { areIconPropsEqual } from './utils/iconPropsEqual';
 import { iconAccessibilityProps } from './utils/iconAccessibility';
 import {
@@ -25,7 +24,6 @@ import {
 import { registerWebFont, warnFontNotLoaded, webFontUrl } from './webFont';
 
 export type { IconComponent, IconProps };
-export { shallowEqualColor };
 
 // Web renderer: uses inline <span> elements so icons flow out of the box (display: inline-block keeps width/height)
 export function createIconSet<GM extends NanoGlyphMapInput>(

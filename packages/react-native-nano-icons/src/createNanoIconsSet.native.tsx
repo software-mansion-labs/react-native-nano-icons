@@ -3,7 +3,6 @@ import { UIManager, View } from 'react-native';
 import type { ColorValue } from 'react-native';
 import type { NanoGlyphMapInput, GlyphEntry } from './core/types';
 import type { IconComponent, IconProps } from './types';
-import { shallowEqualColor } from './utils/shallowEqualColor';
 import { areIconPropsEqual } from './utils/iconPropsEqual';
 import { iconAccessibilityProps } from './utils/iconAccessibility';
 import { useFontScale } from './utils/fontScale';
@@ -28,7 +27,6 @@ import {
 } from './fontIntegrity';
 
 export type { IconComponent, IconProps };
-export { shallowEqualColor };
 
 const HAS_NATIVE_IMPL = UIManager.hasViewManagerConfig('NanoIconView');
 
