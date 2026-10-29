@@ -129,7 +129,7 @@ export function useDynamicFontPending(
   return managed && status === 'loading';
 }
 
-export function useDynamicFontStatus(family: string): FontStatus | undefined {
+function useDynamicFontStatus(family: string): FontStatus | undefined {
   return useSyncExternalStore(
     (cb) => {
       listeners.add(cb);
