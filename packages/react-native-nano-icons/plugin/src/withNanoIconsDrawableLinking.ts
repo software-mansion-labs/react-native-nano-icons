@@ -13,14 +13,16 @@ const ANDROID_DRAWABLES_DIR = 'app/src/main/res/drawable';
  */
 export function withNanoIconsDrawableLinking(
   config: Parameters<typeof withDangerousMod>[0],
-  symbolSets: SymbolSetConfig[]
+  symbolSets: SymbolSetConfig[],
+  frozen?: boolean
 ): ReturnType<typeof withDangerousMod> {
   return withDangerousMod(config, [
     'android',
     async (config) => {
       const built = await getOrBuildSymbols(
         config.modRequest.projectRoot,
-        symbolSets
+        symbolSets,
+        frozen
       );
       if (!built?.length) return config;
 

@@ -59,6 +59,49 @@ describe('check against a real build', () => {
     expect(await checkAllSymbols(symbolSets, projectRoot)).toEqual([]);
   });
 
+  test('with existingOnly, sets that were never built are skipped', async () => {
+    const unbuiltIcons = [
+      ...iconSets,
+      { inputDir: 'icons', outputDir: 'none', fontFamily: 'Unbuilt' },
+    ];
+    const unbuiltSymbols = [
+      ...symbolSets,
+      { inputDir: 'symbols', outputDir: 'none', name: 'unbuilt' },
+    ];
+
+    expect(await checkAllFonts(unbuiltIcons, projectRoot)).toEqual([
+      { name: 'Unbuilt', reason: 'Unbuilt.ttf is missing' },
+    ]);
+    expect(await checkAllSymbols(unbuiltSymbols, projectRoot)).toEqual([
+      { name: 'unbuilt', reason: 'unbuilt.symbolmap.json is missing' },
+    ]);
+    expect(
+      await checkAllFonts(unbuiltIcons, projectRoot, { existingOnly: true })
+    ).toEqual([]);
+    expect(
+      await checkAllSymbols(unbuiltSymbols, projectRoot, { existingOnly: true })
+    ).toEqual([]);
+  });
+
+  test('with existingOnly, a built set is still checked', async () => {
+    const glyphmapPath = path.join(
+      projectRoot,
+      'out',
+      'CheckIcons.glyphmap.json'
+    );
+    const ttfPath = path.join(projectRoot, 'out', 'CheckIcons.ttf');
+    const ttf = fs.readFileSync(ttfPath);
+    fs.unlinkSync(ttfPath);
+    try {
+      expect(fs.existsSync(glyphmapPath)).toBe(true);
+      expect(
+        await checkAllFonts(iconSets, projectRoot, { existingOnly: true })
+      ).toEqual([{ name: 'CheckIcons', reason: 'CheckIcons.ttf is missing' }]);
+    } finally {
+      fs.writeFileSync(ttfPath, ttf);
+    }
+  });
+
   test('a new toolchain version that builds the same files keeps the sets up to date, and nothing is written', async () => {
     const before = snapshot(projectRoot);
     const succeed = jest.fn();

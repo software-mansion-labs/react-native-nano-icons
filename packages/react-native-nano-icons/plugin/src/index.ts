@@ -9,12 +9,20 @@ const withNanoIcons: ConfigPlugin<NanoIconsPluginOptions> = (
   options
 ) => {
   if (options?.iconSets?.length) {
-    config = withNanoIconsFontLinking(config, options.iconSets);
+    config = withNanoIconsFontLinking(config, options.iconSets, options.frozen);
   }
 
   if (options?.symbolSets?.length) {
-    config = withNanoIconsSymbolLinking(config, options.symbolSets);
-    config = withNanoIconsDrawableLinking(config, options.symbolSets);
+    config = withNanoIconsSymbolLinking(
+      config,
+      options.symbolSets,
+      options.frozen
+    );
+    config = withNanoIconsDrawableLinking(
+      config,
+      options.symbolSets,
+      options.frozen
+    );
   }
 
   return config;

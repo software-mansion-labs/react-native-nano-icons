@@ -12,14 +12,16 @@ import type { SymbolSetConfig } from './types';
  */
 export function withNanoIconsSymbolLinking(
   config: Parameters<typeof withDangerousMod>[0],
-  symbolSets: SymbolSetConfig[]
+  symbolSets: SymbolSetConfig[],
+  frozen?: boolean
 ): ReturnType<typeof withDangerousMod> {
   return withDangerousMod(config, [
     'ios',
     async (config) => {
       const built = await getOrBuildSymbols(
         config.modRequest.projectRoot,
-        symbolSets
+        symbolSets,
+        frozen
       );
       if (!built?.length) return config;
 

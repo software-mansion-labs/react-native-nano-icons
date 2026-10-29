@@ -123,7 +123,7 @@ The library uses an Expo Config Plugin to hook into the prebuild phase. This aut
 }
 ```
 
-The plugin accepts an `iconSets` array, so one build can generate multiple distinct fonts. See [all `iconSets` options](#iconsets-options).
+The plugin accepts an `iconSets` array, so one build can generate multiple distinct fonts. See [all `iconSets` options](#iconsets-options). In CI, prebuild fails on out-of-date generated files instead of regenerating them, see [`frozen`](#when-fonts-are-regenerated).
 
 Then run `npx expo prebuild` and rebuild the app once (e.g. `npx expo run:ios`). After that, the [Metro plugin](#4-add-the-metro-plugin) picks up SVG edits without a rebuild.
 
@@ -459,6 +459,8 @@ To fail CI when the committed files are out of date, run the CLI with `--check`.
 ```sh
 npx react-native-nano-icons --check
 ```
+
+With Expo, prebuild in CI fails instead of regenerating out-of-date files, like a frozen lockfile install. It names each set and why. This applies when the `CI` environment variable is set and is not `false` or `0`, as on EAS Build, and only to sets whose generated files exist, e.g. are committed. Sets without generated files are built. To change it, set the plugin's `frozen` option: `true` checks every set, also outside CI, and `false` turns it off.
 
 ### Font integrity check
 

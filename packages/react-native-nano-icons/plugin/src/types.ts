@@ -72,6 +72,14 @@ export interface BuiltSymbolSet {
 export interface NanoIconsPluginOptions {
   iconSets?: IconSetConfig[];
   symbolSets?: SymbolSetConfig[];
+  /**
+   * Fail prebuild when a set's generated files are out of date, instead of regenerating them.
+   *
+   * - unset: on in CI (`CI` is set and not `false` or `0`) for the sets whose generated files exist; the others are built.
+   * - `true`: on for every set, also outside CI.
+   * - `false`: off.
+   */
+  frozen?: boolean;
 }
 
 /**
