@@ -96,7 +96,10 @@ function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
     glyphmap?.m?.l === 'd' ? 'dynamic' : 'static';
   const storedWeb = glyphmap?.m?.w === true;
 
-  if (!storedHash || !storedFamily || storedHash !== set.inputHash) {
+  if (!storedHash || !storedFamily) {
+    return { staleBecause: `${path.basename(glyphmapPath)} is incomplete` };
+  }
+  if (storedHash !== set.inputHash) {
     return {
       staleBecause: 'its SVGs, options or installed versions changed',
     };

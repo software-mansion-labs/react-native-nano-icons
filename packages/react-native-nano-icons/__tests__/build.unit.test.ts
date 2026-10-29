@@ -799,6 +799,24 @@ describe('checkAllFonts', () => {
   });
 
   test.each([
+    ['without a fingerprint', () => ({ m: { f: STORED_FAMILY }, i: {} })],
+    ['without a family', () => ({ m: { h: inputHash }, i: {} })],
+    ['that is null', () => null],
+  ])('a glyphmap %s is named as incomplete', (_label, glyphmap) => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    fs.writeFileSync(
+      path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
+      JSON.stringify(glyphmap())
+    );
+    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+      {
+        name: FONT_FAMILY,
+        reason: `${FONT_FAMILY}.glyphmap.json is incomplete`,
+      },
+    ]);
+  });
+
+  test.each([
     [
       'an edited SVG',
       () => fs.writeFileSync(path.join(inputDir, 'icon.svg'), `${SAMPLE_SVG} `),
