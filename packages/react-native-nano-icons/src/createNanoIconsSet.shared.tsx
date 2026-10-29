@@ -130,7 +130,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
         [scaledSize, width, style]
       );
 
-      const sizeStyle = useMemo(() => {
+      const glyphStyle = useMemo(() => {
         if (!square) return { fontSize: size };
         const box = squareGlyphBox(adv, unitsPerEm, safeZone);
         return {
@@ -163,7 +163,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
                     selectable={false}
                     accessible={false}
                     allowFontScaling={allowFontScaling}
-                    style={[styleOverrides, sizeStyle, { color: layerColor }]}>
+                    style={[styleOverrides, glyphStyle, { color: layerColor }]}>
                     {getChar(codepoint)}
                   </Text>
                 );
