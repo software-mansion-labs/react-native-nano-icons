@@ -58,7 +58,8 @@ void NanoIconProps::setProp(
 
 void NanoIconProps::applyGlyphDimensions() {
   const Float height = size * fontScale;
-  const Float width = squareGlyphScale <= 0 && unitsPerEm > 0
+  const bool square = squareGlyphScale > 0;
+  const Float width = !square && unitsPerEm > 0
       ? height * static_cast<Float>(advanceWidth) / static_cast<Float>(unitsPerEm)
       : height;
   if (!hasStyleWidth) {

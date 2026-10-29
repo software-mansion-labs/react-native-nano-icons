@@ -168,7 +168,7 @@ class NanoIconView(context: Context) : View(context) {
 
     canvas.save()
     canvas.clipRect(0f, 0f, width.toFloat(), height.toFloat())
-    val left = if (squareGlyphScale > 0f && unitsPerEm > 0) {
+    val left = if (squareGlyphScale > 0f) {
       (width - minOf(width, height) * squareGlyphScale * advanceWidth / unitsPerEm) / 2
     } else {
       0f
