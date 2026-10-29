@@ -180,7 +180,7 @@ describe('createIconSet (web)', () => {
   test('a font url gets a hoisted @font-face under the configured family and a preload', () => {
     const { styles } = render({ name: 'heart' }, '/fonts/Ui.woff2');
     expect(styles[1]).toMatchObject({
-      href: 'react-native-nano-icons:Ui:/fonts/Ui.woff2',
+      href: expect.stringMatching(/^react-native-nano-icons:[0-9a-z]+$/),
       precedence: 'react-native-nano-icons',
       children:
         '@font-face{font-family:"Ui";src:url("/fonts/Ui.woff2");font-display:block}',
@@ -189,6 +189,22 @@ describe('createIconSet (web)', () => {
       as: 'font',
       crossOrigin: 'anonymous',
     });
+  });
+
+  test('the @font-face href is a hash of the family and url, without spaces', () => {
+    const spaced = render({ name: 'heart' }, '/fonts/My Icons.woff2');
+    const other = render({ name: 'heart' }, '/fonts/Other.woff2');
+    expect(spaced.styles[1]!['href']).toMatch(
+      /^react-native-nano-icons:[0-9a-z]+$/
+    );
+    expect(spaced.styles[1]!['href']).not.toBe(other.styles[1]!['href']);
+  });
+
+  test('a data: font url is not preloaded', () => {
+    const url = 'data:font/woff2;base64,AAAA';
+    const { styles } = render({ name: 'heart' }, url);
+    expect(styles[1]!['children']).toContain(`url("${url}")`);
+    expect(mockPreload).not.toHaveBeenCalled();
   });
 
   test('an { uri } font works like a url', () => {

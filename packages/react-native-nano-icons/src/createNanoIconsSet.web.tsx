@@ -55,6 +55,14 @@ function cssString(value: string): string {
   return JSON.stringify(value);
 }
 
+function shortHash(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash = Math.imul(hash ^ value.charCodeAt(i), 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 // Web renderer: uses inline <span> elements so icons flow out of the box (display: inline-block keeps width/height)
 export function createIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM
@@ -77,7 +85,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
   const getChar = createCharCache();
   const fontUrl = webFontUrl(font);
   const fontFace = fontUrl && {
-    href: `${STYLE_HREF}:${fontBasename}:${fontUrl}`,
+    href: `${STYLE_HREF}:${shortHash(`${fontBasename}:${fontUrl}`)}`,
     css: `@font-face{font-family:${cssString(fontBasename)};src:url(${cssString(fontUrl)});font-display:block}`,
   };
 
@@ -109,7 +117,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
     }: IconProps<keyof GM['i']>) => {
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
 
-      if (fontUrl) {
+      if (fontUrl && !fontUrl.startsWith('data:')) {
         ReactDOM.preload?.(fontUrl, { as: 'font', crossOrigin: 'anonymous' });
       }
 
