@@ -81,6 +81,11 @@ export function sanitizePathData(d: string): { d: string; sanitized: boolean } {
   return { d: `M${x},${y} ${trimmed}`, sanitized: true };
 }
 
+function isUnpainted(fill: string | null): boolean {
+  const f = (fill ?? '').trim().toLowerCase();
+  return f === 'transparent' || f === 'none';
+}
+
 const parsePath = (p: Element): ParsedPath => {
   const d = p.getAttribute('d') ?? '';
 
@@ -89,7 +94,7 @@ const parsePath = (p: Element): ParsedPath => {
   const fill = attribute(p, 'fill');
   const groupOp = ancestorOpacity(p);
 
-  if (op !== null || fillOp !== null || groupOp !== 1) {
+  if (!isUnpainted(fill) && (op !== null || fillOp !== null || groupOp !== 1)) {
     const opVal = op !== null ? parseFloat(op) : 1;
     const fillOpVal = fillOp !== null ? parseFloat(fillOp) : 1;
     const combinedOpacity = opVal * fillOpVal * groupOp;
@@ -147,6 +152,5 @@ export function parseFlattenedSvg(
 
 export function shouldSkipPath(d: string, fill: string | null): boolean {
   if (!d || d.trim() === '') return true;
-  const f = (fill ?? '').trim().toLowerCase();
-  return f === 'transparent' || f === 'none';
+  return isUnpainted(fill);
 }

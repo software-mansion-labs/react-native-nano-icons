@@ -181,6 +181,22 @@ describe('parseFlattenedSvg opacity integration', () => {
     expect(paths[0]!.fill).toBe('rgba(255,0,0,0.125)');
   });
 
+  test('none and transparent fills stay unpainted under opacity', () => {
+    const svg = `<svg viewBox="0 0 24 24">
+      <g opacity="0.5">
+        <path d="M0 0L24 24" fill="none"/>
+        <path d="M0 0L24 24" fill="Transparent"/>
+      </g>
+      <path d="M0 0L24 24" fill="transparent" opacity="0.5"/>
+    </svg>`;
+    const { paths } = parseFlattenedSvg(svg);
+    expect(paths.map((p) => p.fill)).toEqual([
+      'none',
+      'Transparent',
+      'transparent',
+    ]);
+  });
+
   test('path without any opacity attr preserves original fill string', () => {
     const svg = `<svg viewBox="0 0 24 24">
       <path d="M0 0L24 24" fill="#123456"/>
@@ -220,6 +236,14 @@ describe('opacity after flattenSvg', () => {
       '#f00',
     ]);
     expect(fills(`<g opacity="${opacity}">${RED}</g>`)).toEqual(['#f00']);
+  });
+
+  test('a transparent fill inherited inside a semi-transparent group stays transparent', () => {
+    expect(
+      fills(
+        `<g opacity="0.5" fill="transparent"><path d="M0 0H20V20H0Z"/>${RED}</g>`
+      )
+    ).toEqual(['transparent', 'rgba(255,0,0,0.5)']);
   });
 });
 
