@@ -26,7 +26,7 @@ class NanoIconView(context: Context) : View(context) {
   private var cachedTypeface: Typeface? = null
   // Cached String objects — rebuilt only when codepoints change
   private var cachedTexts: Array<String> = emptyArray()
-  // Cached baseline — rebuilt when font, size, or bounds change
+  // Cached baseline — rebuilt when font, size, bounds, or square glyph scale change
   private var cachedBaseline: Float = 0f
   private var squareGlyphScale = 0f
   private var advanceWidth = 0
