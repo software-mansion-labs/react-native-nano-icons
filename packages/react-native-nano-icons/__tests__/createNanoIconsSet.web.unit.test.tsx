@@ -244,6 +244,15 @@ describe('createIconSet (web)', () => {
   test('loadFont without a font resolves without loading', async () => {
     await expect(createIconSet(glyphMap).loadFont()).resolves.toBeUndefined();
     expect(mockRegisterWebFont).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  test('loadFont with an asset id warns in development and loads nothing', async () => {
+    await expect(createIconSet(glyphMap).loadFont(42)).resolves.toBeUndefined();
+    expect(mockRegisterWebFont).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Icon font "Ui" is not loaded on web')
+    );
   });
 
   test('display name uses the configured family', () => {

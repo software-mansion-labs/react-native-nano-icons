@@ -50,6 +50,14 @@ test('a font is loaded with font-display block and added to the document', async
   expect(isWebFontRegistered('Ui')).toBe(true);
 });
 
+test('a url already registered for the family is not added again', async () => {
+  await registerWebFont('Ui', '/a.woff2');
+  await registerWebFont('Ui', '/a.woff2');
+  expect(added).toHaveLength(1);
+  await registerWebFont('Ui', '/b.woff2');
+  expect(added).toHaveLength(2);
+});
+
 test('a failed load is not marked as registered', async () => {
   load.mockRejectedValue(new Error('404'));
   await expect(registerWebFont('Ui', '/missing.woff2')).rejects.toThrow('404');

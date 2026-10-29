@@ -56,6 +56,12 @@ function cssString(value: string): string {
   return JSON.stringify(value);
 }
 
+function warnFontNotLoaded(fontBasename: string): void {
+  warnRuntime(
+    `Icon font "${fontBasename}" is not loaded on web: pass its url, e.g. require("${fontBasename}.woff2") or { uri }.`
+  );
+}
+
 function shortHash(value: string): string {
   let hash = 0x811c9dc5;
   for (let i = 0; i < value.length; i++) {
@@ -92,9 +98,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
     if (font != null && fontUrl === undefined) {
-      warnRuntime(
-        `Icon font "${fontBasename}" is not loaded on web: pass its url, e.g. require("${fontBasename}.woff2") or { uri }.`
-      );
+      warnFontNotLoaded(fontBasename);
     }
     if ((globalThis as { document?: unknown }).document !== undefined) {
       void loadFontFromDevServer(family);
@@ -184,8 +188,13 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   const IconComp = Icon as unknown as IconComponent<GM>;
   IconComp.loadFont = (override) => {
-    const url = webFontUrl(override ?? font);
-    return url ? registerWebFont(fontBasename, url) : Promise.resolve();
+    const source = override ?? font;
+    const url = webFontUrl(source);
+    if (url) return registerWebFont(fontBasename, url);
+    if (source != null && typeof __DEV__ !== 'undefined' && __DEV__) {
+      warnFontNotLoaded(fontBasename);
+    }
+    return Promise.resolve();
   };
   return IconComp;
 }

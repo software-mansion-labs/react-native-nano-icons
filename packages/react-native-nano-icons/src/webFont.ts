@@ -11,7 +11,7 @@ type BrowserGlobals = {
   document?: { fonts?: { add(face: FontFaceLike): void } };
 };
 
-const registered = new Set<string>();
+const registered = new Map<string, string>();
 
 export function webFontUrl(font: unknown): string | undefined {
   if (typeof font === 'string') return font;
@@ -33,6 +33,7 @@ export async function registerWebFont(
   family: string,
   url: string
 ): Promise<void> {
+  if (registered.get(family) === url) return;
   const g = globalThis as BrowserGlobals;
   if (!g.FontFace || !g.document?.fonts) {
     throw runtimeError('FontFace API unavailable; cannot load the icon font.');
@@ -42,7 +43,7 @@ export async function registerWebFont(
   });
   await face.load();
   g.document.fonts.add(face);
-  registered.add(family);
+  registered.set(family, url);
 }
 
 export function __resetWebFontsForTests(): void {
