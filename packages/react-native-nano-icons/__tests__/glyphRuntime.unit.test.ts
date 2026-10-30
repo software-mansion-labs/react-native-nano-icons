@@ -3,6 +3,7 @@ import {
   resolveGlyphEntry,
   createCharCache,
   createLayerColorResolver,
+  squareGlyphBox,
   tintableLayers,
 } from '../src/utils/glyphRuntime';
 
@@ -195,6 +196,29 @@ describe('glyphRuntime', () => {
     test('currentColor mode lists only currentColor layers', () => {
       expect(tintableLayers(layers, 'currentColor')).toEqual([1, 3]);
       expect(tintableLayers([[1, '#f00']], 'currentColor')).toEqual([]);
+    });
+  });
+
+  describe('squareGlyphBox', () => {
+    test('a narrow glyph keeps its size', () => {
+      expect(squareGlyphBox(512, 1024, 1020)).toEqual({
+        scale: 1,
+        width: 0.5,
+      });
+    });
+
+    test('a wide glyph fits the safe zone', () => {
+      expect(squareGlyphBox(2044, 1024, 1020)).toEqual({
+        scale: 0.5,
+        width: 0.998046875,
+      });
+    });
+
+    test('a glyph one em wide is unchanged', () => {
+      expect(squareGlyphBox(1024, 1024, 1020)).toEqual({
+        scale: 1,
+        width: 1,
+      });
     });
   });
 });

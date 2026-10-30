@@ -18,6 +18,20 @@ export function resolveGlyphEntry<GM extends NanoGlyphMapInput>(
   ]) as GlyphEntry;
 }
 
+/**
+ * Size of a glyph in a square box, as fractions of the box side: the glyph's
+ * longer side fits the safe zone.
+ */
+export function squareGlyphBox(
+  advanceWidth: number,
+  unitsPerEm: number,
+  safeZone: number
+): { scale: number; width: number } {
+  const contentWidth = advanceWidth - (unitsPerEm - safeZone);
+  const scale = contentWidth > safeZone ? safeZone / contentWidth : 1;
+  return { scale, width: (advanceWidth / unitsPerEm) * scale };
+}
+
 /** A memoized codepoint -> string converter, scoped per icon set. */
 export function createCharCache(): (codepoint: number) => string {
   const cache = new Map<number, string>();

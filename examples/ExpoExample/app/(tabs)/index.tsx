@@ -26,6 +26,18 @@ export default function TabOneScreen() {
               <Text style={styles.buttonText}>Monochrome Button Icon</Text>
             </Pressable>
           </View>
+          <View style={styles.boxRow}>
+            <Icon name="person-walking" size={64} style={styles.box} />
+            <Icon
+              name="person-walking"
+              size={64}
+              frame="square"
+              style={styles.box}
+            />
+            <Icon name="SWM_logo" size={64} style={styles.box} />
+            <Icon name="SWM_logo" size={64} frame="square" style={styles.box} />
+          </View>
+          <Text style={styles.caption}>Icon frames: fit-glyph and square</Text>
           <View style={styles.row}>
             <View style={styles.rowItem}>
               <Icon name="person-walking" size={150} />
@@ -119,5 +131,16 @@ const styles = StyleSheet.create({
   },
   caption: {
     textAlign: 'center',
+  },
+  boxRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 40,
+    marginBottom: 8,
+  },
+  box: {
+    backgroundColor: '#8E8E9340',
   },
 });

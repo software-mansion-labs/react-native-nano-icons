@@ -26,8 +26,11 @@ class NanoIconView(context: Context) : View(context) {
   private var cachedTypeface: Typeface? = null
   // Cached String objects — rebuilt only when codepoints change
   private var cachedTexts: Array<String> = emptyArray()
-  // Cached baseline — rebuilt when font, size, or bounds change
+  // Cached baseline — rebuilt when font, size, bounds, or square glyph scale change
   private var cachedBaseline: Float = 0f
+  private var squareGlyphScale = 0f
+  private var advanceWidth = 0
+  private var unitsPerEm = 0
   // Derived from the loaded font's metrics; recomputed on typeface change.
   private var textSizeFactor = 0f
   private var baselineFactor = 0f
@@ -66,6 +69,20 @@ class NanoIconView(context: Context) : View(context) {
     if (textSizeFactor <= 0f) updateFontFactors()
     fitToBounds()
     invalidate()
+  }
+
+  fun setSquareGlyphScale(value: Float) {
+    squareGlyphScale = value
+    fitToBounds()
+    invalidate()
+  }
+
+  fun setAdvanceWidth(value: Int) {
+    advanceWidth = value
+  }
+
+  fun setUnitsPerEm(value: Int) {
+    unitsPerEm = value
   }
 
   fun setCodepoints(values: IntArray) {
@@ -139,8 +156,9 @@ class NanoIconView(context: Context) : View(context) {
   private fun fitToBounds() {
     val h = height.toFloat()
     if (h <= 0f || textSizeFactor <= 0f) return
-    cachedBaseline = h * baselineFactor
-    val size = h * textSizeFactor
+    val glyphHeight = if (squareGlyphScale > 0f) minOf(width, height) * squareGlyphScale else h
+    cachedBaseline = (h - glyphHeight) / 2 + glyphHeight * baselineFactor
+    val size = glyphHeight * textSizeFactor
     if (paint.textSize != size) paint.textSize = size
   }
 
@@ -150,11 +168,16 @@ class NanoIconView(context: Context) : View(context) {
 
     canvas.save()
     canvas.clipRect(0f, 0f, width.toFloat(), height.toFloat())
+    val left = if (squareGlyphScale > 0f) {
+      (width - minOf(width, height) * squareGlyphScale * advanceWidth / unitsPerEm) / 2
+    } else {
+      0f
+    }
 
     // All layers drawn at the same position (stacked on each other)
     for (i in cachedTexts.indices) {
       paint.color = layerColor(i)
-      canvas.drawText(cachedTexts[i], 0f, cachedBaseline, paint)
+      canvas.drawText(cachedTexts[i], left, cachedBaseline, paint)
     }
 
     canvas.restore()

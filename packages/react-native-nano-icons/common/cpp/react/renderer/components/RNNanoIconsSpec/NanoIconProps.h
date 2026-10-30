@@ -17,8 +17,9 @@ namespace facebook::react {
 //    node directly would be wiped and cause a re-layout each time.
 // 3. The codegen class only parses what JS sent and is final, so it cannot be
 //    extended. This class repeats that parsing and adds one step: compute
-//    width and height from size, fontScale and the glyph advance ratio, and
-//    store them in the style unless the user style already sets them.
+//    width and height from size, fontScale and the glyph advance ratio, or a
+//    square box when squareGlyphScale is set, and store them in the style
+//    unless the user style already sets them.
 class NanoIconProps final : public ViewProps {
  public:
   NanoIconProps() = default;
@@ -42,6 +43,7 @@ class NanoIconProps final : public ViewProps {
   Float fontScale{1.0};
   int advanceWidth{0};
   int unitsPerEm{0};
+  Float squareGlyphScale{0.0};
   bool hasStyleWidth{false};
   bool hasStyleHeight{false};
 

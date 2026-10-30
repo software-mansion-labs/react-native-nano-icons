@@ -26,6 +26,15 @@ export type IconProps<Name> = {
    */
   tintMode?: TintMode;
   /**
+   * The box the icon is drawn in.
+   * - `'fit-glyph'`: `size` high and as wide as the glyph (default font
+   *   behavior).
+   * - `'square'`: `size` high and wide, with the glyph fitted and centered,
+   *   like `resizeMode="contain"`.
+   * @default 'fit-glyph'
+   */
+  frame?: 'fit-glyph' | 'square';
+  /**
    * Label announced by screen readers. Without it, the icon is decorative and
    * hidden from screen readers, unless `accessible`, `accessibilityRole`,
    * `importantForAccessibility="yes"` or `accessibilityElementsHidden={false}`

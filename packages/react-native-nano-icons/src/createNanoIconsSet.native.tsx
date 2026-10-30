@@ -11,6 +11,7 @@ import {
   DEFAULT_ICON_SIZE,
   resolveGlyphEntry,
   createLayerColorResolver,
+  squareGlyphBox,
   tintableLayers,
 } from './utils/glyphRuntime';
 import NanoIconViewNative from './specs/NanoIconViewNativeComponent';
@@ -60,6 +61,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 
   const fontFamilyBasename = glyphMap.m.f;
   const unitsPerEm = glyphMap.m.u;
+  const safeZone = glyphMap.m.z;
   warnIfLinkingMismatch(fontFamilyBasename, glyphMap.m.l, font);
 
   // dynamically linked font - register and hide icons until ready
@@ -121,6 +123,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       tintMode,
       style,
       allowFontScaling = true,
+      frame,
       accessible,
       accessibilityLabel,
       accessibilityRole,
@@ -132,7 +135,11 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       const fontScale = useFontScale(allowFontScaling);
       const [adv, layers] = resolveGlyphEntry(glyphMap, name);
       const scaledSize = size * fontScale;
-      const width = (adv / unitsPerEm) * scaledSize;
+      const square = frame === 'square';
+      const width = square ? scaledSize : (adv / unitsPerEm) * scaledSize;
+      const squareGlyphScale = square
+        ? squareGlyphBox(adv, unitsPerEm, safeZone).scale
+        : undefined;
 
       const pending = useDynamicFontPending(managed, fontFamilyBasename);
 
@@ -186,6 +193,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
           fontScale={fontScale}
           advanceWidth={adv}
           unitsPerEm={unitsPerEm}
+          squareGlyphScale={squareGlyphScale}
           style={style}
           {...accessibility}
           testID={testID}

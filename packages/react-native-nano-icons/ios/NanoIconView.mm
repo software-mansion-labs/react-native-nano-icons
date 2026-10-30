@@ -221,6 +221,14 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   // Flip to CoreText coordinates (Y-up) and apply fit scale.
   CGContextTranslateCTM(context, 0, bounds.size.height);
   CGContextScaleCTM(context, 1.0, -1.0);
+  const auto &viewProps = static_cast<const NanoIconProps &>(*_props);
+  if (viewProps.squareGlyphScale > 0) {
+    CGFloat glyphHeight = MIN(bounds.size.width, bounds.size.height) * viewProps.squareGlyphScale;
+    CGFloat glyphScale = glyphHeight / bounds.size.height;
+    CGFloat glyphWidth = glyphHeight * viewProps.advanceWidth / viewProps.unitsPerEm;
+    CGContextTranslateCTM(context, (bounds.size.width - glyphWidth) / 2, (bounds.size.height - glyphHeight) / 2);
+    CGContextScaleCTM(context, glyphScale, glyphScale);
+  }
   CGContextScaleCTM(context, _fitScale, _fitScale);
 
   size_t i = 0;
@@ -351,6 +359,10 @@ static void NanoIconTrackLiveView(NanoIconView *view) {
   if (oldViewProps.color != newViewProps.color) {
     _tintColor = newViewProps.color ? RCTUIColorFromSharedColor(newViewProps.color) : nil;
     [self _rebuildCachedColors];
+    needsRedraw = YES;
+  }
+
+  if (oldViewProps.squareGlyphScale != newViewProps.squareGlyphScale) {
     needsRedraw = YES;
   }
 

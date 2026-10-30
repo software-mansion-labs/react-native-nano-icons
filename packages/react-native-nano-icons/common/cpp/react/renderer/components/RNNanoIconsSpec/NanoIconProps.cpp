@@ -32,6 +32,7 @@ NanoIconProps::NanoIconProps(
       fontScale(convertRawProp(context, rawProps, "fontScale", sourceProps.fontScale, {1.0})),
       advanceWidth(convertRawProp(context, rawProps, "advanceWidth", sourceProps.advanceWidth, {0})),
       unitsPerEm(convertRawProp(context, rawProps, "unitsPerEm", sourceProps.unitsPerEm, {0})),
+      squareGlyphScale(convertRawProp(context, rawProps, "squareGlyphScale", sourceProps.squareGlyphScale, {0.0})),
       hasStyleWidth(rawPropIsSet(rawProps, "width", sourceProps.hasStyleWidth)),
       hasStyleHeight(rawPropIsSet(rawProps, "height", sourceProps.hasStyleHeight)) {
   applyGlyphDimensions();
@@ -57,7 +58,8 @@ void NanoIconProps::setProp(
 
 void NanoIconProps::applyGlyphDimensions() {
   const Float height = size * fontScale;
-  const Float width = unitsPerEm > 0
+  const bool square = squareGlyphScale > 0;
+  const Float width = !square && unitsPerEm > 0
       ? height * static_cast<Float>(advanceWidth) / static_cast<Float>(unitsPerEm)
       : height;
   if (!hasStyleWidth) {
@@ -109,6 +111,9 @@ folly::dynamic NanoIconProps::getDiffProps(const Props *prevProps) const {
   }
   if (unitsPerEm != oldProps->unitsPerEm) {
     result["unitsPerEm"] = unitsPerEm;
+  }
+  if ((squareGlyphScale != oldProps->squareGlyphScale) && !(std::isnan(squareGlyphScale) && std::isnan(oldProps->squareGlyphScale))) {
+    result["squareGlyphScale"] = squareGlyphScale;
   }
   return result;
 }
