@@ -61,8 +61,27 @@ export function layerHexColor(fill: string | null): string {
   return `#${h(r)}${h(g)}${h(b)}`;
 }
 
-export function layerClass(layerIndex: number): string {
-  return `monochrome-${layerIndex} multicolor-${layerIndex}:custom`;
+/** A `currentColor` layer follows the tint in multicolor too, like the monochrome rendering. */
+export function isTintFill(fill: string | null): boolean {
+  return fill !== null && fill.trim().toLowerCase() === 'currentcolor';
+}
+
+/** More than one distinct fill: the symbol is meant to be seen in colour. */
+export function isMulticolor(layers: SymbolTemplateLayer[]): boolean {
+  return (
+    new Set(layers.map((l) => (l.fill ?? '').trim().toLowerCase())).size > 1
+  );
+}
+
+function multicolorClass(layerIndex: number, fill: string | null): string {
+  return `multicolor-${layerIndex}:${isTintFill(fill) ? 'tintColor' : 'custom'}`;
+}
+
+export function layerClass(
+  layerIndex: number,
+  fill: string | null = null
+): string {
+  return `monochrome-${layerIndex} ${multicolorClass(layerIndex, fill)}`;
 }
 
 function multicolorStyle(fill: string | null): string {
@@ -76,15 +95,15 @@ function renderingModeStyles(layers: SymbolTemplateLayer[]): string {
     .map(
       (layer, i) =>
         `    .monochrome-${i} {fill:#000000}\n` +
-        `    .multicolor-${i}:custom {${multicolorStyle(layer.fill)}}`
+        `    .${multicolorClass(i, layer.fill)} {${multicolorStyle(layer.fill)}}`
     )
     .join('\n');
 }
 
 /**
  * Build the template SVG for one symbol. Layers are back→front; every layer
- * gets `monochrome-N multicolor-N:custom` classes, with the layer fills
- * declared in a `<style>` block.
+ * gets `monochrome-N multicolor-N:custom` classes (`multicolor-N:tintColor` for a
+ * `currentColor` layer), with the layer fills declared in a `<style>` block.
  */
 export function buildSymbolTemplate(opts: {
   layers: SymbolTemplateLayer[];
@@ -119,7 +138,8 @@ export function buildSymbolTemplate(opts: {
   const pathsMarkup = (indent: string): string =>
     layers
       .map(
-        (layer, i) => `${indent}<path class="${layerClass(i)}" d="${layer.d}"/>`
+        (layer, i) =>
+          `${indent}<path class="${layerClass(i, layer.fill)}" d="${layer.d}"/>`
       )
       .join('\n');
 

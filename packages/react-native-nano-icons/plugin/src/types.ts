@@ -42,6 +42,12 @@ export interface SymbolSetConfig {
   name?: string;
   /** Symbol name prefix (default "nano"): home.svg → "nano.home". */
   prefix?: string;
+  /**
+   * How each icon fills the symbol: `'content'` (default) scales its drawn shapes to
+   * the full height; `'viewBox'` keeps the padding of its viewBox, so icons drawn on one
+   * grid keep their relative sizes.
+   */
+  fit?: 'content' | 'viewBox';
   /** Output dir; defaults to a sibling nanoicons folder next to inputDir. */
   outputDir?: string;
 }

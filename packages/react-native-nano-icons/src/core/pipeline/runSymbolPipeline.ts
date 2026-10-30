@@ -20,6 +20,8 @@ export type SymbolsPipelineConfig = {
   name: string;
   /** Symbol name prefix, e.g. "nano" → "nano.home". */
   prefix: string;
+  /** `'content'` (default) or `'viewBox'`; see `SymbolSetConfig.fit`. */
+  fit?: 'content' | 'viewBox';
 };
 
 export type SymbolsPipelinePaths = {
@@ -132,6 +134,7 @@ export async function runSymbolPipeline(
       filePath: path.join(paths.inputDir, file),
       setName: config.name,
       prefix: config.prefix,
+      fit: config.fit ?? 'content',
     })),
     options?.concurrency ?? defaultConcurrency(),
     options?.preparedSvgCache,

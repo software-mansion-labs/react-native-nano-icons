@@ -624,6 +624,7 @@ Each entry of `symbolSets` generates one set of [native symbols](#-native-symbol
 | `inputDir`   | `string`  | **Yes**  | —              | Path to the directory containing your `.svg` files, relative to the folder of `.nanoicons.json` or the app config. Subfolders are not read. |
 | `name`       | `string`  | No       | Folder name    | Set name, used for output filenames and the generated typed manifest.                                    |
 | `prefix`     | `string`  | No       | `nano`         | Symbol-name prefix: `home.svg` → `nano.home` (iOS) / `nano_home` (Android). On Android, names are lowercased and other characters become `_`. Sets that share a prefix and a file name overwrite each other. |
+| `fit`        | `'content' \| 'viewBox'` | No | `'content'` | How each icon fills its symbol and drawable. `'content'` scales the drawn shapes to the full height. `'viewBox'` keeps the padding of the SVG's `viewBox`, so a set drawn on one grid (for example 24×24) keeps its relative sizes. |
 | `outputDir`  | `string`  | No       | Sibling `nanoicons` folder | Path where the generated artifacts are written, relative to the folder of `.nanoicons.json` or the app config. Defaults to a `nanoicons` folder next to `inputDir`. |
 
 ### `nativeNanoSymbol()`

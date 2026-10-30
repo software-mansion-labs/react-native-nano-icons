@@ -340,7 +340,8 @@ describe('Symbols E2E — .symbolset generation', () => {
         );
 
       expect(built[0]!.assetDirs[0]).toMatch(/\.symbolset$/);
-      expect(contents.properties['symbol-rendering-intent']).toBe('template');
+      // Drawn in more than one colour, so it asks for its colours when shown original.
+      expect(contents.properties['symbol-rendering-intent']).toBe('multicolor');
 
       expect(svg).toContain('.multicolor-0:custom {fill:#001A72}');
       expect(svg).toContain('.multicolor-1:custom {fill:#FFFFFF}');

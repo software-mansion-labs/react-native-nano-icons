@@ -12,6 +12,7 @@ export type FingerprintInputs = {
 
 export type SymbolFingerprintInputs = {
   prefix: string;
+  fit?: 'content' | 'viewBox';
   version: string;
   toolchain: readonly string[];
 };
@@ -48,6 +49,7 @@ export function fingerprintSymbolDirSync(
   return hashSvgDir(dir, [
     'symbol',
     inputs.prefix,
+    inputs.fit ?? 'content',
     inputs.version,
     inputs.toolchain,
   ]);

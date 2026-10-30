@@ -16,6 +16,8 @@ import {
   packageVersion,
 } from '../src/utils/packageVersion';
 
+export type SymbolFit = 'content' | 'viewBox';
+
 export type SymbolSetConfig = {
   /** Folder of SVG files (relative to project root). */
   inputDir: string;
@@ -23,6 +25,12 @@ export type SymbolSetConfig = {
   name?: string;
   /** Symbol name prefix (default "nano"): home.svg → "nano.home". */
   prefix?: string;
+  /**
+   * How each icon fills the symbol: `'content'` (default) scales its drawn shapes to
+   * the full height; `'viewBox'` keeps the padding of its viewBox, so icons drawn on one
+   * grid keep their relative sizes.
+   */
+  fit?: SymbolFit;
   /** Output dir; defaults to a sibling nanoicons folder next to inputDir. */
   outputDir?: string;
 };
@@ -122,6 +130,12 @@ export async function buildAllSymbols(
     const inputDir = path.resolve(projectRoot, set.inputDir);
     const name = set.name ?? path.basename(inputDir);
     const prefix = set.prefix ?? DEFAULT_PREFIX;
+    const fit = set.fit ?? 'content';
+    if (fit !== 'content' && fit !== 'viewBox') {
+      throw new Error(
+        `[react-native-nano-icons] "${name}": "fit" must be "content" or "viewBox", got ${JSON.stringify(set.fit)}`
+      );
+    }
 
     if (!fs.existsSync(inputDir)) {
       throw new Error(
@@ -142,6 +156,7 @@ export async function buildAllSymbols(
       inputDir,
       {
         prefix,
+        fit,
         version,
         toolchain,
       }
@@ -158,7 +173,7 @@ export async function buildAllSymbols(
     let out;
     try {
       out = await runSymbolPipeline(
-        { name, prefix },
+        { name, prefix, fit },
         { inputDir, outputDir },
         {
           logger,

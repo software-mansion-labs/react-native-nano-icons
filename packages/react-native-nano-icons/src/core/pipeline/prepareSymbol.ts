@@ -4,7 +4,7 @@ import { shouldSkipPath } from '../glyph/parse';
 import type { PathKitModule } from '../pathkit/types';
 import { symbolsetContentsJson } from '../symbols/contents';
 import { contentBounds, resolveSymbolLayers } from '../symbols/layers';
-import { buildSymbolTemplate } from '../symbols/template';
+import { buildSymbolTemplate, isMulticolor } from '../symbols/template';
 import { buildVectorDrawableXml } from '../symbols/vectorDrawable';
 import { collectingLogger, type IconLog } from './prepareIcon';
 import { prepareSvgLayers } from './prepare';
@@ -15,6 +15,8 @@ export type SymbolTask = {
   filePath: string;
   setName: string;
   prefix: string;
+  /** `'content'` (default) or `'viewBox'`; see `SymbolSetConfig.fit`. */
+  fit?: 'content' | 'viewBox';
 };
 
 export type SymbolAsset = {
@@ -84,11 +86,15 @@ export async function prepareSymbol(
         `    ⊖ Knockout layer: hole in monochrome, own fill in original`
       ),
   });
+  // 'viewBox' keeps the padding each icon was drawn with, so a set drawn on one
+  // grid keeps its relative sizes; 'content' scales every icon to fill the box.
   const bounds =
-    contentBounds(
-      pathkit,
-      layers.map((l) => l.d)
-    ) ?? undefined;
+    task.fit === 'viewBox'
+      ? undefined
+      : (contentBounds(
+          pathkit,
+          layers.map((l) => l.d)
+        ) ?? undefined);
   result.asset = {
     assetName,
     assetDirName: `${assetName}.symbolset`,
@@ -100,7 +106,7 @@ export async function prepareSymbol(
       descriptiveName: assetName,
       logger,
     }),
-    contents: symbolsetContentsJson(svgFilename),
+    contents: symbolsetContentsJson(svgFilename, isMulticolor(layers)),
     vdXml: buildVectorDrawableXml({
       layers: [{ d: monochrome, fill: null }],
       viewBox: prepared.viewBox,
