@@ -112,6 +112,23 @@ describe('getFingerprintSync', () => {
     }
   });
 
+  test('CRLF line endings produce the same hash as LF', () => {
+    const dir = makeTmpDir();
+    try {
+      const file = path.join(dir, 'icon.svg');
+      const lines = ['<svg viewBox="0 0 24 24">', '<path d="M0 0L24 24"/>'];
+      fs.writeFileSync(file, `${lines.join('\n')}\n</svg>\n`);
+      const h1 = getFingerprintSync(dir, INPUTS);
+
+      fs.writeFileSync(file, `${lines.join('\r\n')}\r\n</svg>\r\n`);
+      const h2 = getFingerprintSync(dir, INPUTS);
+
+      expect(h1).toBe(h2);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   test.each([
     ['upm', { ...INPUTS, upm: 512 }],
     ['safeZone', { ...INPUTS, safeZone: 1000 }],

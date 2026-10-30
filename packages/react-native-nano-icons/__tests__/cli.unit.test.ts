@@ -9,6 +9,8 @@ const mockCreateOraLogger = jest.fn();
 const mockBuildAllSymbols = jest.fn();
 const mockLinkBareSymbols = jest.fn();
 const mockLinkBareAndroidDrawables = jest.fn();
+const mockCheckAllFonts = jest.fn();
+const mockCheckAllSymbols = jest.fn();
 
 jest.mock('../cli/index', () => ({
   IconSetBuildError: jest.requireActual('../cli/build').IconSetBuildError,
@@ -19,6 +21,8 @@ jest.mock('../cli/index', () => ({
   linkBareAndroidDrawables: (...args: unknown[]) =>
     mockLinkBareAndroidDrawables(...args),
   buildAllFonts: (...args: unknown[]) => mockBuildAllFonts(...args),
+  checkAllFonts: (...args: unknown[]) => mockCheckAllFonts(...args),
+  checkAllSymbols: (...args: unknown[]) => mockCheckAllSymbols(...args),
   linkBare: (...args: unknown[]) => mockLinkBare(...args),
   loadNanoIconsConfig: (...args: unknown[]) => mockLoadNanoIconsConfig(...args),
   loadDynamicIconSets: (...args: unknown[]) => mockLoadDynamicIconSets(...args),
@@ -336,6 +340,115 @@ describe('cli main', () => {
     expect(mockLinkBare).not.toHaveBeenCalled();
   });
 
+  describe('--check', () => {
+    const SYMBOL_SETS = [{ inputDir: 's' }];
+
+    beforeEach(() => {
+      mockLoadNanoIconsConfig.mockReturnValue({
+        iconSets: SETS,
+        symbolSets: SYMBOL_SETS,
+      });
+      mockCheckAllFonts.mockReturnValue([]);
+      mockCheckAllSymbols.mockReturnValue([]);
+    });
+
+    test('checks the icon and symbol sets, and builds and links nothing', async () => {
+      process.argv = ['node', 'cli', '--check'];
+
+      await runMain();
+
+      expect(mockCheckAllFonts).toHaveBeenCalledWith(
+        SETS,
+        process.cwd(),
+        expect.objectContaining({ appRoot: process.cwd() })
+      );
+      expect(mockCheckAllSymbols).toHaveBeenCalledWith(
+        SYMBOL_SETS,
+        process.cwd(),
+        expect.anything()
+      );
+      expect(mockBuildAllFonts).not.toHaveBeenCalled();
+      expect(mockBuildAllSymbols).not.toHaveBeenCalled();
+      expect(mockLinkBare).not.toHaveBeenCalled();
+      expect(mockLinkBareSymbols).not.toHaveBeenCalled();
+      expect(mockLinkBareAndroidDrawables).not.toHaveBeenCalled();
+    });
+
+    test('out-of-date sets fail the run and are named', async () => {
+      process.argv = ['node', 'cli', '--check'];
+      mockCheckAllFonts.mockReturnValue([
+        { name: 'A', reason: 'A.ttf is missing' },
+      ]);
+      mockCheckAllSymbols.mockReturnValue([
+        {
+          name: 'tabicons',
+          reason: 'its SVGs, prefix or installed versions changed',
+        },
+      ]);
+
+      await expect(runMain()).rejects.toThrow(
+        '2 sets are out of date: A.ttf, tabicons symbols. Run the same command without --check to rebuild them.'
+      );
+    });
+
+    test('an icon set and a symbol set with the same name are told apart', async () => {
+      process.argv = ['node', 'cli', '--check'];
+      mockCheckAllFonts.mockReturnValue([
+        { name: 'Ico', reason: 'Ico.ttf is missing' },
+      ]);
+      mockCheckAllSymbols.mockReturnValue([
+        { name: 'Ico', reason: 'Ico.symbolmap.json is missing' },
+      ]);
+
+      await expect(runMain()).rejects.toThrow(
+        '2 sets are out of date: Ico.ttf, Ico symbols. Run the same command without --check to rebuild them.'
+      );
+    });
+
+    test('one out-of-date set is named in the singular', async () => {
+      process.argv = ['node', 'cli', '--check'];
+      mockCheckAllFonts.mockReturnValue([
+        { name: 'A', reason: 'A.ttf is missing' },
+      ]);
+
+      await expect(runMain()).rejects.toThrow(
+        '1 set is out of date: A.ttf. Run the same command without --check to rebuild it.'
+      );
+    });
+
+    test('with --dynamic only the dynamic sets are checked', async () => {
+      process.argv = ['node', 'cli', '--check', '--dynamic'];
+      mockLoadDynamicIconSets.mockReturnValue([SETS[2]]);
+
+      await runMain();
+
+      expect(mockCheckAllFonts).toHaveBeenCalledWith(
+        [SETS[2]],
+        process.cwd(),
+        expect.anything()
+      );
+      expect(mockCheckAllSymbols).not.toHaveBeenCalled();
+      expect(mockBuildAllFonts).not.toHaveBeenCalled();
+    });
+
+    test('with --dynamic-app-config the dynamic sets of the app config are checked', async () => {
+      process.argv = ['node', 'cli', '--check', '--dynamic-app-config'];
+      mockLoadDynamicSetsFromAppConfig.mockReturnValue([SETS[1]]);
+
+      await runMain();
+
+      expect(mockLoadDynamicSetsFromAppConfig).toHaveBeenCalledWith(
+        process.cwd()
+      );
+      expect(mockCheckAllFonts).toHaveBeenCalledWith(
+        [SETS[1]],
+        process.cwd(),
+        expect.anything()
+      );
+      expect(mockBuildAllFonts).not.toHaveBeenCalled();
+    });
+  });
+
   test('--dynamic builds only dynamic sets and never links', async () => {
     process.argv = ['node', 'cli', '--dynamic'];
     mockLoadDynamicIconSets.mockReturnValue([SETS[2]]);
@@ -357,6 +470,7 @@ describe('parseCliArgs', () => {
     expect(parseCliArgs([])).toEqual({
       dynamic: false,
       appConfig: false,
+      check: false,
       verbose: false,
       help: false,
     });
@@ -368,12 +482,14 @@ describe('parseCliArgs', () => {
         '--path',
         'apps/mobile',
         '--dynamic-app-config',
+        '--check',
         '--verbose',
       ])
     ).toEqual({
       path: 'apps/mobile',
       dynamic: true,
       appConfig: true,
+      check: true,
       verbose: true,
       help: false,
     });
@@ -467,6 +583,7 @@ describe('runCli', () => {
       '--path',
       '--dynamic',
       '--dynamic-app-config',
+      '--check',
       '--verbose',
       '--help',
       '-h',
@@ -509,6 +626,20 @@ describe('runCli', () => {
     expect(mockCreateOraLogger).toHaveBeenCalledWith('normal');
     expect(mockLinkBare).toHaveBeenCalled();
     expect(logger.fail).not.toHaveBeenCalled();
+  });
+
+  test('an out-of-date set reports the sets and exits with 1', async () => {
+    mockCheckAllFonts.mockReturnValue([
+      { name: 'A', reason: 'A.ttf is missing' },
+    ]);
+    mockCheckAllSymbols.mockReturnValue([]);
+
+    await expect(runCli(['--check'])).resolves.toBe(1);
+
+    expect(logger.fail).toHaveBeenCalledWith(
+      '1 set is out of date: A.ttf. Run the same command without --check to rebuild it.'
+    );
+    expect(mockBuildAllFonts).not.toHaveBeenCalled();
   });
 
   test('a failed build reports the error and exits with 1', async () => {

@@ -7,7 +7,9 @@ import {
   type SvgWorkerPool,
 } from '../src/core/pipeline/index';
 import { QUADRATIC_ERROR_BOUND_EM } from '../src/core/font/quadratic';
+import type { NanoGlyphMap } from '../src/core/types';
 import type { NanoLogger } from './logger';
+import { staleLinkedFont } from './link';
 import { fingerprintSvgDirSync } from '../src/utils/fingerPrint';
 import {
   fontToolchainVersions,
@@ -65,53 +67,202 @@ function webOutputFor(configured: boolean, withWeb: boolean): WebOutput {
   return 'ignored';
 }
 
-function familyOfCurrentOutput(
-  inputHash: string,
-  outputDir: string,
-  fontFamily: string,
-  linking: 'static' | 'dynamic',
-  webOutput: WebOutput,
-  logger?: NanoLogger
-): string | undefined {
-  const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
-  const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
-  const woff2Path = path.join(outputDir, `${fontFamily}.woff2`);
+export type StaleSet = { name: string; reason: string };
 
-  if (
-    !fs.existsSync(outputDir) ||
-    !fs.existsSync(ttfPath) ||
-    !fs.existsSync(glyphmapPath) ||
-    (webOutput === 'required' && !fs.existsSync(woff2Path))
-  ) {
-    return undefined;
+type OutputState = { family: string } | { staleBecause: string };
+
+function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
+  const { fontFamily, ttfPath, glyphmapPath, woff2Path, webOutput } = set;
+  const missing = [
+    ttfPath,
+    glyphmapPath,
+    ...(webOutput === 'required' ? [woff2Path] : []),
+  ].find((file) => !fs.existsSync(file));
+  if (missing) {
+    return { staleBecause: `${path.basename(missing)} is missing` };
   }
 
-  const glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
+  let glyphmap: NanoGlyphMap;
+  try {
+    glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
+  } catch {
+    return {
+      staleBecause: `${path.basename(glyphmapPath)} is not valid JSON`,
+    };
+  }
   const storedHash: string | undefined = glyphmap?.m?.h;
   const storedFamily: string | undefined = glyphmap?.m?.f;
   const storedLinking: 'static' | 'dynamic' =
     glyphmap?.m?.l === 'd' ? 'dynamic' : 'static';
   const storedWeb = glyphmap?.m?.w === true;
-  const webCurrent =
-    webOutput === 'ignored' || storedWeb === (webOutput === 'required');
 
-  if (
-    storedHash &&
-    storedFamily &&
-    storedHash === inputHash &&
-    storedLinking === linking &&
-    webCurrent
-  ) {
-    const iconCount = Object.keys(glyphmap?.i ?? {}).length;
-    logger?.succeed(
-      `${fontFamily}.ttf is up to date [${iconCount} icon${
-        iconCount === 1 ? '' : 's'
-      }]`
-    );
-    return storedFamily;
+  if (!storedHash || !storedFamily) {
+    return { staleBecause: `${path.basename(glyphmapPath)} is incomplete` };
+  }
+  if (storedHash !== set.inputHash) {
+    return {
+      staleBecause: 'its SVGs, options or installed versions changed',
+    };
+  }
+  if (storedLinking !== set.linking) {
+    return { staleBecause: `its linking changed to "${set.linking}"` };
+  }
+  if (webOutput !== 'ignored' && storedWeb !== (webOutput === 'required')) {
+    return {
+      staleBecause: `web output was turned ${storedWeb ? 'off' : 'on'}`,
+    };
   }
 
-  return undefined;
+  const iconCount = Object.keys(glyphmap?.i ?? {}).length;
+  logger?.succeed(
+    `${fontFamily}.ttf is up to date [${iconCount} icon${
+      iconCount === 1 ? '' : 's'
+    }]`
+  );
+  return { family: storedFamily };
+}
+
+type ResolvedIconSet = {
+  fontFamily: string;
+  inputDir: string;
+  outputDir: string;
+  ttfPath: string;
+  glyphmapPath: string;
+  woff2Path: string;
+  linking: 'static' | 'dynamic';
+  web: boolean;
+  webOutput: WebOutput;
+  config: {
+    fontFamily: string;
+    upm: number;
+    safeZone: number;
+    curveTolerance: number;
+    startUnicode: number;
+    linking: 'static' | 'dynamic';
+    web: boolean;
+  };
+  inputHash: string;
+  svgHashByFile: Map<string, string>;
+};
+
+function resolveIconSet(
+  set: IconSetConfig,
+  projectRoot: string,
+  withWeb: boolean,
+  versions: { version: string; toolchain: readonly string[] }
+): ResolvedIconSet {
+  const inputDir = path.resolve(projectRoot, set.inputDir);
+  const fontFamily = set.fontFamily ?? path.basename(inputDir);
+  const linking: 'static' | 'dynamic' = set.linking ?? 'static';
+  const web = (set.web ?? false) && withWeb;
+  const webOutput = webOutputFor(set.web ?? false, withWeb);
+
+  if (!fs.existsSync(inputDir)) {
+    throw new Error(
+      `[react-native-nano-icons] Input directory does not exist: ${inputDir} (from "${set.inputDir}")`
+    );
+  }
+
+  const upm = set.upm ?? DEFAULT_UPM;
+  const safeZone = set.safeZone ?? Math.round(upm * DEFAULT_SAFE_ZONE_RATIO);
+  if (safeZone > upm) {
+    throw new Error(
+      `[react-native-nano-icons] safeZone (${safeZone}) of "${fontFamily}" must not exceed upm (${upm}).`
+    );
+  }
+  const curveTolerance = set.curveTolerance ?? QUADRATIC_ERROR_BOUND_EM;
+  if (!Number.isFinite(curveTolerance) || curveTolerance <= 0) {
+    throw new Error(
+      `[react-native-nano-icons] curveTolerance (${inspect(curveTolerance)}) of "${fontFamily}" must be a positive number.`
+    );
+  }
+
+  const outputDir = set.outputDir
+    ? path.resolve(projectRoot, set.outputDir)
+    : path.join(path.dirname(inputDir), 'nanoicons');
+
+  const config = {
+    fontFamily,
+    upm,
+    safeZone,
+    curveTolerance,
+    startUnicode:
+      set.startUnicode !== undefined
+        ? typeof set.startUnicode === 'string'
+          ? parseInt(set.startUnicode, 16)
+          : set.startUnicode
+        : DEFAULT_START_UNICODE,
+    linking,
+    web,
+  };
+
+  const { hash: inputHash, svgHashByFile } = fingerprintSvgDirSync(inputDir, {
+    upm: config.upm,
+    safeZone: config.safeZone,
+    curveTolerance: config.curveTolerance,
+    startUnicode: config.startUnicode,
+    ...versions,
+  });
+
+  return {
+    fontFamily,
+    inputDir,
+    outputDir,
+    ttfPath: path.join(outputDir, `${fontFamily}.ttf`),
+    glyphmapPath: path.join(outputDir, `${fontFamily}.glyphmap.json`),
+    woff2Path: path.join(outputDir, `${fontFamily}.woff2`),
+    linking,
+    web,
+    webOutput,
+    config,
+    inputHash,
+    svgHashByFile,
+  };
+}
+
+/**
+ * Report the icon sets whose generated files are out of date, without building or writing anything.
+ * A set is out of date when a build would regenerate it. With `appRoot`, a static set is also out of date
+ * when its font linked into that app's android/ or ios/ project differs from the generated TTF.
+ */
+export function checkAllFonts(
+  iconSets: IconSetConfig[],
+  projectRoot: string,
+  options?: { logger?: NanoLogger; withWeb?: boolean; appRoot?: string }
+): StaleSet[] {
+  const versions = {
+    version: packageVersion(),
+    toolchain: fontToolchainVersions(),
+  };
+  const stale: StaleSet[] = [];
+  for (const set of iconSets) {
+    const resolved = resolveIconSet(
+      set,
+      projectRoot,
+      options?.withWeb ?? true,
+      versions
+    );
+    const state = currentOutput(resolved, options?.logger);
+    if ('staleBecause' in state) {
+      options?.logger?.fail(
+        `${resolved.fontFamily}.ttf is out of date: ${state.staleBecause}`
+      );
+      stale.push({ name: resolved.fontFamily, reason: state.staleBecause });
+      continue;
+    }
+    if (options?.appRoot && resolved.linking === 'static') {
+      const reason = staleLinkedFont(
+        options.appRoot,
+        state.family,
+        resolved.ttfPath
+      );
+      if (reason) {
+        options.logger?.fail(reason);
+        stale.push({ name: resolved.fontFamily, reason });
+      }
+    }
+  }
+  return stale;
 }
 
 /**
@@ -132,83 +283,41 @@ export async function buildAllFonts(
 ): Promise<BuiltFont[]> {
   const withWeb = options?.withWeb ?? true;
   const logger = options?.logger;
-  const version = packageVersion();
-  const toolchain = fontToolchainVersions();
+  const versions = {
+    version: packageVersion(),
+    toolchain: fontToolchainVersions(),
+  };
   const results: BuiltFont[] = [];
   const failures: string[] = [];
   let allSkipped = true;
 
   for (let i = 0; i < iconSets.length; i++) {
-    const set = iconSets[i]!;
-    const inputDir = path.resolve(projectRoot, set.inputDir);
-    const fontFamily = set.fontFamily ?? path.basename(inputDir);
-    const linking: 'static' | 'dynamic' = set.linking ?? 'static';
-    const web = (set.web ?? false) && withWeb;
-    const webOutput = webOutputFor(set.web ?? false, withWeb);
-
-    if (!fs.existsSync(inputDir)) {
-      throw new Error(
-        `[react-native-nano-icons] Input directory does not exist: ${inputDir} (from "${set.inputDir}")`
-      );
-    }
-
-    const upm = set.upm ?? DEFAULT_UPM;
-    const safeZone = set.safeZone ?? Math.round(upm * DEFAULT_SAFE_ZONE_RATIO);
-    if (safeZone > upm) {
-      throw new Error(
-        `[react-native-nano-icons] safeZone (${safeZone}) of "${fontFamily}" must not exceed upm (${upm}).`
-      );
-    }
-    const curveTolerance = set.curveTolerance ?? QUADRATIC_ERROR_BOUND_EM;
-    if (!Number.isFinite(curveTolerance) || curveTolerance <= 0) {
-      throw new Error(
-        `[react-native-nano-icons] curveTolerance (${inspect(curveTolerance)}) of "${fontFamily}" must be a positive number.`
-      );
-    }
-
-    const outputDir = set.outputDir
-      ? path.resolve(projectRoot, set.outputDir)
-      : path.join(path.dirname(inputDir), 'nanoicons');
-    const ttfPath = path.join(outputDir, `${fontFamily}.ttf`);
-    const glyphmapPath = path.join(outputDir, `${fontFamily}.glyphmap.json`);
-    const woff2Path = path.join(outputDir, `${fontFamily}.woff2`);
-
-    const config = {
+    const resolved = resolveIconSet(
+      iconSets[i]!,
+      projectRoot,
+      withWeb,
+      versions
+    );
+    const {
       fontFamily,
-      upm,
-      safeZone,
-      curveTolerance,
-      startUnicode:
-        set.startUnicode !== undefined
-          ? typeof set.startUnicode === 'string'
-            ? parseInt(set.startUnicode, 16)
-            : set.startUnicode
-          : DEFAULT_START_UNICODE,
+      inputDir,
+      outputDir,
+      ttfPath,
+      glyphmapPath,
+      woff2Path,
       linking,
       web,
-    };
-
-    const { hash: inputHash, svgHashByFile } = fingerprintSvgDirSync(inputDir, {
-      upm: config.upm,
-      safeZone: config.safeZone,
-      curveTolerance: config.curveTolerance,
-      startUnicode: config.startUnicode,
-      version,
-      toolchain,
-    });
-
-    const currentFamily = familyOfCurrentOutput(
-      inputHash,
-      outputDir,
-      fontFamily,
-      linking,
       webOutput,
-      logger
-    );
-    if (currentFamily) {
+      config,
+      inputHash,
+      svgHashByFile,
+    } = resolved;
+
+    const current = currentOutput(resolved, logger);
+    if ('family' in current) {
       results.push({
         fontFamily,
-        family: currentFamily,
+        family: current.family,
         ttfPath,
         glyphmapPath,
         linking,

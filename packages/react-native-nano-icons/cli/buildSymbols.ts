@@ -9,6 +9,7 @@ import type { SvgWorkerPool } from '../src/core/pipeline/iconPool';
 import type { SymbolTask } from '../src/core/pipeline/prepareSymbol';
 import type { PreparedSvgCache } from '../src/core/pipeline/preparedSvgCache';
 import type { NanoLogger } from './logger';
+import type { StaleSet } from './build';
 import { fingerprintSymbolDirSync } from '../src/utils/fingerPrint';
 import { toOriginalDrawableResourceName } from '../src/utils/naming';
 import {
@@ -40,34 +41,40 @@ export class SymbolSetBuildError extends Error {
 
 const DEFAULT_PREFIX = 'nano';
 
-function shouldSkipGeneration(
+type SymbolOutputState = { built: BuiltSymbolSet } | { staleBecause: string };
+
+function currentSymbolOutput(
   inputHash: string,
   outputDir: string,
   name: string,
   logger?: NanoLogger
-): BuiltSymbolSet | null {
+): SymbolOutputState {
   const symbolmapPath = path.join(outputDir, `${name}.symbolmap.json`);
   const dtsPath = path.join(outputDir, `${name}.symbols.d.ts`);
   const symbolsDir = path.join(outputDir, `${name}.symbols`);
   const drawablesDir = path.join(outputDir, `${name}.drawables`);
 
-  if (
-    !fs.existsSync(symbolmapPath) ||
-    !fs.existsSync(dtsPath) ||
-    !fs.existsSync(symbolsDir) ||
-    !fs.existsSync(drawablesDir)
-  ) {
-    return null;
+  const missing = [symbolmapPath, dtsPath, symbolsDir, drawablesDir].find(
+    (file) => !fs.existsSync(file)
+  );
+  if (missing) {
+    return { staleBecause: `${path.basename(missing)} is missing` };
   }
 
   let symbolmap: NanoSymbolMap;
   try {
     symbolmap = JSON.parse(fs.readFileSync(symbolmapPath, 'utf8'));
   } catch {
-    return null;
+    return {
+      staleBecause: `${path.basename(symbolmapPath)} is not valid JSON`,
+    };
   }
 
-  if (!symbolmap?.m?.h || symbolmap.m.h !== inputHash) return null;
+  if (!symbolmap?.m?.h || symbolmap.m.h !== inputHash) {
+    return {
+      staleBecause: 'its SVGs, prefix or installed versions changed',
+    };
+  }
 
   const symbols = symbolmap.s ?? {};
   const drawables = symbolmap.d ?? {};
@@ -81,22 +88,87 @@ function shouldSkipGeneration(
       `${toOriginalDrawableResourceName(resourceName)}.xml`
     ),
   ]);
-  if (!assetDirs.every((d) => fs.existsSync(d))) return null;
-  if (!drawableFiles.every((f) => fs.existsSync(f))) return null;
+  const missingAsset = [...assetDirs, ...drawableFiles].find(
+    (file) => !fs.existsSync(file)
+  );
+  if (missingAsset) {
+    return { staleBecause: `${path.basename(missingAsset)} is missing` };
+  }
 
   logger?.info(`${name}: SVG fingerprint unchanged, skipping build.`);
   return {
-    name,
-    prefix: symbolmap.m.p,
-    symbolsDir,
-    assetDirs,
-    drawablesDir,
-    drawableFiles,
-    dtsPath,
-    symbolmapPath,
-    symbols,
-    drawables,
+    built: {
+      name,
+      prefix: symbolmap.m.p,
+      symbolsDir,
+      assetDirs,
+      drawablesDir,
+      drawableFiles,
+      dtsPath,
+      symbolmapPath,
+      symbols,
+      drawables,
+    },
   };
+}
+
+function resolveSymbolSet(
+  set: SymbolSetConfig,
+  projectRoot: string,
+  versions: { version: string; toolchain: readonly string[] }
+) {
+  const inputDir = path.resolve(projectRoot, set.inputDir);
+  const name = set.name ?? path.basename(inputDir);
+  const prefix = set.prefix ?? DEFAULT_PREFIX;
+
+  if (!fs.existsSync(inputDir)) {
+    throw new Error(
+      `[react-native-nano-icons] Input directory does not exist: ${inputDir} (from "${set.inputDir}")`
+    );
+  }
+
+  const outputDir = set.outputDir
+    ? path.resolve(projectRoot, set.outputDir)
+    : path.join(path.dirname(inputDir), 'nanoicons');
+  const { hash: inputHash, svgHashByFile } = fingerprintSymbolDirSync(
+    inputDir,
+    { prefix, ...versions }
+  );
+
+  return { inputDir, name, prefix, outputDir, inputHash, svgHashByFile };
+}
+
+/**
+ * Report the symbol sets whose generated files are out of date, without building or writing anything.
+ * A set is out of date when a build would regenerate it.
+ */
+export function checkAllSymbols(
+  symbolSets: SymbolSetConfig[],
+  projectRoot: string,
+  options?: { logger?: NanoLogger }
+): StaleSet[] {
+  const versions = {
+    version: packageVersion(),
+    toolchain: fontToolchainVersions(),
+  };
+  const stale: StaleSet[] = [];
+  for (const set of symbolSets) {
+    const { name, outputDir, inputHash } = resolveSymbolSet(
+      set,
+      projectRoot,
+      versions
+    );
+    const state = currentSymbolOutput(inputHash, outputDir, name);
+    if ('staleBecause' in state) {
+      options?.logger?.fail(
+        `${name} symbols are out of date: ${state.staleBecause}`
+      );
+      stale.push({ name, reason: state.staleBecause });
+    } else {
+      options?.logger?.succeed(`${name} symbols are up to date`);
+    }
+  }
+  return stale;
 }
 
 // Build all symbol sets. Output goes in a "nanoicons" folder next to each
@@ -112,44 +184,27 @@ export async function buildAllSymbols(
   }
 ): Promise<BuiltSymbolSet[]> {
   const logger = options?.logger;
-  const version = packageVersion();
-  const toolchain = fontToolchainVersions();
+  const versions = {
+    version: packageVersion(),
+    toolchain: fontToolchainVersions(),
+  };
   const results: BuiltSymbolSet[] = [];
   const failures: string[] = [];
 
   for (let i = 0; i < symbolSets.length; i++) {
     const set = symbolSets[i]!;
-    const inputDir = path.resolve(projectRoot, set.inputDir);
-    const name = set.name ?? path.basename(inputDir);
-    const prefix = set.prefix ?? DEFAULT_PREFIX;
-
-    if (!fs.existsSync(inputDir)) {
-      throw new Error(
-        `[react-native-nano-icons] Input directory does not exist: ${inputDir} (from "${set.inputDir}")`
-      );
-    }
-
-    const outputDir = set.outputDir
-      ? path.resolve(projectRoot, set.outputDir)
-      : path.join(path.dirname(inputDir), 'nanoicons');
+    const { inputDir, name, prefix, outputDir, inputHash, svgHashByFile } =
+      resolveSymbolSet(set, projectRoot, versions);
 
     if ('multicolor' in set) {
       logger?.warn(
         `${name}: "multicolor" is no longer needed — every symbol now carries both rendering modes; remove it from the config.`
       );
     }
-    const { hash: inputHash, svgHashByFile } = fingerprintSymbolDirSync(
-      inputDir,
-      {
-        prefix,
-        version,
-        toolchain,
-      }
-    );
 
-    const skipped = shouldSkipGeneration(inputHash, outputDir, name, logger);
-    if (skipped) {
-      results.push(skipped);
+    const current = currentSymbolOutput(inputHash, outputDir, name, logger);
+    if ('built' in current) {
+      results.push(current.built);
       continue;
     }
 
