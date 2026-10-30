@@ -1,4 +1,4 @@
-import { runtimeError } from './utils/runtimeLog';
+import { runtimeError, warnRuntime } from './utils/runtimeLog';
 
 type FontFaceLike = { load(): Promise<unknown> };
 
@@ -48,4 +48,10 @@ export async function registerWebFont(
 
 export function __resetWebFontsForTests(): void {
   registered.clear();
+}
+
+export function warnFontNotLoaded(fontBasename: string): void {
+  warnRuntime(
+    `Icon font "${fontBasename}" is not loaded on web: pass its url, e.g. require("${fontBasename}.woff2") or { uri }.`
+  );
 }
