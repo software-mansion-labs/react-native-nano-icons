@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import { DOMParser, type Element } from '@xmldom/xmldom';
+import { flattenSvg } from '../src/core/flatten/index';
 import {
   calculateOpColor,
   parseFlattenedSvg,
@@ -8,7 +9,9 @@ import {
   shouldSkipPath,
 } from '../src/core/glyph/parse';
 import { preprocessSvg, validateSvg } from '../src/core/glyph/validate';
+import type { PathKitModule } from '../src/core/pathkit/types';
 import { parseColor } from '../src/utils/parse';
+import { loadPathKit } from './helpers/geometry';
 
 // ---------------------------------------------------------------------------
 // parseColor
@@ -152,6 +155,48 @@ describe('parseFlattenedSvg opacity integration', () => {
     expect(paths[0]!.fill).toBe('rgba(255,255,255,0.25)');
   });
 
+  test('group opacity applies to every path inside the group', () => {
+    const svg = `<svg viewBox="0 0 24 24">
+      <g opacity="0.15">
+        <path d="M0 0L12 12" fill="#001A72"/>
+        <path d="M12 12L24 24" fill="#001A72"/>
+      </g>
+      <path d="M0 24L24 0" fill="#001A72"/>
+    </svg>`;
+    const { paths } = parseFlattenedSvg(svg);
+    expect(paths.map((p) => p.fill)).toEqual([
+      'rgba(0,26,114,0.15)',
+      'rgba(0,26,114,0.15)',
+      '#001A72',
+    ]);
+  });
+
+  test('nested group opacities multiply with the path opacity', () => {
+    const svg = `<svg viewBox="0 0 24 24">
+      <g opacity="0.5"><g opacity="0.5">
+        <path d="M0 0L24 24" fill="red" opacity="0.5"/>
+      </g></g>
+    </svg>`;
+    const { paths } = parseFlattenedSvg(svg);
+    expect(paths[0]!.fill).toBe('rgba(255,0,0,0.125)');
+  });
+
+  test('none and transparent fills stay unpainted under opacity', () => {
+    const svg = `<svg viewBox="0 0 24 24">
+      <g opacity="0.5">
+        <path d="M0 0L24 24" fill="none"/>
+        <path d="M0 0L24 24" fill="Transparent"/>
+      </g>
+      <path d="M0 0L24 24" fill="transparent" opacity="0.5"/>
+    </svg>`;
+    const { paths } = parseFlattenedSvg(svg);
+    expect(paths.map((p) => p.fill)).toEqual([
+      'none',
+      'Transparent',
+      'transparent',
+    ]);
+  });
+
   test('path without any opacity attr preserves original fill string', () => {
     const svg = `<svg viewBox="0 0 24 24">
       <path d="M0 0L24 24" fill="#123456"/>
@@ -166,6 +211,54 @@ describe('parseFlattenedSvg opacity integration', () => {
     </svg>`;
     const { paths } = parseFlattenedSvg(svg);
     expect(paths[0]!.fill).toBeNull();
+  });
+});
+
+describe('opacity after flattenSvg', () => {
+  const RED = '<path fill="#f00" d="M0 0H10V10H0Z"/>';
+  let PathKit: PathKitModule;
+
+  beforeAll(async () => {
+    PathKit = await loadPathKit();
+  });
+
+  const fills = (body: string, rootAttrs = '') =>
+    parseFlattenedSvg(
+      flattenSvg(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"${rootAttrs}>${body}</svg>`,
+        PathKit
+      )
+    ).paths.map((p) => p.fill);
+
+  test.each(['', 'inherit'])('a group opacity of %p is ignored', (opacity) => {
+    expect(fills(`<g opacity="${opacity}">${RED}${RED}</g>`)).toEqual([
+      '#f00',
+      '#f00',
+    ]);
+    expect(fills(`<g opacity="${opacity}">${RED}</g>`)).toEqual(['#f00']);
+  });
+
+  test('a transparent fill inherited inside a semi-transparent group stays transparent', () => {
+    expect(
+      fills(
+        `<g opacity="0.5" fill="transparent"><path d="M0 0H20V20H0Z"/>${RED}</g>`
+      )
+    ).toEqual(['transparent', 'rgba(255,0,0,0.5)']);
+  });
+
+  test('a root opacity applies to every path', () => {
+    expect(fills(RED, ' opacity="0.5"')).toEqual(['rgba(255,0,0,0.5)']);
+    expect(
+      fills(`${RED}<g opacity="0.5">${RED}${RED}</g>`, ' opacity="0.5"')
+    ).toEqual([
+      'rgba(255,0,0,0.5)',
+      'rgba(255,0,0,0.25)',
+      'rgba(255,0,0,0.25)',
+    ]);
+    expect(fills(`${RED}${RED}`, ' style="opacity:0.5"')).toEqual([
+      'rgba(255,0,0,0.5)',
+      'rgba(255,0,0,0.5)',
+    ]);
   });
 });
 

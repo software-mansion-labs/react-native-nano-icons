@@ -76,6 +76,27 @@ describe('same-colour paths of #91', () => {
   });
 });
 
+describe('a semi-transparent group of same-color shapes', () => {
+  test('becomes one layer at the group opacity', async () => {
+    const { paths } = (await prepareSvgLayers({
+      filePath: path.join(
+        __dirname,
+        '..',
+        'test_icons',
+        'swm_icons',
+        'duotone',
+        'Command.svg'
+      ),
+      fileLabel: 'Command.svg',
+      pathkit: PathKit,
+    }))!;
+    expect(paths.map((p) => p.fill)).toEqual([
+      'rgba(0,26,114,0.15)',
+      '#001A72',
+    ]);
+  });
+});
+
 describe('mergeSameColorPaths', () => {
   const square = (x: number) => `M${x} 0 H${x + 10} V10 H${x} Z`;
   const squareReversed = (x: number) => `M${x} 0 V10 H${x + 10} V0 Z`;
