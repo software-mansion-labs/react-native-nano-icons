@@ -47,7 +47,7 @@ For each icon set:
 3. **Skips generation** if the existing glyphmap hash, linking and web flag (`m.w`) match the config and every expected file exists (incremental builds)
 4. Deletes stale output files
 5. Calls `runFontPipeline()` with resolved config and paths
-6. Returns `{ fontFamily, family, ttfPath, glyphmapPath, linking, woff2Path? }` — `family` is `glyphMap.m.f`, the configured name plus the first 8 fingerprint characters; it is also the TTF's internal font name and the Android asset file name
+6. Returns `{ fontFamily, family, ttfPath, glyphmapPath, linking, woff2Path? }` — `family` is `glyphMap.m.f`, the configured name plus the first 8 characters of the SHA-256 of the TTF built under the configured name; it is also the TTF's internal font name and the Android asset file name
 
 ---
 
@@ -221,7 +221,7 @@ Includes metadata:
 ```json
 {
   "m": {
-    "f": "FontFamily-1a2b3c4d", // runtime font family: configured name + first 8 fingerprint chars
+    "f": "FontFamily-1a2b3c4d", // runtime font family: configured name + first 8 chars of the built font's hash
     "u": 1024,          // upm
     "z": 1020,          // safeZone
     "s": 59648,         // startUnicode (0xe900)
@@ -236,7 +236,7 @@ Includes metadata:
 
 ### Step 4: Compile TTF
 
-**`compileTtfFromGlyphs({ glyphs, outTtfPath, fontName, upm, ascent, descent })`**
+**`compileTtfFromGlyphs({ glyphs, fontName, upm, ascent, descent })`**
 
 **File:** `src/core/font/compile.ts`
 
@@ -267,7 +267,7 @@ Includes metadata:
    - Sets `OS/2` Win and Typo metrics
    - **Sets USE_TYPO_METRICS flag** (bit 7 of `fsSelection`) — prevents vertical clipping on Windows/Android
 
-4. **Write `.ttf` file**
+4. **Name and write the `.ttf`**: with an input fingerprint, the TTF built under the configured name is hashed, and the font is built again under `<fontFamily>-<first 8 hex of that hash>`
 
 5. With `web: true`, **encode the same buffer to WOFF2** via the encoder bundled with `fonteditor-core` and write `<fontFamily>.woff2` beside it
 

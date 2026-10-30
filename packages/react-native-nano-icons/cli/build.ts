@@ -10,6 +10,7 @@ import { QUADRATIC_ERROR_BOUND_EM } from '../src/core/font/quadratic';
 import type { NanoGlyphMap } from '../src/core/types';
 import type { NanoLogger } from './logger';
 import { staleLinkedFont } from './link';
+import { buildsSameOutputs } from './sameOutputs';
 import { fingerprintSvgDirSync } from '../src/utils/fingerPrint';
 import {
   fontToolchainVersions,
@@ -69,6 +70,17 @@ function webOutputFor(configured: boolean, withWeb: boolean): WebOutput {
 
 export type StaleSet = { name: string; reason: string };
 
+const STALE_REASON = {
+  missing: (file: string) => `${file} is missing`,
+  invalidJson: (file: string) => `${file} is not valid JSON`,
+  incomplete: (file: string) => `${file} is incomplete`,
+  inputsChanged: 'its SVGs, options or installed versions changed',
+  linkingChanged: (linking: 'static' | 'dynamic') =>
+    `its linking changed to "${linking}"`,
+  webOutputChanged: (enabled: boolean) =>
+    `web output was turned ${enabled ? 'on' : 'off'}`,
+} as const;
+
 type OutputState = { family: string } | { staleBecause: string };
 
 function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
@@ -79,7 +91,7 @@ function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
     ...(webOutput === 'required' ? [woff2Path] : []),
   ].find((file) => !fs.existsSync(file));
   if (missing) {
-    return { staleBecause: `${path.basename(missing)} is missing` };
+    return { staleBecause: STALE_REASON.missing(path.basename(missing)) };
   }
 
   let glyphmap: NanoGlyphMap;
@@ -87,7 +99,7 @@ function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
     glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
   } catch {
     return {
-      staleBecause: `${path.basename(glyphmapPath)} is not valid JSON`,
+      staleBecause: STALE_REASON.invalidJson(path.basename(glyphmapPath)),
     };
   }
   const storedHash: string | undefined = glyphmap?.m?.h;
@@ -97,20 +109,18 @@ function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
   const storedWeb = glyphmap?.m?.w === true;
 
   if (!storedHash || !storedFamily) {
-    return { staleBecause: `${path.basename(glyphmapPath)} is incomplete` };
+    return {
+      staleBecause: STALE_REASON.incomplete(path.basename(glyphmapPath)),
+    };
   }
   if (storedHash !== set.inputHash) {
-    return {
-      staleBecause: 'its SVGs, options or installed versions changed',
-    };
+    return { staleBecause: STALE_REASON.inputsChanged };
   }
   if (storedLinking !== set.linking) {
-    return { staleBecause: `its linking changed to "${set.linking}"` };
+    return { staleBecause: STALE_REASON.linkingChanged(set.linking) };
   }
   if (webOutput !== 'ignored' && storedWeb !== (webOutput === 'required')) {
-    return {
-      staleBecause: `web output was turned ${storedWeb ? 'off' : 'on'}`,
-    };
+    return { staleBecause: STALE_REASON.webOutputChanged(!storedWeb) };
   }
 
   const iconCount = Object.keys(glyphmap?.i ?? {}).length;
@@ -220,16 +230,35 @@ function resolveIconSet(
   };
 }
 
+async function familyIfBuiltTheSame(
+  set: ResolvedIconSet
+): Promise<string | undefined> {
+  const same = await buildsSameOutputs(
+    set.outputDir,
+    path.basename(set.glyphmapPath),
+    (outputDir) =>
+      runFontPipeline(
+        set.config,
+        { inputDir: set.inputDir, outputDir, tempDir: outputDir },
+        { inputHash: set.inputHash, svgHashByFile: set.svgHashByFile }
+      )
+  );
+  return same
+    ? JSON.parse(fs.readFileSync(set.glyphmapPath, 'utf8')).m.f
+    : undefined;
+}
+
 /**
- * Report the icon sets whose generated files are out of date, without building or writing anything.
- * A set is out of date when a build would regenerate it. With `appRoot`, a static set is also out of date
+ * Report the icon sets whose generated files are out of date, without writing anything to the project.
+ * A set is out of date when a build would change its generated files. When only its input fingerprint changed,
+ * the set is built into a temp dir and compared with them. With `appRoot`, a static set is also out of date
  * when its font linked into that app's android/ or ios/ project differs from the generated TTF.
  */
-export function checkAllFonts(
+export async function checkAllFonts(
   iconSets: IconSetConfig[],
   projectRoot: string,
   options?: { logger?: NanoLogger; withWeb?: boolean; appRoot?: string }
-): StaleSet[] {
+): Promise<StaleSet[]> {
   const versions = {
     version: packageVersion(),
     toolchain: fontToolchainVersions(),
@@ -242,7 +271,19 @@ export function checkAllFonts(
       options?.withWeb ?? true,
       versions
     );
-    const state = currentOutput(resolved, options?.logger);
+    let state = currentOutput(resolved, options?.logger);
+    if (
+      'staleBecause' in state &&
+      state.staleBecause === STALE_REASON.inputsChanged
+    ) {
+      const family = await familyIfBuiltTheSame(resolved);
+      if (family) {
+        options?.logger?.succeed(
+          `${resolved.fontFamily}.ttf is up to date: its inputs changed, but it builds the same`
+        );
+        state = { family };
+      }
+    }
     if ('staleBecause' in state) {
       options?.logger?.fail(
         `${resolved.fontFamily}.ttf is out of date: ${state.staleBecause}`

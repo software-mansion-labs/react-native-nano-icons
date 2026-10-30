@@ -732,6 +732,7 @@ describe('checkAllFonts', () => {
     writeSvgs(inputDir);
     inputHash = getFingerprintSync(inputDir, DEFAULT_INPUTS);
     mockRunPipeline.mockReset();
+    mockBuildWriting('rebuilt');
   });
 
   afterEach(() => {
@@ -741,6 +742,30 @@ describe('checkAllFonts', () => {
 
   function makeIconSet(extra?: Partial<IconSetConfig>): IconSetConfig {
     return { inputDir, outputDir, fontFamily: FONT_FAMILY, ...extra };
+  }
+
+  function mockBuildWriting(ttf: string): void {
+    mockRunPipeline.mockImplementation(async (config, paths, options) => {
+      writeFakeOutputs(
+        paths.outputDir,
+        config.fontFamily,
+        options?.inputHash,
+        config.linking,
+        config.web
+      );
+      fs.writeFileSync(
+        path.join(paths.outputDir, `${config.fontFamily}.ttf`),
+        ttf
+      );
+      return {
+        ttfPath: path.join(paths.outputDir, `${config.fontFamily}.ttf`),
+        glyphmapPath: path.join(
+          paths.outputDir,
+          `${config.fontFamily}.glyphmap.json`
+        ),
+        family: STORED_FAMILY,
+      };
+    });
   }
 
   function outputSnapshot(): Record<string, string> {
@@ -754,9 +779,10 @@ describe('checkAllFonts', () => {
     );
   }
 
-  test('an up-to-date set is not reported', () => {
+  test('an up-to-date set is not reported', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
-    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([]);
+    expect(await checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([]);
+    expect(mockRunPipeline).not.toHaveBeenCalled();
   });
 
   test('a set a build would skip is up to date, one it would rebuild is not', async () => {
@@ -768,7 +794,7 @@ describe('checkAllFonts', () => {
         makeIconSet(),
         { inputDir: other, outputDir: other, fontFamily: 'Other' },
       ];
-      expect(checkAllFonts(sets, os.tmpdir())).toEqual([
+      expect(await checkAllFonts(sets, os.tmpdir())).toEqual([
         { name: 'Other', reason: 'Other.ttf is missing' },
       ]);
     } finally {
@@ -776,44 +802,46 @@ describe('checkAllFonts', () => {
     }
   });
 
-  test('a missing file is named', () => {
+  test('a missing file is named', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
     fs.unlinkSync(path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`));
-    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+    expect(await checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
       { name: FONT_FAMILY, reason: `${FONT_FAMILY}.glyphmap.json is missing` },
     ]);
   });
 
-  test('a glyphmap that is not valid JSON is named', () => {
+  test('a glyphmap that is not valid JSON is named', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
     fs.writeFileSync(
       path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
       '<<<<<<< HEAD'
     );
-    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+    expect(await checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
       {
         name: FONT_FAMILY,
         reason: `${FONT_FAMILY}.glyphmap.json is not valid JSON`,
       },
     ]);
+    expect(mockRunPipeline).not.toHaveBeenCalled();
   });
 
   test.each([
     ['without a fingerprint', () => ({ m: { f: STORED_FAMILY }, i: {} })],
     ['without a family', () => ({ m: { h: inputHash }, i: {} })],
     ['that is null', () => null],
-  ])('a glyphmap %s is named as incomplete', (_label, glyphmap) => {
+  ])('a glyphmap %s is named as incomplete', async (_label, glyphmap) => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
     fs.writeFileSync(
       path.join(outputDir, `${FONT_FAMILY}.glyphmap.json`),
       JSON.stringify(glyphmap())
     );
-    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+    expect(await checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
       {
         name: FONT_FAMILY,
         reason: `${FONT_FAMILY}.glyphmap.json is incomplete`,
       },
     ]);
+    expect(mockRunPipeline).not.toHaveBeenCalled();
   });
 
   test.each([
@@ -835,24 +863,36 @@ describe('checkAllFonts', () => {
           .spyOn(packageVersionModule, 'fontToolchainVersions')
           .mockReturnValue(['@xmldom/xmldom@0.0.0']),
     ],
-  ])('%s makes the set out of date', (_label, change) => {
-    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
-    change();
-    try {
-      expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
-        {
-          name: FONT_FAMILY,
-          reason: 'its SVGs, options or installed versions changed',
-        },
-      ]);
-    } finally {
-      jest.restoreAllMocks();
+  ])(
+    '%s makes the set out of date when the build changes its files',
+    async (_label, change) => {
+      writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+      change();
+      try {
+        expect(await checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+          {
+            name: FONT_FAMILY,
+            reason: 'its SVGs, options or installed versions changed',
+          },
+        ]);
+      } finally {
+        jest.restoreAllMocks();
+      }
     }
+  );
+
+  test('changed inputs that build the same files keep the set up to date', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, 'old-hash');
+    mockBuildWriting('fake');
+    expect(await checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([]);
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
   });
 
-  test('a changed option makes the set out of date', () => {
+  test('a changed option makes the set out of date', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
-    expect(checkAllFonts([makeIconSet({ upm: 2048 })], os.tmpdir())).toEqual([
+    expect(
+      await checkAllFonts([makeIconSet({ upm: 2048 })], os.tmpdir())
+    ).toEqual([
       {
         name: FONT_FAMILY,
         reason: 'its SVGs, options or installed versions changed',
@@ -860,47 +900,49 @@ describe('checkAllFonts', () => {
     ]);
   });
 
-  test('a changed linking mode makes the set out of date', () => {
+  test('a changed linking mode makes the set out of date', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
     expect(
-      checkAllFonts([makeIconSet({ linking: 'dynamic' })], os.tmpdir())
+      await checkAllFonts([makeIconSet({ linking: 'dynamic' })], os.tmpdir())
     ).toEqual([
       { name: FONT_FAMILY, reason: 'its linking changed to "dynamic"' },
     ]);
   });
 
-  test('turning web output on or off makes the set out of date', () => {
+  test('turning web output on or off makes the set out of date', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', false);
     fs.writeFileSync(path.join(outputDir, `${FONT_FAMILY}.woff2`), 'fake');
-    expect(checkAllFonts([makeIconSet({ web: true })], os.tmpdir())).toEqual([
-      { name: FONT_FAMILY, reason: 'web output was turned on' },
-    ]);
+    expect(
+      await checkAllFonts([makeIconSet({ web: true })], os.tmpdir())
+    ).toEqual([{ name: FONT_FAMILY, reason: 'web output was turned on' }]);
 
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', true);
-    expect(checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
+    expect(await checkAllFonts([makeIconSet()], os.tmpdir())).toEqual([
       { name: FONT_FAMILY, reason: 'web output was turned off' },
     ]);
   });
 
-  test('a web set without its woff2 names the woff2', () => {
+  test('a web set without its woff2 names the woff2', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, inputHash, 'static', true);
     fs.unlinkSync(path.join(outputDir, `${FONT_FAMILY}.woff2`));
-    expect(checkAllFonts([makeIconSet({ web: true })], os.tmpdir())).toEqual([
+    expect(
+      await checkAllFonts([makeIconSet({ web: true })], os.tmpdir())
+    ).toEqual([
       { name: FONT_FAMILY, reason: `${FONT_FAMILY}.woff2 is missing` },
     ]);
   });
 
-  test('nothing is built or written, whatever the state', () => {
+  test('nothing is written to the project, whatever the state', async () => {
     writeFakeOutputs(outputDir, FONT_FAMILY, 'stale-hash');
     const before = outputSnapshot();
 
-    checkAllFonts([makeIconSet()], os.tmpdir());
+    await checkAllFonts([makeIconSet()], os.tmpdir());
 
     expect(outputSnapshot()).toEqual(before);
-    expect(mockRunPipeline).not.toHaveBeenCalled();
+    expect(mockRunPipeline.mock.calls[0]![1].outputDir).not.toBe(outputDir);
   });
 
-  test('each out-of-date set is logged with its reason', () => {
+  test('each out-of-date set is logged with its reason', async () => {
     const fail = jest.fn();
     const logger = {
       start: () => {},
@@ -911,7 +953,7 @@ describe('checkAllFonts', () => {
       warn: () => {},
     } satisfies NanoLogger;
 
-    checkAllFonts([makeIconSet()], os.tmpdir(), { logger });
+    await checkAllFonts([makeIconSet()], os.tmpdir(), { logger });
 
     expect(fail).toHaveBeenCalledWith(
       `${FONT_FAMILY}.ttf is out of date: ${FONT_FAMILY}.ttf is missing`

@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
@@ -363,10 +364,14 @@ describe('Pipeline E2E — font identity', () => {
   const SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="10" height="10"/></svg>';
 
-  async function build(linking: 'static' | 'dynamic', inputHash?: string) {
+  async function build(
+    linking: 'static' | 'dynamic',
+    inputHash?: string,
+    svg = SVG
+  ) {
     const inputDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-id-in-'));
     const outputDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nano-id-out-'));
-    await fsp.writeFile(path.join(inputDir, 'a.svg'), SVG);
+    await fsp.writeFile(path.join(inputDir, 'a.svg'), svg);
     const res = await runFontPipeline(
       { ...PIPELINE, linking, fontFamily: 'IdSet' },
       { inputDir, outputDir, tempDir: outputDir },
@@ -374,29 +379,57 @@ describe('Pipeline E2E — font identity', () => {
     );
     const { Font } =
       require('fonteditor-core') as typeof import('fonteditor-core');
-    const data = Font.create(fs.readFileSync(res.ttfPath), {
-      type: 'ttf',
-    }).get();
+    const ttf = fs.readFileSync(res.ttfPath);
+    const data = Font.create(ttf, { type: 'ttf' }).get();
     const glyphmap = JSON.parse(
       fs.readFileSync(res.glyphmapPath, 'utf8')
     ) as NanoGlyphMap;
     await fsp.rm(inputDir, { recursive: true, force: true });
     await fsp.rm(outputDir, { recursive: true, force: true });
-    return { names: data.name!, glyphmap, ttfPath: path.basename(res.ttfPath) };
+    return {
+      names: data.name!,
+      glyphmap,
+      ttf,
+      ttfPath: path.basename(res.ttfPath),
+    };
   }
 
   test.each(['static', 'dynamic'] as const)(
-    '%s font family carries the short hash in TTF and glyphmap, file name stays',
+    '%s font family carries the short hash of the font built under the configured name, file name stays',
     async (linking) => {
+      const unnamed = await build(linking);
+      const family = `IdSet-${crypto
+        .createHash('sha256')
+        .update(unnamed.ttf)
+        .digest('hex')
+        .slice(0, 8)}`;
       const { names, glyphmap, ttfPath } = await build(linking, HASH);
-      expect(glyphmap.m.f).toBe('IdSet-cccccccc');
-      expect(names.postScriptName).toBe('IdSet-cccccccc');
-      expect(names.fontFamily).toBe('IdSet-cccccccc');
+      expect(glyphmap.m.f).toBe(family);
+      expect(names.postScriptName).toBe(family);
+      expect(names.fontFamily).toBe(family);
       expect(glyphmap.m.h).toBe(HASH);
       expect(ttfPath).toBe('IdSet.ttf');
     },
     120_000
   );
+
+  test('another input hash that builds the same font keeps the family', async () => {
+    const before = await build('static', HASH);
+    const after = await build('static', 'd'.repeat(64));
+    expect(after.glyphmap.m.f).toBe(before.glyphmap.m.f);
+    expect(after.ttf.equals(before.ttf)).toBe(true);
+    expect(after.glyphmap.m.h).not.toBe(before.glyphmap.m.h);
+  }, 120_000);
+
+  test('a changed glyph changes the family', async () => {
+    const before = await build('static', HASH);
+    const after = await build(
+      'static',
+      HASH,
+      SVG.replace('width="10"', 'width="12"')
+    );
+    expect(after.glyphmap.m.f).not.toBe(before.glyphmap.m.f);
+  }, 120_000);
 
   test('without an input hash the configured name is used as is', async () => {
     const { names, glyphmap } = await build('dynamic');
