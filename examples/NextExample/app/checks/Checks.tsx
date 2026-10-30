@@ -1,13 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { GlyphEntry } from 'react-native-nano-icons';
+import {
+  addFontIntegrityListener,
+  createNanoIconSet,
+  useFontIntegrityIssue,
+  type GlyphEntry,
+} from 'react-native-nano-icons';
 
 import { glyphMap, Icon } from '../icons';
 
 type Row = { case: string; expected: string; actual: string };
 
 const entry = (name: keyof typeof glyphMap.i) => glyphMap.i[name] as GlyphEntry;
+
+const withFamily = (f: string) => ({ ...glyphMap, m: { ...glyphMap.m, f } });
+
+const MissingFontIcon = createNanoIconSet(
+  withFamily('NextIconsMissing'),
+  '/nanoicons/missing.woff2'
+);
+
+const LateFontIcon = createNanoIconSet(withFamily('NextIconsLate'));
 
 const css = `
 .size-64 { width: 64px; height: 64px; font-size: 64px; }
@@ -168,6 +182,42 @@ export function Checks() {
   const [rows, setRows] = useState<Row[]>([]);
   const [label, setLabel] = useState('First');
   const [accessible, setAccessible] = useState(true);
+  const fontIssue = useFontIntegrityIssue(glyphMap.m.f);
+  const missingFontIssue = useFontIntegrityIssue('NextIconsMissing');
+  const [lateFont, setLateFont] = useState('(pending)');
+
+  useEffect(() => {
+    let active = true;
+    const statuses: string[] = [];
+    const remove = addFontIntegrityListener((issue, status) => {
+      if (issue.family === 'NextIconsLate') statuses.push(status);
+    });
+    void LateFontIcon.loadFont('/nanoicons/missing.woff2')
+      .catch(() => LateFontIcon.loadFont('/nanoicons/NextIcons.woff2'))
+      .then(() => active && setLateFont(statuses.join(' → ')));
+    return () => {
+      active = false;
+      remove();
+    };
+  }, []);
+
+  const integrityRows: Row[] = [
+    {
+      case: 'font that loads: no issue from useFontIntegrityIssue',
+      expected: '(none)',
+      actual: fontIssue ? 'found' : '(none)',
+    },
+    {
+      case: 'font url that fails to load: issue from useFontIntegrityIssue',
+      expected: 'found',
+      actual: missingFontIssue ? 'found' : '(none)',
+    },
+    {
+      case: 'loadFont fails, then loads: listener statuses',
+      expected: 'found → resolved',
+      actual: lateFont,
+    },
+  ];
 
   useEffect(() => {
     setLabel('Second');
@@ -248,6 +298,9 @@ export function Checks() {
             accessible={accessible}
           />
         </span>
+        <span data-case="missing-font">
+          <MissingFontIcon name="ic_star" />
+        </span>
       </p>
       <table data-testid="checks">
         <thead>
@@ -259,7 +312,7 @@ export function Checks() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {(rows.length ? [...rows, ...integrityRows] : []).map((row) => (
             <tr key={row.case} data-pass={row.expected === row.actual}>
               <td>{row.case}</td>
               <td>{row.expected}</td>

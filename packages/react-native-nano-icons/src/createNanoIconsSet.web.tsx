@@ -12,6 +12,11 @@ import {
 } from './utils/glyphRuntime';
 import { configuredFontFamily } from './utils/fontIdentity';
 import { loadFontFromDevServer } from './devServerFont.web';
+import {
+  reportFontLoadFailure,
+  resolveFontIssue,
+  watchFontLoadFailures,
+} from './fontIntegrity.web';
 import { resolveWebStyle } from './utils/webStyle';
 import {
   BASE_CSS,
@@ -40,6 +45,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
 ): IconComponent<GM> {
   const family = glyphMap.m.f;
   const fontBasename = configuredFontFamily(family);
+  const linking = glyphMap.m.l === 'd' ? 'dynamic' : 'static';
 
   const fontFamily =
     family === fontBasename
@@ -61,8 +67,12 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       warnFontNotLoaded(fontBasename);
     }
     if ((globalThis as { document?: unknown }).document !== undefined) {
-      void loadFontFromDevServer(family);
+      void loadFontFromDevServer(family).then(() =>
+        watchFontLoadFailures(family, linking)
+      );
     }
+  } else {
+    watchFontLoadFailures(family, linking);
   }
 
   const Icon = memo(
@@ -170,7 +180,15 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
   IconComp.loadFont = (override) => {
     const source = override ?? font;
     const url = webFontUrl(source);
-    if (url) return registerWebFont(fontBasename, url);
+    if (url) {
+      return registerWebFont(fontBasename, url).then(
+        () => resolveFontIssue(family),
+        (cause: unknown) => {
+          reportFontLoadFailure(family, linking, cause);
+          throw cause;
+        }
+      );
+    }
     if (source != null && typeof __DEV__ !== 'undefined' && __DEV__) {
       warnFontNotLoaded(fontBasename);
     }
