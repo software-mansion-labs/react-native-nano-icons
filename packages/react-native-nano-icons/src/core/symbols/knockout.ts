@@ -1,4 +1,5 @@
 import { DOMParser, XMLSerializer, type Element } from '@xmldom/xmldom';
+import { attribute } from '../glyph/parse';
 
 export const KNOCKOUT_ATTRIBUTE = 'data-nano-knockout';
 export const KNOCKOUT_MARKER_FILL = '#fe01fe';
@@ -13,13 +14,13 @@ function styleDeclaration(property: PaintProperty): RegExp {
 }
 
 function explicitPaint(el: Element, property: PaintProperty): string | null {
-  const fromStyle = el.getAttribute('style')?.match(styleDeclaration(property));
+  const fromStyle = attribute(el, 'style')?.match(styleDeclaration(property));
   if (fromStyle) return fromStyle[2]!.trim();
-  return el.getAttribute(property);
+  return attribute(el, property);
 }
 
 function setPaint(el: Element, property: PaintProperty, value: string): void {
-  const style = el.getAttribute('style');
+  const style = attribute(el, 'style');
   if (style !== null) {
     el.setAttribute('style', style.replace(styleDeclaration(property), '$1'));
   }

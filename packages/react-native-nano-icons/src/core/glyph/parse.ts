@@ -20,13 +20,19 @@ export type ParsedFlatSvg = {
   paths: ParsedPath[];
 };
 
+const ELEMENT_NODE = 1;
+
+export function attribute(el: Element, name: string): string | null {
+  return el.hasAttribute(name) ? el.getAttribute(name) : null;
+}
+
 // if the fill is implicit, walk ancestors for the first explicit fill value
 function resolveInheritedFill(el: Element): string {
-  let current = el.parentElement;
-  while (current !== null) {
-    const fill = current.getAttribute('fill');
+  let current = el.parentNode;
+  while (current?.nodeType === ELEMENT_NODE) {
+    const fill = attribute(current as Element, 'fill');
     if (fill !== null && fill !== 'inherit') return fill;
-    current = current.parentElement;
+    current = current.parentNode;
   }
   return 'black';
 }
@@ -69,9 +75,9 @@ export function sanitizePathData(d: string): { d: string; sanitized: boolean } {
 const parsePath = (p: Element): ParsedPath => {
   const d = p.getAttribute('d') ?? '';
 
-  const op = p.getAttribute('opacity');
-  const fillOp = p.getAttribute('fill-opacity');
-  const fill = p.getAttribute('fill');
+  const op = attribute(p, 'opacity');
+  const fillOp = attribute(p, 'fill-opacity');
+  const fill = attribute(p, 'fill');
   // flattening may drop fill-rule but preserve clip-rule; treat either as evenodd
   const fillRule =
     p.getAttribute('fill-rule') === 'evenodd' ||

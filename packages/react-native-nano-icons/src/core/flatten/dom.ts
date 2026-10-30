@@ -1,5 +1,6 @@
 // Tags and attribute names use the "{namespace}local" convention.
 
+import * as xmldom from '@xmldom/xmldom';
 import { DOMParser, type Element as XmldomElement } from '@xmldom/xmldom';
 import { XML_AMP, XML_GT, XML_LT, XML_QUOT } from '../../utils/svgPatterns';
 
@@ -135,6 +136,8 @@ function convertElement(node: XmldomElement): XEl {
   return el;
 }
 
+const XMLDOM_08_MESSAGE_DECORATION = /^\[xmldom \w+\]\t|\n@[^\n]*$/g;
+
 export function parseSvgDocument(content: string): XEl {
   let text = content;
   // svgs are fond of not declaring xlink
@@ -146,11 +149,13 @@ export function parseSvgDocument(content: string): XEl {
   }
 
   let parseError: string | null = null;
-  const parser = new DOMParser({
-    onError: (_level, message) => {
-      parseError = parseError ?? message;
-    },
-  });
+  const onError = (_level: string, message: string) => {
+    parseError =
+      parseError ?? message.replace(XMLDOM_08_MESSAGE_DECORATION, '');
+  };
+  const parser = new DOMParser(
+    'onErrorStopParsing' in xmldom ? { onError } : { errorHandler: onError }
+  );
   const doc = parser.parseFromString(text, 'text/xml');
   const root = doc.documentElement;
   if (!root || parseError) {
