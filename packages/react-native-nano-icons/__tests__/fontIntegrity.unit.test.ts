@@ -1,22 +1,30 @@
 const mockIsFontRegistered = jest.fn<Promise<boolean>, [string]>();
 const mockRegisterFont = jest.fn<Promise<boolean>, [string, string]>();
+const mockIsFontAvailable = jest.fn<boolean, [string]>();
 
 jest.mock('../src/specs/NativeNanoIconsFontLoader', () => ({
   __esModule: true,
   default: {
     registerFont: (...args: [string, string]) => mockRegisterFont(...args),
     isFontRegistered: (family: string) => mockIsFontRegistered(family),
+    isFontAvailable: (family: string) => mockIsFontAvailable(family),
   },
 }));
 
+import { createElement } from 'react';
+
 import {
   checkFontIntegrity,
+  checkStaticFontNow,
   addFontIntegrityListener,
   getFontIntegrityIssues,
   isFontMismatch,
   reportDynamicFontLoadFailure,
   reportFontMismatch,
   reportMissingDynamicFont,
+  resolveFontIssue,
+  useFontIntegrityIssue,
+  type FontIntegrityIssue,
   FONT_MISMATCH_CODE,
   FONT_SOURCE_CODE,
   __resetFontIntegrityForTests,
@@ -34,6 +42,7 @@ beforeEach(() => {
   __resetDynamicFontsForTests();
   mockIsFontRegistered.mockReset();
   mockRegisterFont.mockReset();
+  mockIsFontAvailable.mockReset();
   warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 afterEach(() => warn.mockRestore());
@@ -291,5 +300,113 @@ describe('warnIfLinkingMismatch', () => {
     warnIfLinkingMismatch('Icons-1a2b3c4d', undefined, undefined);
     expect(warn).not.toHaveBeenCalled();
     expect(getFontIntegrityIssues()).toEqual([]);
+  });
+});
+
+describe('checkStaticFontNow', () => {
+  const global = globalThis as unknown as { __DEV__: boolean };
+
+  function releaseBuild(run: () => void): void {
+    global.__DEV__ = false;
+    try {
+      run();
+    } finally {
+      global.__DEV__ = true;
+    }
+  }
+
+  test('an available font is checked synchronously and leaves no trace', () => {
+    mockIsFontAvailable.mockReturnValue(true);
+    expect(checkStaticFontNow('Icons-1a2b3c4d')).toBe(true);
+    expect(mockIsFontRegistered).not.toHaveBeenCalled();
+    expect(getFontIntegrityIssues()).toEqual([]);
+  });
+
+  test('in a release build a missing font is recorded at once, and listeners are called later', async () => {
+    mockIsFontAvailable.mockReturnValue(false);
+    const early = jest.fn();
+    addFontIntegrityListener(early);
+
+    releaseBuild(() => {
+      expect(checkStaticFontNow('Icons-1a2b3c4d')).toBe(true);
+      expect(checkStaticFontNow('Icons-1a2b3c4d')).toBe(true);
+    });
+    expect(getFontIntegrityIssues()).toEqual([
+      expect.objectContaining({
+        fontFamily: 'Icons',
+        family: 'Icons-1a2b3c4d',
+        linking: 'static',
+      }),
+    ]);
+    expect(early).not.toHaveBeenCalled();
+    const late = jest.fn();
+    addFontIntegrityListener(late);
+    expect(late).toHaveBeenCalledTimes(1);
+
+    await Promise.resolve();
+    expect(early).toHaveBeenCalledTimes(1);
+    expect(early).toHaveBeenCalledWith(getFontIntegrityIssues()[0], 'found');
+    expect(late).toHaveBeenCalledTimes(1);
+    expect(mockIsFontRegistered).not.toHaveBeenCalled();
+  });
+
+  test('in a development build a missing font is left to the async check, which tries Metro first', () => {
+    mockIsFontAvailable.mockReturnValue(false);
+    expect(checkStaticFontNow('Icons-1a2b3c4d')).toBe(false);
+    expect(getFontIntegrityIssues()).toEqual([]);
+  });
+
+  test('an app binary without the sync check is left to the async check', () => {
+    const loader = jest.requireMock('../src/specs/NativeNanoIconsFontLoader')
+      .default as { isFontAvailable?: unknown };
+    const original = loader.isFontAvailable;
+    delete loader.isFontAvailable;
+    try {
+      releaseBuild(() => {
+        expect(checkStaticFontNow('Icons-1a2b3c4d')).toBe(false);
+      });
+    } finally {
+      loader.isFontAvailable = original;
+    }
+    expect(getFontIntegrityIssues()).toEqual([]);
+  });
+});
+
+describe('useFontIntegrityIssue', () => {
+  type Renderer = {
+    act(callback: () => void | Promise<void>): Promise<void>;
+    create(element: ReturnType<typeof createElement>): unknown;
+  };
+  const TestRenderer = require('react-test-renderer') as Renderer;
+
+  test('re-renders with the issue of its family when it is found and resolved', async () => {
+    const seen: (FontIntegrityIssue | undefined)[] = [];
+    function Probe(): null {
+      seen.push(useFontIntegrityIssue('Icons-1a2b3c4d'));
+      return null;
+    }
+    await TestRenderer.act(() => {
+      TestRenderer.create(createElement(Probe));
+    });
+    expect(seen).toEqual([undefined]);
+
+    mockIsFontRegistered.mockResolvedValue(false);
+    await TestRenderer.act(() =>
+      checkFontIntegrity('Other-0badf00d', 'static')
+    );
+    expect(seen).toEqual([undefined]);
+
+    await TestRenderer.act(() =>
+      checkFontIntegrity('Icons-1a2b3c4d', 'static')
+    );
+    expect(seen).toEqual([
+      undefined,
+      expect.objectContaining({ family: 'Icons-1a2b3c4d' }),
+    ]);
+
+    await TestRenderer.act(() => {
+      resolveFontIssue('Icons-1a2b3c4d');
+    });
+    expect(seen.at(-1)).toBeUndefined();
   });
 });

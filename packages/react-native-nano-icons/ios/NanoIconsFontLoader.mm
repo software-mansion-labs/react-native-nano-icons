@@ -77,6 +77,11 @@ RCT_EXPORT_METHOD(isFontRegistered:(NSString *)family
   resolve(@(NanoIconIsFontResolvable(family)));
 }
 
+RCT_EXPORT_SYNCHRONOUS_TYPED_METHOD(NSNumber *, isFontAvailable:(NSString *)family)
+{
+  return @(NanoIconIsFontResolvable(family));
+}
+
 #ifdef RCT_NEW_ARCH_ENABLED
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params

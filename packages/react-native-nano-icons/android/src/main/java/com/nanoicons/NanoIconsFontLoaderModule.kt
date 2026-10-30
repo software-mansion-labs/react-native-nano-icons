@@ -65,6 +65,9 @@ class NanoIconsFontLoaderModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  override fun isFontAvailable(family: String): Boolean =
+    NanoIconFonts.isAvailable(family, reactApplicationContext.assets)
+
   private fun openStream(uri: String): InputStream =
     when {
       uri.startsWith("content://") ->

@@ -284,3 +284,45 @@ describe('createJSIconSet square frame', () => {
     ).toBeCloseTo(20);
   });
 });
+
+describe('font check at set creation', () => {
+  const loader = jest.requireMock('../src/specs/NativeNanoIconsFontLoader')
+    .default as { isFontAvailable?: jest.Mock; isFontRegistered: jest.Mock };
+  const { getFontIntegrityIssues } =
+    require('../src/fontIntegrity') as typeof import('../src/fontIntegrity');
+  const global = globalThis as unknown as { __DEV__: boolean };
+
+  afterEach(() => {
+    delete loader.isFontAvailable;
+    global.__DEV__ = true;
+  });
+
+  function createWithFamily(family: string): void {
+    createIconSet({ ...glyphMap, m: { ...glyphMap.m, f: family } });
+  }
+
+  test('in a release build a missing static font is an issue as soon as the set is created', async () => {
+    loader.isFontAvailable = jest.fn(() => false);
+    global.__DEV__ = false;
+    createWithFamily('Gone-0badf00d');
+    expect(getFontIntegrityIssues()).toEqual([
+      expect.objectContaining({ family: 'Gone-0badf00d', linking: 'static' }),
+    ]);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(loader.isFontRegistered).not.toHaveBeenCalledWith('Gone-0badf00d');
+  });
+
+  test('an available static font skips the async check', async () => {
+    loader.isFontAvailable = jest.fn(() => true);
+    createWithFamily('Here-0badf00d');
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(loader.isFontAvailable).toHaveBeenCalledWith('Here-0badf00d');
+    expect(loader.isFontRegistered).not.toHaveBeenCalledWith('Here-0badf00d');
+  });
+
+  test('without the sync check the static font is checked asynchronously, as before', async () => {
+    createWithFamily('Old-0badf00d');
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(loader.isFontRegistered).toHaveBeenCalledWith('Old-0badf00d');
+  });
+});

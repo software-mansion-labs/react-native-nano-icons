@@ -22,6 +22,7 @@ import {
 import { loadDynamicFont, useDynamicFontPending } from './loadDynamicFont';
 import {
   checkFontIntegrity,
+  checkStaticFontNow,
   isFontMismatch,
   reportDynamicFontLoadFailure,
   reportFontMismatch,
@@ -79,7 +80,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
         }
       }
     );
-  } else if (linking === 'static') {
+  } else if (linking === 'static' && !checkStaticFontNow(fontFamilyBasename)) {
     void ensureStaticFont(fontFamilyBasename);
   }
 

@@ -1,30 +1,30 @@
 import NanoIconsFontLoader from './nativeFontLoader';
+import {
+  __resetFontIssuesForTests,
+  causeDetail,
+  recordIssue,
+} from './fontIntegrityStore';
 import { configuredFontFamily } from './utils/fontIdentity';
 import { errorRuntime, LOG_PREFIX, warnRuntime } from './utils/runtimeLog';
 
-export type FontIntegrityIssue = {
-  fontFamily: string;
-  family: string;
-  linking: 'static' | 'dynamic';
-  message: string;
-  /** The error behind a dynamic font failure, when there is one. */
-  cause?: unknown;
-};
-
-export type FontIntegrityStatus = 'found' | 'resolved';
-
-type Listener = (
-  issue: FontIntegrityIssue,
-  status: FontIntegrityStatus
-) => void;
+export {
+  addFontIntegrityListener,
+  getFontIntegrityIssues,
+  resolveFontIssue,
+  useFontIntegrityIssue,
+  type FontIntegrityIssue,
+  type FontIntegrityStatus,
+} from './fontIntegrityStore';
 
 const checked = new Set<string>();
-const issues = new Map<string, FontIntegrityIssue>();
-const listeners = new Set<Listener>();
 let staleBinaryReported = false;
 
 function hasNativeCheck(): boolean {
   return typeof NanoIconsFontLoader?.isFontRegistered === 'function';
+}
+
+function hasSyncCheck(): boolean {
+  return typeof NanoIconsFontLoader?.isFontAvailable === 'function';
 }
 
 export function isFontRegistered(family: string): Promise<boolean> {
@@ -51,11 +51,24 @@ export async function checkFontIntegrity(
 
   if (await isFontRegistered(family)) return;
 
-  recordIssue(
-    family,
-    linking,
+  recordIssue(family, linking, missingFontMessage(family));
+}
+
+export function checkStaticFontNow(family: string): boolean {
+  if (!NanoIconsFontLoader || !hasSyncCheck()) return false;
+  if (NanoIconsFontLoader.isFontAvailable(family)) return true;
+  if (__DEV__) return false;
+  if (!checked.has(family)) {
+    checked.add(family);
+    recordIssue(family, 'static', missingFontMessage(family), undefined, true);
+  }
+  return true;
+}
+
+function missingFontMessage(family: string): string {
+  return (
     `Icon font "${configuredFontFamily(family)}" is missing or out of date, so its icons will render blank. ` +
-      'Regenerate the icon fonts with the react-native-nano-icons CLI.'
+    'Regenerate the icon fonts with the react-native-nano-icons CLI.'
   );
 }
 
@@ -126,50 +139,8 @@ async function reportDynamicFontIssue(
   }
 }
 
-function causeDetail(cause: unknown): unknown[] {
-  return cause === undefined ? [] : [cause];
-}
-
-function recordIssue(
-  family: string,
-  linking: 'static' | 'dynamic',
-  message: string,
-  cause?: unknown
-): void {
-  const issue: FontIntegrityIssue = {
-    fontFamily: configuredFontFamily(family),
-    family,
-    linking,
-    message,
-    ...(cause === undefined ? {} : { cause }),
-  };
-  issues.set(family, issue);
-  if (__DEV__) warnRuntime(message, ...causeDetail(cause));
-  for (const listener of listeners) listener(issue, 'found');
-}
-
-export function resolveFontIssue(family: string): void {
-  const issue = issues.get(family);
-  if (!issue) return;
-  issues.delete(family);
-  for (const listener of listeners) listener(issue, 'resolved');
-}
-
-export function addFontIntegrityListener(listener: Listener): () => void {
-  listeners.add(listener);
-  for (const issue of issues.values()) listener(issue, 'found');
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-export function getFontIntegrityIssues(): FontIntegrityIssue[] {
-  return [...issues.values()];
-}
-
 export function __resetFontIntegrityForTests(): void {
   staleBinaryReported = false;
   checked.clear();
-  issues.clear();
-  listeners.clear();
+  __resetFontIssuesForTests();
 }

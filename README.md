@@ -51,6 +51,7 @@ That’s it 🔬⚡️
   - [`<Icon>`](#icon)
   - [`addFontIntegrityListener()`](#addfontintegritylistener)
   - [`getFontIntegrityIssues()`](#getfontintegrityissues)
+  - [`useFontIntegrityIssue()`](#usefontintegrityissue)
   - [`symbolSets` options](#symbolsets-options)
   - [`nativeNanoSymbol()`](#nativenanosymbol)
   - [CLI](#cli)
@@ -361,7 +362,7 @@ export const Icon = createNanoIconSet(
 - **Expo:** `require()` gives the URL. Add `config.resolver.assetExts.push("woff2")` to `metro.config.js`.
 - **Next.js:** set `"outputDir": "./public/nanoicons"` and pass `"/nanoicons/my-icons.woff2"`.
 
-This works for static and dynamic sets. Keep it in a `.web.ts` file: on iOS and Android a static set ignores the font argument and warns. Icons stay empty until the font has loaded, instead of showing other characters. A font you load yourself, e.g. with `expo-font` or a stylesheet, works too when it is registered under `fontFamily`.
+This works for static and dynamic sets. Keep it in a `.web.ts` file: on iOS and Android a static set ignores the font argument and warns. Icons stay empty until the font has loaded, instead of showing other characters. A font you load yourself, e.g. with `expo-font` or a stylesheet, works too when it is registered under `fontFamily`. A font that fails to load is reported as a [font integrity](#font-integrity-check) issue.
 
 Server rendering needs React 19. With React 18, icons work in the browser only.
 
@@ -457,6 +458,8 @@ Running `npx expo prebuild` or the CLI regenerates an icon set when its SVGs or 
 
 Each glyphmap refers to the exact font it was built with. On iOS and Android, at startup the library checks, once per icon set, that this font is available. If it is missing or comes from a different build, the set's icons render blank. A warning is printed in development, and the issue is recorded in every build. Read recorded issues with [`addFontIntegrityListener()`](#addfontintegritylistener) and [`getFontIntegrityIssues()`](#getfontintegrityissues).
 
+On web, an issue is recorded when the set's font fails to load, e.g. a 404 or a file that is not a font. This covers the font passed to `createNanoIconSet`, a font from your own CSS, and [`Icon.loadFont()`](#methods). A set with no font at all is not reported. Sets rendered only in React Server Components are not checked.
+
 **Example:** an OTA update changes icons in a set with `linking: 'static'`. The update delivers the new glyphmap, but the installed app still has the old font, so the check fails. Use `linking: 'dynamic'` for sets you update over the air: the update then delivers the font too. See [OTA Updates & Dynamic Linking](#%EF%B8%8F-ota-updates--dynamic-linking).
 
 Forward `"found"` issues to your error monitoring (e.g. Sentry) to catch a bad OTA update. A font registered another way, e.g. with `expo-font`, never resolves an issue.
@@ -469,6 +472,17 @@ addFontIntegrityListener((issue, status) => {
     reportToErrorMonitoring(issue.message);
   }
 });
+```
+
+In release builds, a static set is checked synchronously by `createNanoIconSet`, so `getFontIntegrityIssues()` already lists its issue before the first render. Dynamic sets, and static sets in development builds, where a missing font is first fetched from Metro, are checked asynchronously. To render a fallback when an issue is found, use [`useFontIntegrityIssue()`](#usefontintegrityissue):
+
+```tsx
+import { useFontIntegrityIssue } from 'react-native-nano-icons';
+
+function AppIcon(props: IconProps) {
+  const issue = useFontIntegrityIssue(glyphMap.m.f);
+  return issue ? <SvgIcon {...props} /> : <Icon {...props} />;
+}
 ```
 
 For every scenario and its message, see [FONT_INTEGRITY.md](packages/react-native-nano-icons/docs/FONT_INTEGRITY.md).
@@ -556,7 +570,7 @@ Icon.loadFont(font?): Promise<void>
 | :------- | :--------------------------------------- | :------------------------------------------------------------------- |
 | `font`   | The `font` passed to `createNanoIconSet` | Font source: `require('./icons.ttf')`, `{ uri }`, or a path string. |
 
-Registers a dynamic set's font again, for example to retry a failed remote load when the network comes back (e.g. in a [NetInfo](https://github.com/react-native-netinfo/react-native-netinfo) listener), or to load the font later. A successful load resolves the set's [font integrity](#font-integrity-check) issue. The promise rejects if the font cannot be loaded. For static sets on iOS and Android, it is a no-op. On web, it registers the font under `fontFamily` for any set.
+Registers a dynamic set's font again, for example to retry a failed remote load when the network comes back (e.g. in a [NetInfo](https://github.com/react-native-netinfo/react-native-netinfo) listener), or to load the font later. A successful load resolves the set's [font integrity](#font-integrity-check) issue. The promise rejects if the font cannot be loaded. For static sets on iOS and Android, it is a no-op. On web, it registers the font under `fontFamily` for any set, and a failed load is recorded as an issue.
 
 ### `addFontIntegrityListener()`
 
@@ -571,7 +585,7 @@ addFontIntegrityListener(listener): () => void
 `status` is one of:
 
 - `"found"`: the set's font is missing or out of date, so its icons render blank. A listener added later receives the current issues immediately.
-- `"resolved"`: the library loaded a dynamic set's font after the issue was found, through the `createNanoIconSet` font argument or [`Icon.loadFont()`](#methods). Its icons render again, and the issue is removed from `getFontIntegrityIssues()`.
+- `"resolved"`: the library loaded a dynamic set's font after the issue was found, through the `createNanoIconSet` font argument or [`Icon.loadFont()`](#methods). On web, a successful `Icon.loadFont()` resolves the issue of any set. Its icons render again, and the issue is removed from `getFontIntegrityIssues()`.
 
 Returns a function that removes the listener.
 
@@ -587,7 +601,19 @@ Returns the current issues. Each issue has:
 - `family`: the font family the glyphmap refers to (`glyphMap.m.f`).
 - `linking`: `'static'` or `'dynamic'`.
 - `message`: the warning text.
-- `cause`: the load error behind a dynamic font failure, when there is one.
+- `cause`: the load error behind a dynamic font failure, or a web font load failure, when there is one.
+
+### `useFontIntegrityIssue()`
+
+```TypeScript
+useFontIntegrityIssue(family: string): FontIntegrityIssue | undefined
+```
+
+| Argument | Default        | Description                                          |
+| :------- | :------------- | :--------------------------------------------------- |
+| `family` | **(required)** | The font family the glyphmap refers to: `glyphMap.m.f`. |
+
+Returns the set's current issue, with the [`getFontIntegrityIssues()`](#getfontintegrityissues) shape, or `undefined`. The component re-renders when an issue is found or resolved. During server rendering it returns `undefined`.
 
 ### `symbolSets` options
 
