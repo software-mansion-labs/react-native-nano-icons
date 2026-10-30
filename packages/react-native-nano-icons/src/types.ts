@@ -2,6 +2,7 @@ import type { ComponentRef, Ref } from 'react';
 import type {
   AccessibilityRole,
   ColorValue,
+  StyleProp,
   View,
   ViewStyle,
 } from 'react-native';
@@ -16,7 +17,7 @@ export type IconProps<Name> = {
   color?: ColorValue | ColorValue[];
   tintMode?: TintMode;
   allowFontScaling?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   accessible?: boolean;
   accessibilityLabel?: string;
   accessibilityRole?: AccessibilityRole;

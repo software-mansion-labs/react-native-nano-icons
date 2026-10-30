@@ -38,8 +38,10 @@ config.resolver.blockList = baseBlockList.concat([
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (
     moduleName === 'react' ||
+    moduleName === 'react-dom' ||
     moduleName === 'react-native' ||
     moduleName.startsWith('react/') ||
+    moduleName.startsWith('react-dom/') ||
     moduleName.startsWith('react-native/')
   ) {
     return context.resolveRequest(

@@ -1,9 +1,9 @@
-const mockLoadDynamicFont = jest.fn<Promise<void>, [string, unknown]>();
-const mockGetFontStatus = jest.fn<string | undefined, [string]>();
+const mockRegisterWebFont = jest.fn<Promise<void>, [string, string]>();
+const mockIsWebFontRegistered = jest.fn<boolean, [string]>();
 
-jest.mock('../src/loadDynamicFont', () => ({
-  loadDynamicFont: (...args: [string, unknown]) => mockLoadDynamicFont(...args),
-  getFontStatus: (family: string) => mockGetFontStatus(family),
+jest.mock('../src/webFont', () => ({
+  registerWebFont: (...args: [string, string]) => mockRegisterWebFont(...args),
+  isWebFontRegistered: (family: string) => mockIsWebFontRegistered(family),
 }));
 
 import {
@@ -18,8 +18,8 @@ const fetchMock = jest.fn<Promise<{ ok: boolean }>, [string, RequestInit?]>();
 const g = globalThis as { fetch: unknown; location?: unknown };
 
 beforeEach(() => {
-  mockLoadDynamicFont.mockReset().mockResolvedValue(undefined);
-  mockGetFontStatus.mockReset().mockReturnValue(undefined);
+  mockRegisterWebFont.mockReset().mockResolvedValue(undefined);
+  mockIsWebFontRegistered.mockReset().mockReturnValue(false);
   fetchMock.mockReset().mockResolvedValue({ ok: true });
   g.fetch = fetchMock;
   g.location = { origin: 'http://localhost:8081' };
@@ -38,11 +38,11 @@ test('the font url is built from the page origin', () => {
 test('registers the font served by the dev server under the hashed family', async () => {
   await expect(loadFontFromDevServer(FAMILY)).resolves.toBe(true);
   expect(fetchMock).toHaveBeenCalledWith(URI, { method: 'HEAD' });
-  expect(mockLoadDynamicFont).toHaveBeenCalledWith(FAMILY, { uri: URI });
+  expect(mockRegisterWebFont).toHaveBeenCalledWith(FAMILY, URI);
 });
 
-test('a font that is already ready is left alone', async () => {
-  mockGetFontStatus.mockReturnValue('ready');
+test('a font that is already registered is left alone', async () => {
+  mockIsWebFontRegistered.mockReturnValue(true);
   await expect(loadFontFromDevServer(FAMILY)).resolves.toBe(true);
   expect(fetchMock).not.toHaveBeenCalled();
 });
@@ -52,10 +52,10 @@ test('without the metro plugin, or outside a browser, nothing is registered', as
   await expect(loadFontFromDevServer(FAMILY)).resolves.toBe(false);
   delete g.location;
   await expect(loadFontFromDevServer(FAMILY)).resolves.toBe(false);
-  expect(mockLoadDynamicFont).not.toHaveBeenCalled();
+  expect(mockRegisterWebFont).not.toHaveBeenCalled();
 });
 
 test('a failed registration reports false', async () => {
-  mockLoadDynamicFont.mockRejectedValue(new Error('bad font'));
+  mockRegisterWebFont.mockRejectedValue(new Error('bad font'));
   await expect(loadFontFromDevServer(FAMILY)).resolves.toBe(false);
 });

@@ -51,7 +51,7 @@ export function warnIfLinkingMismatch(
 
 /**
  * JS implementation using <View> + <Text> layers.
- * Used on web and as a fallback when native component is unavailable (e.g. Expo Go).
+ * Used as a fallback when native component is unavailable (e.g. Expo Go).
  */
 export function createJSIconSet<GM extends NanoGlyphMapInput>(
   glyphMap: GM

@@ -2,7 +2,7 @@ type CreateIconSetFn = (...args: unknown[]) => unknown;
 type ConfigPluginFn = (...args: unknown[]) => unknown;
 
 const createNanoIconSet = (...args: unknown[]) => {
-  const { createIconSet } = require('./createNanoIconsSet') as {
+  const { createIconSet } = require('../module/createNanoIconsSet.web.js') as {
     createIconSet: CreateIconSetFn;
   };
   return createIconSet(...args);

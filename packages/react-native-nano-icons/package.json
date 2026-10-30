@@ -53,6 +53,7 @@
     "@expo/config": ">=9.0.0",
     "expo": "*",
     "react": "*",
+    "react-dom": "*",
     "react-native": ">=0.81.0"
   },
   "peerDependenciesMeta": {
@@ -64,6 +65,9 @@
     },
     "expo": {
       "optional": true
+    },
+    "react-dom": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -72,6 +76,7 @@
     "@types/node": "^25.2.3",
     "@types/plist": "^3.0.5",
     "@types/react": "~19.1.0",
+    "@types/react-dom": "~19.1.0",
     "@types/svg2ttf": "^5.0.3",
     "@types/xcode": "^3.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
@@ -80,6 +85,7 @@
     "jest": "^29.7.0",
     "patch-package": "^8.0.0",
     "react": "19.1.0",
+    "react-dom": "19.1.0",
     "react-native": "^0.84.0",
     "react-native-builder-bob": "^0.40.18",
     "typescript": "^5.9.3"
@@ -88,13 +94,17 @@
     ".": {
       "source": "./src/index.ts",
       "react-native": "./lib/module/index.js",
+      "browser": {
+        "types": "./lib/typescript/src/index.d.ts",
+        "default": "./lib/module/index.web.js"
+      },
       "require": {
         "types": "./lib/typescript/src/index.d.ts",
         "default": "./lib/commonjs/index.node.js"
       },
       "import": {
         "types": "./lib/typescript/src/index.d.ts",
-        "default": "./lib/module/index.js"
+        "default": "./lib/module/index.web.js"
       },
       "default": "./lib/commonjs/index.node.js"
     },
