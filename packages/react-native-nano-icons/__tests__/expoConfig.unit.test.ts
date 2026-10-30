@@ -3,7 +3,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { loadDynamicSetsFromAppConfig } from '../cli/expoConfig';
+import {
+  findPluginOptions,
+  loadDynamicSetsFromAppConfig,
+} from '../cli/expoConfig';
 
 let root: string;
 
@@ -120,4 +123,42 @@ test('nothing installed names the app root and the --path remedy', () => {
   expect(() => loadDynamicSetsFromAppConfig(app)).toThrow(
     'pass --path <app root>'
   );
+});
+
+describe('findPluginOptions', () => {
+  const OPTIONS = { iconSets: [{ inputDir: 'icons', fontFamily: 'Icons' }] };
+
+  function optionsFor(plugins: unknown[]): unknown {
+    const app = path.join(root, 'app');
+    writeModule(
+      path.join(app, 'node_modules', '@expo', 'config'),
+      '@expo/config',
+      `exports.getConfig = () => ({ exp: { plugins: ${JSON.stringify(
+        plugins
+      )} } });`
+    );
+    return findPluginOptions(app);
+  }
+
+  test.each([
+    ['the package name', ['react-native-nano-icons', OPTIONS], OPTIONS],
+    [
+      'the app.plugin path',
+      ['react-native-nano-icons/app.plugin', OPTIONS],
+      OPTIONS,
+    ],
+    [
+      'the app.plugin.js path',
+      ['react-native-nano-icons/app.plugin.js', OPTIONS],
+      OPTIONS,
+    ],
+    ['a bare string', 'react-native-nano-icons', {}],
+    ['no options', ['react-native-nano-icons'], {}],
+  ])('reads the plugin listed with %s', (_label, entry, expected) => {
+    expect(optionsFor(['expo-router', entry])).toEqual(expected);
+  });
+
+  test('is undefined when the plugin is not listed', () => {
+    expect(optionsFor(['expo-router'])).toBeUndefined();
+  });
 });

@@ -54,6 +54,7 @@ That’s it 🔬⚡️
   - [`useFontIntegrityIssue()`](#usefontintegrityissue)
   - [`symbolSets` options](#symbolsets-options)
   - [`nativeNanoSymbol()`](#nativenanosymbol)
+  - [`nanoIconsFingerprintSources()`](#nanoiconsfingerprintsources)
   - [CLI](#cli)
 - [📊 Performance](#-performance)
 - [⚠️ Known Limitations](#%EF%B8%8F-known-limitations)
@@ -441,6 +442,22 @@ npx react-native-nano-icons --dynamic
 
 The CLI rebuilds only the sets defined with `linking: "dynamic"`, and skips all native linking. Commit the updated `.ttf` and `.glyphmap.json` and push your OTA update as usual ☁️ 🚀
 
+### EAS Update fingerprint
+
+With EAS Update's `fingerprint` runtime version policy, add your icon sets to the [app fingerprint](https://docs.expo.dev/versions/latest/sdk/fingerprint/) in a `fingerprint.config.js` next to your app config:
+
+```js
+// fingerprint.config.js
+const { nanoIconsFingerprintSources } = require('react-native-nano-icons/fingerprint');
+
+/** @type {import('expo/fingerprint').Config} */
+module.exports = {
+  extraSources: nanoIconsFingerprintSources(__dirname),
+};
+```
+
+The fingerprint then changes when the SVGs, options or library version of a static icon set or a symbol set change, so an update is not sent to binaries built with the old fonts. Dynamic sets are left out, because the update delivers them.
+
 ---
 
 ## 🔁 Rebuilds & Font Integrity
@@ -662,6 +679,18 @@ Returns a react-navigation `Icon`: `{ type: 'sfSymbol', name, renderingMode }` o
 > ```
 >
 > For `'multicolor'`, use `{ type: 'sfSymbol', name: 'nano.home', renderingMode: 'multicolor' }` on iOS and `{ type: 'image', source: { uri: 'nano_home_original' }, tinted: false }` on Android.
+
+### `nanoIconsFingerprintSources()`
+
+```TypeScript
+import { nanoIconsFingerprintSources } from 'react-native-nano-icons/fingerprint';
+
+nanoIconsFingerprintSources(projectRoot: string): FingerprintSource[]
+```
+
+Returns `extraSources` for `fingerprint.config.js`, read from the plugin options in the app config. `projectRoot` is the folder of the app config: pass `__dirname` from a `fingerprint.config.js` next to it.
+
+Each icon set with `linking: 'static'` and each symbol set adds one source, a hash of its SVGs, its options and the installed library versions. Dynamic sets are left out. Returns no sources when the plugin is not configured, and warns and returns none when the sets can't be read. See [EAS Update fingerprint](#eas-update-fingerprint).
 
 ### CLI
 
