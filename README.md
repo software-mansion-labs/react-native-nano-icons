@@ -337,7 +337,7 @@ tabBarIcon: ({ focused }) =>
 
 ## 🌐 Web
 
-On web, icons render as `<span>` elements without `react-native` or `react-native-web`, also in React Server Components. Next.js, Vite and other bundlers get the web build from the package exports, with no alias or `.web.js` extension config.
+Icons work in Expo web, Next.js (also in Server Components) and other React apps, without `react-native-web`.
 
 ### Loading the font
 
@@ -357,14 +357,16 @@ export const Icon = createNanoIconSet(
 - **Expo:** `require()` gives the URL. Add `config.resolver.assetExts.push("woff2")` to `metro.config.js`.
 - **Next.js:** set `"outputDir": "./public/nanoicons"` and pass `"/nanoicons/my-icons.woff2"`.
 
-The icons add an `@font-face` rule with `font-display: block` and a font preload to the document `<head>`, also when rendered on the server, so icons stay empty instead of showing fallback glyphs until the font arrives. This needs React 19. With React 18 the rules render next to each icon, and server rendering is not supported. The font works the same for static and dynamic sets. On iOS and Android a static set ignores the font argument and warns, so keep the web font in a `.web.ts` file. A font loaded another way, e.g. with `expo-font` or a stylesheet, works too when it is registered under `fontFamily`.
+This works for static and dynamic sets. Keep it in a `.web.ts` file: on iOS and Android a static set ignores the font argument and warns. Icons stay empty until the font has loaded, instead of showing other characters. A font you load yourself, e.g. with `expo-font` or a stylesheet, works too when it is registered under `fontFamily`.
+
+Server rendering needs React 19. With React 18, icons work in the browser only.
 
 ### Styling with CSS
 
-- **Size:** without `size`, an icon is `1em` tall and follows the CSS `font-size`; its width keeps the icon's proportions. `size` sets it in px.
+- **Size:** without `size`, an icon follows the CSS `font-size`. `size` sets it in px.
 - **Color:** without `color`, an icon drawn only in black or `currentColor` follows the CSS `color`. Other icons keep their colors.
-- **`className`:** added to the icon's `<span class="nano-icon">`. The library's rules for this span have zero specificity, so any class overrides them.
-- **`style`:** React Native styles are converted to CSS, including arrays, `transform` arrays, `marginHorizontal` / `paddingVertical` and `*Start` / `*End`.
+- **`className`:** any CSS class applies, e.g. Tailwind, and overrides the default size and color.
+- **`style`:** React Native styles work, including style arrays and `transform`.
 
 ```TypeScript
 <Icon name="heart" className="text-2xl lg:text-4xl text-red-500" />
@@ -478,7 +480,7 @@ Each entry of `iconSets` (in the Expo plugin options or `.nanoicons.json`) gener
 | Property       | Type     | Required | Default        | Description                                                                                                                |
 | :------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------- |
 | `inputDir`     | `string` | **Yes**  | —              | Path to the directory containing your `.svg` files (e.g., `./assets/icons/ui`), relative to the folder of `.nanoicons.json` or the app config. Subfolders are not read. |
-| `fontFamily`   | `string` | No       | Folder Name    | The file name of the generated `.ttf` and `.glyphmap.json`. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). On iOS and Android, the font family registered at runtime is `glyphMap.m.f`: this name plus a hash of the icons and build settings (e.g. `ui-1a2b3c4d`), so each change gets a new family. On web, icons use `glyphMap.m.f` with this name as the fallback, so a font registered under this name works across rebuilds. |
+| `fontFamily`   | `string` | No       | Folder Name    | The file name of the generated `.ttf` and `.glyphmap.json`. If omitted, the name of the `inputDir` folder is used (e.g., `ui`). On iOS and Android, the font family registered at runtime is `glyphMap.m.f`: this name plus a hash of the icons and build settings (e.g. `ui-1a2b3c4d`), so each change gets a new family. On web, you can also register the font yourself under this name. |
 | `outputDir`    | `string` | No       | Sibling `nanoicons` folder | Path where the `.ttf` and `.glyphmap.json` files are saved, relative to the folder of `.nanoicons.json` or the app config. Defaults to a `nanoicons` folder next to `inputDir`. |
 | `upm`          | `number` | No       | `1024`         | Units Per Em. Defines the resolution of the font grid.                                                                     |
 | `safeZone`     | `number` | No       | `upm`          | Height, in font units, that each icon's `viewBox` is scaled to. The rest of the em square is padding. Must not exceed `upm`. |
@@ -522,7 +524,7 @@ The component returned by [`createNanoIconSet()`](#createnanoiconset).
 | `tintMode`           | `'all' \| 'currentColor'`    | `'all'`           | Which layers `color` applies to: every layer, or only those drawn with `currentColor` (an icon without any keeps its original colors).                             |
 | `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                       |
 | `style`              | `StyleProp<ViewStyle>`       | `undefined`       | Style applied to the icon container.                                                                                                         |
-| `className` | `string` | `undefined` | Web only. Added to the container element next to `nano-icon`. |
+| `className` | `string` | `undefined` | Web only. CSS classes for the icon, e.g. Tailwind. |
 | `accessible`         | `boolean`                    | `undefined`       | Override the default accessibility behavior.                                                                                                 |
 | `accessibilityLabel` | `string`                     | Icon `name`       | Label announced by screen readers. Defaults to the icon name.                                                                                |
 | `accessibilityRole`  | `AccessibilityRole`          | `"image"`         | Accessibility role. Defaults to `"image"` so the icon is not misinterpreted as text.                                                         |
