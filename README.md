@@ -210,7 +210,7 @@ export default function App() {
 
 Icons without an `accessibilityLabel` are decorative, so screen readers skip them. Give a standalone icon a label, e.g. `<Icon name="heart" accessibilityLabel="Save" />`, to have it read as an image.
 
-An icon is `size` high and as wide as its glyph. To line up icons of different widths, e.g. in a list, give them `frame="square"`: each icon then takes a `size` × `size` box with the glyph fitted and centered.
+An icon is `size` tall, and its width keeps the proportions of its SVG: an SVG twice as wide as it is tall gives an icon `2 × size` wide. To line up icons of different widths, e.g. in a list, give them `frame="square"`: each icon then takes a `size` × `size` box, with the glyph scaled to fit and centered.
 
 See [all `<Icon>` props](#props).
 
@@ -535,7 +535,7 @@ The component returned by [`createNanoIconSet()`](#createnanoiconset).
 | `color`              | `ColorValue \| ColorValue[]` | Glyphmap defaults | Single color applied to all layers, or per-layer color array. If the array is shorter than the number of layers, the last color is repeated. |
 | `tintMode`           | `'all' \| 'currentColor'`    | `'all'`           | Which layers `color` applies to: every layer, or only those drawn with `currentColor` (an icon without any keeps its original colors).                             |
 | `allowFontScaling`   | `boolean`                    | `true`            | Whether the icon size respects the system accessibility font scale.                                                       |
-| `frame`              | `'fit-glyph' \| 'square'`    | `'fit-glyph'`     | The box the icon is drawn in. `'fit-glyph'`: `size` high and as wide as the glyph (default font behavior). `'square'`: `size` high and wide, with the glyph fitted and centered, like `resizeMode="contain"`. |
+| `frame`              | `'fit-glyph' \| 'square'`    | `'fit-glyph'`     | The box the icon is drawn in. `'fit-glyph'`: `size` tall, with the width following the SVG's proportions. `'square'`: `size` tall and wide, with the glyph scaled to fit and centered, like `resizeMode="contain"`. |
 | `style`              | `StyleProp<ViewStyle>`       | `undefined`       | Style applied to the icon container.                                                                                                         |
 | `className` | `string` | `undefined` | Web only. CSS classes for the icon, e.g. Tailwind. |
 | `accessible`         | `boolean`                    | `false` without a label | Set `true` to expose an icon without a label to screen readers. `accessibilityRole`, `importantForAccessibility="yes"` and `accessibilityElementsHidden={false}` expose it too. On web, its label is then the icon `name`. |
