@@ -9,6 +9,7 @@ import { mergeSameColorPaths } from '../src/core/glyph/merge';
 import { parseFlattenedSvg, type ParsedPath } from '../src/core/glyph/parse';
 import { preprocessSvg, validateSvg } from '../src/core/glyph/validate';
 import { convertEvenoddToWinding } from '../src/core/pathkit/evenodd';
+import { canonicalWinding } from '../src/core/pathkit/winding';
 
 const TESTICONS_DIR = path.resolve(
   __dirname,
@@ -77,6 +78,8 @@ async function computeStages(file: string): Promise<StageOutputs> {
       p.d = convertEvenoddToWinding(PathKit, p.d);
       delete p.fillRule;
       p.noMerge = true;
+    } else {
+      p.d = canonicalWinding(PathKit, p.d);
     }
   }
   const converted = snapshotPaths(viewBox, paths);

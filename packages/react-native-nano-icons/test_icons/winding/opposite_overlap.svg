@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- same-colour squares of opposite winding, overlapping around (12, 12) -->
+  <path d="M2 2H14V14H2Z" fill="black"/>
+  <path d="M10 10V22H22V10Z" fill="black"/>
+</svg>
