@@ -41,7 +41,11 @@ export class SymbolSetBuildError extends Error {
 }
 
 const DEFAULT_PREFIX = 'nano';
-const INPUTS_CHANGED = 'its SVGs, prefix or installed versions changed';
+const STALE_REASON = {
+  missing: (file: string) => `${file} is missing`,
+  invalidJson: (file: string) => `${file} is not valid JSON`,
+  inputsChanged: 'its SVGs, prefix or installed versions changed',
+} as const;
 
 type SymbolOutputState = { built: BuiltSymbolSet } | { staleBecause: string };
 
@@ -60,7 +64,7 @@ function currentSymbolOutput(
     (file) => !fs.existsSync(file)
   );
   if (missing) {
-    return { staleBecause: `${path.basename(missing)} is missing` };
+    return { staleBecause: STALE_REASON.missing(path.basename(missing)) };
   }
 
   let symbolmap: NanoSymbolMap;
@@ -68,12 +72,12 @@ function currentSymbolOutput(
     symbolmap = JSON.parse(fs.readFileSync(symbolmapPath, 'utf8'));
   } catch {
     return {
-      staleBecause: `${path.basename(symbolmapPath)} is not valid JSON`,
+      staleBecause: STALE_REASON.invalidJson(path.basename(symbolmapPath)),
     };
   }
 
   if (!symbolmap?.m?.h || symbolmap.m.h !== inputHash) {
-    return { staleBecause: INPUTS_CHANGED };
+    return { staleBecause: STALE_REASON.inputsChanged };
   }
 
   const symbols = symbolmap.s ?? {};
@@ -92,7 +96,9 @@ function currentSymbolOutput(
     (file) => !fs.existsSync(file)
   );
   if (missingAsset) {
-    return { staleBecause: `${path.basename(missingAsset)} is missing` };
+    return {
+      staleBecause: STALE_REASON.missing(path.basename(missingAsset)),
+    };
   }
 
   logger?.info(`${name}: SVG fingerprint unchanged, skipping build.`);
@@ -159,7 +165,7 @@ export async function checkAllSymbols(
     const state = currentSymbolOutput(inputHash, outputDir, name);
     if (
       'staleBecause' in state &&
-      state.staleBecause === INPUTS_CHANGED &&
+      state.staleBecause === STALE_REASON.inputsChanged &&
       (await buildsSameOutputs(outputDir, `${name}.symbolmap.json`, (dir) =>
         runSymbolPipeline(
           { name, prefix },

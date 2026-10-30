@@ -70,7 +70,16 @@ function webOutputFor(configured: boolean, withWeb: boolean): WebOutput {
 
 export type StaleSet = { name: string; reason: string };
 
-const INPUTS_CHANGED = 'its SVGs, options or installed versions changed';
+const STALE_REASON = {
+  missing: (file: string) => `${file} is missing`,
+  invalidJson: (file: string) => `${file} is not valid JSON`,
+  incomplete: (file: string) => `${file} is incomplete`,
+  inputsChanged: 'its SVGs, options or installed versions changed',
+  linkingChanged: (linking: 'static' | 'dynamic') =>
+    `its linking changed to "${linking}"`,
+  webOutputChanged: (enabled: boolean) =>
+    `web output was turned ${enabled ? 'on' : 'off'}`,
+} as const;
 
 type OutputState = { family: string } | { staleBecause: string };
 
@@ -82,7 +91,7 @@ function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
     ...(webOutput === 'required' ? [woff2Path] : []),
   ].find((file) => !fs.existsSync(file));
   if (missing) {
-    return { staleBecause: `${path.basename(missing)} is missing` };
+    return { staleBecause: STALE_REASON.missing(path.basename(missing)) };
   }
 
   let glyphmap: NanoGlyphMap;
@@ -90,7 +99,7 @@ function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
     glyphmap = JSON.parse(fs.readFileSync(glyphmapPath, 'utf8'));
   } catch {
     return {
-      staleBecause: `${path.basename(glyphmapPath)} is not valid JSON`,
+      staleBecause: STALE_REASON.invalidJson(path.basename(glyphmapPath)),
     };
   }
   const storedHash: string | undefined = glyphmap?.m?.h;
@@ -100,18 +109,18 @@ function currentOutput(set: ResolvedIconSet, logger?: NanoLogger): OutputState {
   const storedWeb = glyphmap?.m?.w === true;
 
   if (!storedHash || !storedFamily) {
-    return { staleBecause: `${path.basename(glyphmapPath)} is incomplete` };
+    return {
+      staleBecause: STALE_REASON.incomplete(path.basename(glyphmapPath)),
+    };
   }
   if (storedHash !== set.inputHash) {
-    return { staleBecause: INPUTS_CHANGED };
+    return { staleBecause: STALE_REASON.inputsChanged };
   }
   if (storedLinking !== set.linking) {
-    return { staleBecause: `its linking changed to "${set.linking}"` };
+    return { staleBecause: STALE_REASON.linkingChanged(set.linking) };
   }
   if (webOutput !== 'ignored' && storedWeb !== (webOutput === 'required')) {
-    return {
-      staleBecause: `web output was turned ${storedWeb ? 'off' : 'on'}`,
-    };
+    return { staleBecause: STALE_REASON.webOutputChanged(!storedWeb) };
   }
 
   const iconCount = Object.keys(glyphmap?.i ?? {}).length;
@@ -263,7 +272,10 @@ export async function checkAllFonts(
       versions
     );
     let state = currentOutput(resolved, options?.logger);
-    if ('staleBecause' in state && state.staleBecause === INPUTS_CHANGED) {
+    if (
+      'staleBecause' in state &&
+      state.staleBecause === STALE_REASON.inputsChanged
+    ) {
       const family = await familyIfBuiltTheSame(resolved);
       if (family) {
         options?.logger?.succeed(
