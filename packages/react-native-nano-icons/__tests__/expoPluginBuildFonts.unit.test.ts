@@ -29,7 +29,7 @@ describe('Expo plugin buildAllFonts', () => {
       new Error('1 icon set failed to build: DxTest')
     );
 
-    await expect(buildAllFonts([], '/tmp')).rejects.toThrow(
+    await expect(buildAllFonts([], '/tmp', false)).rejects.toThrow(
       '1 icon set failed to build: DxTest'
     );
     expect(mockWarnings).toEqual([]);
@@ -40,8 +40,8 @@ describe('Expo plugin buildAllFonts', () => {
       new Error('1 icon set failed to build: DxTest')
     );
 
-    const ios = getOrBuildFonts('/tmp', []);
-    const android = getOrBuildFonts('/tmp', []);
+    const ios = getOrBuildFonts('/tmp', [], false);
+    const android = getOrBuildFonts('/tmp', [], false);
 
     await expect(ios).rejects.toThrow('DxTest');
     await expect(android).rejects.toThrow('DxTest');
@@ -50,7 +50,7 @@ describe('Expo plugin buildAllFonts', () => {
 
   test('a healthy run returns the built fonts', async () => {
     mockCoreBuildAllFonts.mockResolvedValue([{ fontFamily: 'Ok' }]);
-    await expect(buildAllFonts([], '/tmp')).resolves.toEqual([
+    await expect(buildAllFonts([], '/tmp', false)).resolves.toEqual([
       { fontFamily: 'Ok' },
     ]);
     expect(mockWarnings).toEqual([]);

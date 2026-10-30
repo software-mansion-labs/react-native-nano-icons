@@ -147,12 +147,12 @@ function resolveSymbolSet(
 /**
  * Report the symbol sets whose generated files are out of date, without writing anything to the project.
  * A set is out of date when a build would change its generated files. When only its input fingerprint changed,
- * the set is built into a temp dir and compared with them.
+ * the set is built into a temp dir and compared with them. With `existingOnly`, sets without a symbolmap are skipped.
  */
 export async function checkAllSymbols(
   symbolSets: SymbolSetConfig[],
   projectRoot: string,
-  options?: { logger?: NanoLogger }
+  options?: { logger?: NanoLogger; existingOnly?: boolean }
 ): Promise<StaleSet[]> {
   const versions = {
     version: packageVersion(),
@@ -162,6 +162,12 @@ export async function checkAllSymbols(
   for (const set of symbolSets) {
     const { inputDir, name, prefix, outputDir, inputHash, svgHashByFile } =
       resolveSymbolSet(set, projectRoot, versions);
+    if (
+      options?.existingOnly &&
+      !fs.existsSync(path.join(outputDir, `${name}.symbolmap.json`))
+    ) {
+      continue;
+    }
     const state = currentSymbolOutput(inputHash, outputDir, name);
     if (
       'staleBecause' in state &&

@@ -24,12 +24,14 @@ const IOS_FONTS_GROUP = 'Resources';
  */
 export function withNanoIconsIos(
   config: Parameters<typeof withXcodeProject>[0],
-  iconSets: IconSetConfig[]
+  iconSets: IconSetConfig[],
+  frozen?: boolean
 ): ReturnType<typeof withXcodeProject> {
   config = withXcodeProject(config, async (config) => {
     const built = await getOrBuildFonts(
       config.modRequest.projectRoot,
-      iconSets
+      iconSets,
+      frozen
     );
     const bundled = built?.filter((b) => b.linking !== 'dynamic') ?? [];
     if (!bundled.length) return config;
@@ -65,7 +67,8 @@ export function withNanoIconsIos(
     async (config) => {
       const built = await getOrBuildFonts(
         config.modRequest.projectRoot,
-        iconSets
+        iconSets,
+        frozen
       );
       const bundled = built?.filter((b) => b.linking !== 'dynamic') ?? [];
       if (!bundled.length) return config;
@@ -98,14 +101,16 @@ function getUIAppFonts(infoPlist: InfoPlist): string[] {
  */
 export function withNanoIconsAndroid(
   config: Parameters<typeof withDangerousMod>[0],
-  iconSets: IconSetConfig[]
+  iconSets: IconSetConfig[],
+  frozen?: boolean
 ): ReturnType<typeof withDangerousMod> {
   return withDangerousMod(config, [
     'android',
     async (config) => {
       const built = await getOrBuildFonts(
         config.modRequest.projectRoot,
-        iconSets
+        iconSets,
+        frozen
       );
       const bundled = built?.filter((b) => b.linking !== 'dynamic') ?? [];
       syncAndroidFontAssets(
@@ -126,9 +131,10 @@ export function withNanoIconsAndroid(
  */
 export function withNanoIconsFontLinking(
   config: Parameters<typeof withNanoIconsIos>[0],
-  iconSets: IconSetConfig[]
+  iconSets: IconSetConfig[],
+  frozen?: boolean
 ): ReturnType<typeof withNanoIconsAndroid> {
-  config = withNanoIconsIos(config, iconSets);
-  config = withNanoIconsAndroid(config, iconSets);
+  config = withNanoIconsIos(config, iconSets, frozen);
+  config = withNanoIconsAndroid(config, iconSets, frozen);
   return config;
 }

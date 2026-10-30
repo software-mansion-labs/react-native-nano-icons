@@ -253,11 +253,17 @@ async function familyIfBuiltTheSame(
  * A set is out of date when a build would change its generated files. When only its input fingerprint changed,
  * the set is built into a temp dir and compared with them. With `appRoot`, a static set is also out of date
  * when its font linked into that app's android/ or ios/ project differs from the generated TTF.
+ * With `existingOnly`, sets without a glyphmap are skipped.
  */
 export async function checkAllFonts(
   iconSets: IconSetConfig[],
   projectRoot: string,
-  options?: { logger?: NanoLogger; withWeb?: boolean; appRoot?: string }
+  options?: {
+    logger?: NanoLogger;
+    withWeb?: boolean;
+    appRoot?: string;
+    existingOnly?: boolean;
+  }
 ): Promise<StaleSet[]> {
   const versions = {
     version: packageVersion(),
@@ -271,6 +277,9 @@ export async function checkAllFonts(
       options?.withWeb ?? true,
       versions
     );
+    if (options?.existingOnly && !fs.existsSync(resolved.glyphmapPath)) {
+      continue;
+    }
     let state = currentOutput(resolved, options?.logger);
     if (
       'staleBecause' in state &&
