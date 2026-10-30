@@ -9,4 +9,10 @@ export {
   type FontIntegrityIssue,
   type FontIntegrityStatus,
 } from './fontIntegrity';
+export type {
+  GlyphEntry,
+  GlyphLayer,
+  NanoGlyphMap,
+  NanoGlyphMapInput,
+} from './core/types';
 export type { ColorValue } from 'react-native';

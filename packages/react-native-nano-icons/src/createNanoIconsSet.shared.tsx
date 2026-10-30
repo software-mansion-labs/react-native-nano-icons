@@ -2,7 +2,8 @@ import { memo, useMemo } from 'react';
 import { PixelRatio, Platform, Text, View, type TextProps } from 'react-native';
 import type { NanoGlyphMapInput } from './core/types';
 import type { IconComponent, IconProps } from './types';
-import { shallowEqualColor } from './utils/shallowEqualColor';
+import { areIconPropsEqual } from './utils/iconPropsEqual';
+import { iconAccessibilityProps } from './utils/iconAccessibility';
 import {
   DEFAULT_ICON_SIZE,
   resolveGlyphEntry,
@@ -20,7 +21,6 @@ import {
 import { configuredFontFamily } from './utils/fontIdentity';
 
 export type { IconComponent, IconProps };
-export { shallowEqualColor };
 
 /**
  * Warn when the `font` argument and the glyphmap's linking mode are inconsistent.
@@ -106,7 +106,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
       allowFontScaling = true,
       accessible,
       accessibilityLabel,
-      accessibilityRole = 'image',
+      accessibilityRole,
       accessibilityElementsHidden,
       importantForAccessibility,
       testID,
@@ -131,11 +131,13 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
         <View
           ref={ref}
           style={containerStyle}
-          accessible={accessible}
-          accessibilityRole={accessibilityRole}
-          accessibilityLabel={accessibilityLabel ?? (name as string)}
-          accessibilityElementsHidden={accessibilityElementsHidden}
-          importantForAccessibility={importantForAccessibility}
+          {...iconAccessibilityProps({
+            accessible,
+            accessibilityLabel,
+            accessibilityRole,
+            accessibilityElementsHidden,
+            importantForAccessibility,
+          })}
           testID={testID}>
           {pending
             ? null
@@ -155,13 +157,7 @@ export function createJSIconSet<GM extends NanoGlyphMapInput>(
         </View>
       );
     },
-    (prev, next) =>
-      prev.name === next.name &&
-      prev.size === next.size &&
-      prev.allowFontScaling === next.allowFontScaling &&
-      prev.style === next.style &&
-      prev.tintMode === next.tintMode &&
-      shallowEqualColor(prev.color, next.color)
+    areIconPropsEqual
   );
 
   Icon.displayName = `NanoIcon(${fontBasename})`;

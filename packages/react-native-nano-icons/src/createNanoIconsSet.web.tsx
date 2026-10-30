@@ -2,7 +2,8 @@ import { memo, type CSSProperties } from 'react';
 import * as ReactDOM from 'react-dom';
 import type { NanoGlyphMapInput } from './core/types';
 import type { IconComponent, IconProps } from './types';
-import { shallowEqualColor } from './utils/shallowEqualColor';
+import { areIconPropsEqual } from './utils/iconPropsEqual';
+import { iconAccessibilityProps } from './utils/iconAccessibility';
 import {
   resolveGlyphEntry,
   createCharCache,
@@ -23,7 +24,6 @@ import {
 import { registerWebFont, warnFontNotLoaded, webFontUrl } from './webFont';
 
 export type { IconComponent, IconProps };
-export { shallowEqualColor };
 
 // Web renderer: uses inline <span> elements so icons flow out of the box (display: inline-block keeps width/height)
 export function createIconSet<GM extends NanoGlyphMapInput>(
@@ -72,8 +72,9 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       style,
       accessible,
       accessibilityLabel,
-      accessibilityRole = 'image',
+      accessibilityRole,
       accessibilityElementsHidden,
+      importantForAccessibility,
       testID,
       className,
       ref,
@@ -94,8 +95,20 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
       const inheritColor = color == null && followsTextColor(layers);
       const resolveColor = createLayerColorResolver(color, tintMode, layers);
 
-      const isHidden = accessible === false || accessibilityElementsHidden;
-      const role = accessibilityRole === 'image' ? 'img' : accessibilityRole;
+      const accessibility = iconAccessibilityProps({
+        accessible,
+        accessibilityLabel,
+        accessibilityRole,
+        accessibilityElementsHidden,
+        importantForAccessibility,
+      });
+      const isHidden =
+        accessibility.accessible === false ||
+        accessibility.accessibilityElementsHidden === true;
+      const role =
+        accessibility.accessibilityRole === 'image'
+          ? 'img'
+          : accessibility.accessibilityRole;
 
       return (
         <>
@@ -113,7 +126,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
             style={containerStyle}
             role={isHidden ? undefined : role}
             aria-label={
-              isHidden ? undefined : (accessibilityLabel ?? (name as string))
+              isHidden ? undefined : accessibilityLabel || (name as string)
             }
             aria-hidden={isHidden || undefined}
             data-testid={testID}>
@@ -133,13 +146,7 @@ export function createIconSet<GM extends NanoGlyphMapInput>(
         </>
       );
     },
-    (prev, next) =>
-      prev.name === next.name &&
-      prev.size === next.size &&
-      prev.style === next.style &&
-      prev.className === next.className &&
-      prev.tintMode === next.tintMode &&
-      shallowEqualColor(prev.color, next.color)
+    areIconPropsEqual
   );
 
   Icon.displayName = `NanoIcon(${fontBasename})`;

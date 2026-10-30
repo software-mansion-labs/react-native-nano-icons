@@ -27,6 +27,7 @@ type TestRendererModule = {
   act(callback: () => void): void;
   create(element: ReactElement): {
     root: { findAll(predicate: (node: HostNode) => boolean): HostNode[] };
+    update(element: ReactElement): void;
   };
 };
 
@@ -63,13 +64,13 @@ function render(props: Props, font?: unknown) {
   const find = (predicate: (node: HostNode) => boolean) =>
     tree.root.findAll(predicate);
   const container = find(
-    (node) => node.type === 'span' && node.props['aria-hidden'] !== true
+    (node) => node.type === 'span' && node.props['className'] !== undefined
   )[0]!;
   return {
     container,
     containerStyle: container.props['style'] as Record<string, unknown>,
     layerStyles: find(
-      (node) => node.type === 'span' && node.props['aria-hidden'] === true
+      (node) => node.type === 'span' && node.props['className'] === undefined
     ).map((node) => node.props['style'] as CSSProperties | undefined),
     styles: find((node) => node.type === 'style').map((node) => node.props),
   };
@@ -257,5 +258,101 @@ describe('createIconSet (web)', () => {
 
   test('display name uses the configured family', () => {
     expect(createIconSet(glyphMap).displayName).toBe('NanoIcon(Ui)');
+  });
+
+  test('an icon without a label is hidden from screen readers', () => {
+    const { container } = render({ name: 'heart' });
+    expect(container.props).toMatchObject({ 'aria-hidden': true });
+    expect(container.props['role']).toBeUndefined();
+    expect(container.props['aria-label']).toBeUndefined();
+  });
+
+  test('a label makes the icon an img with that label', () => {
+    const { container } = render({ name: 'heart', accessibilityLabel: 'Like' });
+    expect(container.props).toMatchObject({
+      role: 'img',
+      'aria-label': 'Like',
+    });
+    expect(container.props['aria-hidden']).toBeUndefined();
+  });
+
+  test('accessible without a label makes the icon an img named after the icon', () => {
+    const { container } = render({ name: 'heart', accessible: true });
+    expect(container.props).toMatchObject({
+      role: 'img',
+      'aria-label': 'heart',
+    });
+    expect(container.props['aria-hidden']).toBeUndefined();
+  });
+
+  test('an explicit opt-in exposes an icon without a label', () => {
+    expect(
+      render({ name: 'heart', importantForAccessibility: 'yes' }).container
+        .props
+    ).toMatchObject({ role: 'img', 'aria-label': 'heart' });
+    expect(
+      render({ name: 'heart', accessibilityElementsHidden: false }).container
+        .props
+    ).toMatchObject({ role: 'img', 'aria-label': 'heart' });
+    expect(
+      render({ name: 'heart', accessibilityRole: 'button' }).container.props
+    ).toMatchObject({ role: 'button', 'aria-label': 'heart' });
+  });
+
+  test('a changed accessibility prop re-renders the icon', () => {
+    const Icon = createIconSet(glyphMap);
+    let tree!: ReturnType<TestRendererModule['create']>;
+    const container = () =>
+      tree.root.findAll(
+        (node) => node.type === 'span' && node.props['className'] !== undefined
+      )[0]!.props;
+    TestRenderer.act(() => {
+      tree = TestRenderer.create(
+        createElement(Icon, { name: 'heart', accessibilityLabel: 'First' })
+      );
+    });
+    TestRenderer.act(() =>
+      tree.update(
+        createElement(Icon, { name: 'heart', accessibilityLabel: 'Second' })
+      )
+    );
+    expect(container()['aria-label']).toBe('Second');
+    TestRenderer.act(() =>
+      tree.update(
+        createElement(Icon, {
+          name: 'heart',
+          accessibilityLabel: 'Second',
+          accessible: false,
+        })
+      )
+    );
+    expect(container()['aria-hidden']).toBe(true);
+  });
+
+  test('a new style array with the same values does not re-render', () => {
+    const Icon = createIconSet(glyphMap);
+    let tree!: ReturnType<TestRendererModule['create']>;
+    const container = () =>
+      tree.root.findAll(
+        (node) => node.type === 'span' && node.props['className'] !== undefined
+      )[0]!.props;
+    TestRenderer.act(() => {
+      tree = TestRenderer.create(
+        createElement(Icon, { name: 'heart', style: [{ margin: 4 }] })
+      );
+    });
+    const before = container();
+    TestRenderer.act(() =>
+      tree.update(
+        createElement(Icon, { name: 'heart', style: [{ margin: 4 }] })
+      )
+    );
+    expect(container()).toBe(before);
+    TestRenderer.act(() =>
+      tree.update(
+        createElement(Icon, { name: 'heart', style: [{ margin: 5 }] })
+      )
+    );
+    expect(container()).not.toBe(before);
   });
 });

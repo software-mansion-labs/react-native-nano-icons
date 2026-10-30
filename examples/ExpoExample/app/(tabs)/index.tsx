@@ -20,7 +20,7 @@ export default function TabOneScreen() {
             </Text>
 
             <Text style={styles.subtitle}>Standalone icon:</Text>
-            <Icon name="react-logo" size={80} />
+            <Icon name="react-logo" size={80} accessibilityLabel="React logo" />
             <Pressable style={styles.button}>
               <SWMIconsOutline name="ZoomIn" size={28} color={'#007AFF'} />
               <Text style={styles.buttonText}>Monochrome Button Icon</Text>

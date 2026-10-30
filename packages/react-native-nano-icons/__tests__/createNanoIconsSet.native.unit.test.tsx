@@ -24,12 +24,15 @@ jest.spyOn(UIManager, 'hasViewManagerConfig').mockReturnValue(true);
 
 const { createIconSet } =
   require('../src/createNanoIconsSet.native') as typeof import('../src/createNanoIconsSet.native');
+const { createJSIconSet } =
+  require('../src/createNanoIconsSet.shared') as typeof import('../src/createNanoIconsSet.shared');
 
 type HostNode = { type: unknown; props: Record<string, unknown> };
 type TestRendererModule = {
   act(callback: () => void): void;
   create(element: ReactElement): {
     root: { findAll(predicate: (node: HostNode) => boolean): HostNode[] };
+    update(element: ReactElement): void;
   };
 };
 const TestRenderer = require('react-test-renderer') as TestRendererModule;
@@ -138,5 +141,69 @@ describe('createIconSet (native) layer colors', () => {
     expect(errorSpy.mock.calls[0][0]).toContain(
       'Invalid color "nope" for icon "message" (layer 0)'
     );
+  });
+});
+
+describe.each([
+  ['native', () => createIconSet(glyphMap), 'NanoIconView'],
+  ['JS fallback', () => createJSIconSet(glyphMap), 'View'],
+])('createIconSet (%s) props', (_, create, hostType) => {
+  const Icon = create();
+
+  function mount(props: IconElementProps) {
+    let tree!: ReturnType<TestRendererModule['create']>;
+    TestRenderer.act(() => {
+      tree = TestRenderer.create(createElement(Icon, props));
+    });
+    return {
+      host: () => tree.root.findAll((node) => node.type === hostType)[0]!.props,
+      update: (next: IconElementProps) =>
+        TestRenderer.act(() => tree.update(createElement(Icon, next))),
+    };
+  }
+
+  test('an icon without a label is hidden from screen readers', () => {
+    const props = mount({ name: 'message' }).host();
+    expect(props).toMatchObject({
+      accessible: false,
+      accessibilityElementsHidden: true,
+      importantForAccessibility: 'no-hide-descendants',
+    });
+    expect(props['accessibilityLabel']).toBeUndefined();
+    expect(props['accessibilityRole']).toBeUndefined();
+  });
+
+  test('a label makes the icon an image with that label', () => {
+    const props = mount({
+      name: 'message',
+      accessibilityLabel: 'Message',
+    }).host();
+    expect(props).toMatchObject({
+      accessibilityLabel: 'Message',
+      accessibilityRole: 'image',
+    });
+    expect(props['accessible']).toBeUndefined();
+    expect(props['accessibilityElementsHidden']).toBeUndefined();
+  });
+
+  test('a changed accessibility prop re-renders the icon', () => {
+    const icon = mount({ name: 'message', accessibilityLabel: 'First' });
+    icon.update({ name: 'message', accessibilityLabel: 'Second' });
+    expect(icon.host()['accessibilityLabel']).toBe('Second');
+    icon.update({
+      name: 'message',
+      accessibilityLabel: 'Second',
+      accessible: false,
+    });
+    expect(icon.host()['accessible']).toBe(false);
+  });
+
+  test('a new style array with the same values does not re-render', () => {
+    const icon = mount({ name: 'message', style: [{ margin: 4 }] });
+    const before = icon.host();
+    icon.update({ name: 'message', style: [{ margin: 4 }] });
+    expect(icon.host()).toBe(before);
+    icon.update({ name: 'message', style: [{ margin: 5 }] });
+    expect(icon.host()).not.toBe(before);
   });
 });
