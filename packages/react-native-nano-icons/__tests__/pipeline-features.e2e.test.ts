@@ -338,13 +338,9 @@ describe('Pipeline E2E — failure reporting', () => {
     const fixture = (rel: string) =>
       fs.readFileSync(path.join(TEST_ICONS, rel), 'utf8');
     const { error, infos } = await runBroken({
-      'swm-walker.svg': fixture('nested/swm-walker.svg'),
       'elephant.svg': fixture('sanatize_examples/elephant.svg'),
     });
     expect(error).toBeNull();
-    expect(infos).toContain(
-      '  ↻ [BrokenSet: swm-walker.svg] converting evenodd path to nonzero winding'
-    );
     expect(infos).toContain(
       '  ⚠ [BrokenSet: elephant.svg] sanitized path: path was missing initial moveto (prepended M from endpoint)'
     );

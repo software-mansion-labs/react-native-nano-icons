@@ -185,18 +185,32 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
     "unicode": 57357,
   },
   {
-    "contourCount": 11,
+    "contourCount": 9,
     "shape": {
-      "area": 525625,
+      "area": 467736,
       "bbox": [
         133,
         133,
         867,
         867,
       ],
-      "contours": 11,
+      "contours": 9,
     },
     "unicode": 57358,
+  },
+  {
+    "contourCount": 2,
+    "shape": {
+      "area": 57889,
+      "bbox": [
+        533,
+        133,
+        867,
+        467,
+      ],
+      "contours": 2,
+    },
+    "unicode": 57359,
   },
   {
     "contourCount": 1,
@@ -210,33 +224,19 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 1,
     },
-    "unicode": 57359,
+    "unicode": 57360,
   },
   {
-    "contourCount": 4,
+    "contourCount": 26,
     "shape": {
-      "area": 587797,
+      "area": 629009,
       "bbox": [
         102,
         257,
         897,
         659,
       ],
-      "contours": 4,
-    },
-    "unicode": 57360,
-  },
-  {
-    "contourCount": 22,
-    "shape": {
-      "area": 41213,
-      "bbox": [
-        281,
-        420,
-        813,
-        611,
-      ],
-      "contours": 22,
+      "contours": 26,
     },
     "unicode": 57361,
   },
@@ -927,32 +927,18 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
     "unicode": 57410,
   },
   {
-    "contourCount": 4,
+    "contourCount": 26,
     "shape": {
-      "area": 546313,
+      "area": 584624,
       "bbox": [
         117,
         118,
         882,
         506,
       ],
-      "contours": 4,
+      "contours": 26,
     },
     "unicode": 57411,
-  },
-  {
-    "contourCount": 22,
-    "shape": {
-      "area": 38311,
-      "bbox": [
-        289,
-        275,
-        802,
-        459,
-      ],
-      "contours": 22,
-    },
-    "unicode": 57412,
   },
   {
     "contourCount": 4,
@@ -966,7 +952,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 4,
     },
-    "unicode": 57413,
+    "unicode": 57412,
   },
   {
     "contourCount": 5,
@@ -980,7 +966,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 5,
     },
-    "unicode": 57414,
+    "unicode": 57413,
   },
   {
     "contourCount": 4,
@@ -994,7 +980,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 4,
     },
-    "unicode": 57417,
+    "unicode": 57416,
   },
   {
     "contourCount": 2,
@@ -1008,7 +994,7 @@ exports[`pipeline golden — glyph geometry compiled glyph outlines match their 
       ],
       "contours": 2,
     },
-    "unicode": 57418,
+    "unicode": 57417,
   },
 ]
 `;
@@ -1088,6 +1074,7 @@ exports[`pipeline golden — structural summary (Tier S) curated icons produce a
       "adv": 1000,
       "layerColors": [
         "black",
+        "black",
       ],
       "name": "evenodd_qrcode",
     },
@@ -1120,7 +1107,6 @@ exports[`pipeline golden — structural summary (Tier S) curated icons produce a
         "#1C2226",
         "#001A72",
         "white",
-        "white",
       ],
       "name": "nested_swm-walker",
     },
@@ -1128,7 +1114,6 @@ exports[`pipeline golden — structural summary (Tier S) curated icons produce a
       "adv": 1000,
       "layerColors": [
         "#001A72",
-        "white",
         "white",
         "#FCC9A7",
         "#1F252A",

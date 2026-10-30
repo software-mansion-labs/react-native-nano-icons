@@ -1,7 +1,10 @@
 /** @jest-environment node */
 
-import { convertEvenoddToWinding } from '../src/core/pathkit/evenodd';
 import type { PathKitModule } from '../src/core/pathkit/types';
+import {
+  analyzeWinding,
+  pathDataWithWinding,
+} from '../src/core/pathkit/winding';
 import { loadPathKit, flattenContours, signedArea } from './helpers/geometry';
 
 let PathKit: PathKitModule;
@@ -10,43 +13,73 @@ beforeAll(async () => {
   PathKit = await loadPathKit();
 }, 60_000);
 
-describe('convertEvenoddToWinding', () => {
-  // 0..100 square with a 25..75 hole, evenodd
-  const SQUARE_WITH_HOLE = 'M0 0 H100 V100 H0 Z M25 25 H75 V75 H25 Z';
+const SQUARE = 'M0 0 H100 V100 H0 Z';
+const SQUARE_REVERSED = 'M0 0 V100 H100 V0 Z';
+const HOLE = 'M25 25 V75 H75 V25 Z';
+const HOLE_REVERSED = 'M25 25 H75 V75 H25 Z';
+const SIDE_SQUARE_REVERSED = 'M200 0 V100 H300 V0 Z';
 
-  test('preserves two contours (outer + hole survive)', () => {
-    const out = convertEvenoddToWinding(PathKit, SQUARE_WITH_HOLE);
-    expect(flattenContours(PathKit, out).length).toBe(2);
+const signs = (d: string) => analyzeWinding(PathKit, d)?.outerSigns ?? null;
+
+describe('analyzeWinding', () => {
+  test('a contour has the sign of its direction', () => {
+    const [sign] = signs(SQUARE)!;
+    expect(sign).not.toBe(0);
+    expect(signs(SQUARE_REVERSED)).toEqual([-sign!]);
   });
 
-  test('outer and hole end up with opposite winding signs', () => {
-    const out = convertEvenoddToWinding(PathKit, SQUARE_WITH_HOLE);
-    const signs = flattenContours(PathKit, out).map((c) =>
-      Math.sign(signedArea(c))
+  test('a hole turning against its outline has the outline sign', () => {
+    const [sign] = signs(SQUARE)!;
+    expect(signs(`${SQUARE} ${HOLE}`)).toEqual([sign, sign]);
+  });
+
+  test('separate outlines keep their own signs', () => {
+    const [sign] = signs(SQUARE)!;
+    expect(signs(`${SQUARE} ${SIDE_SQUARE_REVERSED}`)).toEqual([sign, -sign!]);
+  });
+
+  test('a hole turning with its outline cannot be analysed', () => {
+    expect(signs(`${SQUARE} ${HOLE_REVERSED}`)).toBeNull();
+  });
+
+  test('crossing contours cannot be analysed', () => {
+    expect(signs(`${SQUARE} M50 50 H150 V150 H50 Z`)).toBeNull();
+  });
+
+  test('an empty path cannot be analysed', () => {
+    expect(signs('')).toBeNull();
+  });
+});
+
+describe('pathDataWithWinding', () => {
+  const areas = (d: string) => flattenContours(PathKit, d).map(signedArea);
+
+  test('keeps a path that already has the sign', () => {
+    const d = `${SQUARE} ${HOLE}`;
+    const analysis = analyzeWinding(PathKit, d)!;
+    expect(
+      pathDataWithWinding(PathKit, d, analysis, analysis.outerSigns[0] as 1)
+    ).toBe(d);
+  });
+
+  test('reverses every contour for the opposite sign', () => {
+    const d = `${SQUARE} ${HOLE}`;
+    const analysis = analyzeWinding(PathKit, d)!;
+    const flipped = pathDataWithWinding(
+      PathKit,
+      d,
+      analysis,
+      -analysis.outerSigns[0]! as 1
     );
-    // opposite winding is what makes the hole render under nonzero fill
-    expect(new Set(signs).size).toBe(2);
+    expect(areas(flipped)).toEqual(areas(d).map((a) => -a));
   });
 
-  test('bounding box is unchanged by the conversion', () => {
-    const out = convertEvenoddToWinding(PathKit, SQUARE_WITH_HOLE);
-    const pts = flattenContours(PathKit, out).flat();
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
-    expect(Math.min(...xs)).toBeCloseTo(0, 1);
-    expect(Math.min(...ys)).toBeCloseTo(0, 1);
-    expect(Math.max(...xs)).toBeCloseTo(100, 1);
-    expect(Math.max(...ys)).toBeCloseTo(100, 1);
-  });
-
-  test('a simple hole-free square keeps a single contour and its area', () => {
-    const out = convertEvenoddToWinding(PathKit, 'M0 0 H100 V100 H0 Z');
-    const contours = flattenContours(PathKit, out);
-    expect(contours.length).toBe(1);
-    expect(Math.abs(signedArea(contours[0]!))).toBeCloseTo(10000, 0);
-  });
-
-  test('returns a string for an unparseable d', () => {
-    expect(typeof convertEvenoddToWinding(PathKit, '')).toBe('string');
+  test('reverses only the outlines with the other sign', () => {
+    const d = `${SQUARE} ${SIDE_SQUARE_REVERSED}`;
+    const analysis = analyzeWinding(PathKit, d)!;
+    const sign = analysis.outerSigns[0] as 1;
+    const out = pathDataWithWinding(PathKit, d, analysis, sign);
+    expect(analyzeWinding(PathKit, out)!.outerSigns).toEqual([sign, sign]);
+    expect(areas(out).map(Math.abs)).toEqual(areas(d).map(Math.abs));
   });
 });

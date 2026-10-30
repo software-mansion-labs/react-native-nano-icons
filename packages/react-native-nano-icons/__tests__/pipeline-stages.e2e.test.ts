@@ -8,7 +8,6 @@ import { loadPathKit } from '../src/core/pathkit/load';
 import { mergeSameColorPaths } from '../src/core/glyph/merge';
 import { parseFlattenedSvg, type ParsedPath } from '../src/core/glyph/parse';
 import { preprocessSvg, validateSvg } from '../src/core/glyph/validate';
-import { convertEvenoddToWinding } from '../src/core/pathkit/evenodd';
 
 const TESTICONS_DIR = path.resolve(
   __dirname,
@@ -25,8 +24,6 @@ type PathsSnapshot = {
   paths: {
     d: string;
     fill: string | null;
-    fillRule: 'evenodd' | null;
-    noMerge: boolean;
   }[];
 };
 
@@ -34,7 +31,6 @@ type StageOutputs = {
   preprocessed: string;
   flattened: string;
   parsed: PathsSnapshot;
-  converted: PathsSnapshot;
   merged: PathsSnapshot;
 };
 
@@ -44,8 +40,6 @@ function snapshotPaths(viewBox: number[], paths: ParsedPath[]): PathsSnapshot {
     paths: paths.map((p) => ({
       d: p.d,
       fill: p.fill,
-      fillRule: p.fillRule ?? null,
-      noMerge: p.noMerge ?? false,
     })),
   };
 }
@@ -72,18 +66,9 @@ async function computeStages(file: string): Promise<StageOutputs> {
   };
   const parsed = snapshotPaths(viewBox, paths);
 
-  for (const p of paths) {
-    if (p.fillRule === 'evenodd') {
-      p.d = convertEvenoddToWinding(PathKit, p.d);
-      delete p.fillRule;
-      p.noMerge = true;
-    }
-  }
-  const converted = snapshotPaths(viewBox, paths);
+  const merged = snapshotPaths(viewBox, mergeSameColorPaths(paths, PathKit));
 
-  const merged = snapshotPaths(viewBox, mergeSameColorPaths(paths));
-
-  return { preprocessed, flattened, parsed, converted, merged };
+  return { preprocessed, flattened, parsed, merged };
 }
 
 test('testicons corpus is present', () => {
@@ -107,10 +92,6 @@ describe.each(ICONS)('pipeline stages golden — %s', (file) => {
 
   test('after parseFlattenedSvg', () => {
     expect(stages.parsed).toMatchSnapshot();
-  });
-
-  test('after convertEvenoddToWinding', () => {
-    expect(stages.converted).toMatchSnapshot();
   });
 
   test('after mergeSameColorPaths', () => {

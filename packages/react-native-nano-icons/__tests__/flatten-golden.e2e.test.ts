@@ -47,7 +47,6 @@ describe('flatten seam golden — flattenSvg output', () => {
         viewBox: parsed.viewBox,
         paths: parsed.paths.map((p) => ({
           fill: p.fill,
-          fillRule: p.fillRule ?? null,
           shape: glyphFingerprint(PathKit, p.d),
         })),
       };

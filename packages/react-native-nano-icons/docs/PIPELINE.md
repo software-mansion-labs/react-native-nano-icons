@@ -7,7 +7,7 @@ Complete documentation of how SVG icons are converted into a TrueType font + gly
 ## Overview
 
 ```
-SVG files → flatten (PathKit-backed) → parse paths → evenodd conversion → same-color merge → placement → transform → SVG font XML → svg2ttf → metrics fix → .ttf + .glyphmap.json
+SVG files → flatten (PathKit-backed) → parse paths → same-color merge → placement → transform → SVG font XML → svg2ttf → metrics fix → .ttf + .glyphmap.json
 ```
 
 The pipeline converts a directory of SVG icon files into:
@@ -65,10 +65,11 @@ Loads **PathKit** (Skia's path geometry library, compiled to WASM) once and cach
 ### `src/core/pathkit/` — everything that talks to PathKit
 
 - `types.ts` — `PathKitModule` / `PathKitPath` typings and the `Cmd` / `Point` verb-level types
-- `contours.ts` — verb-level contour maths shared by the flattener and the evenodd
-  converter: contour splitting, signed area, curve sampling, ray-cast containment,
+- `contours.ts` — verb-level contour maths shared by the flattener and the winding
+  helpers: contour splitting, signed area, curve sampling, ray-cast containment,
   orientation fixing, deterministic start-point rotation
-- `evenodd.ts` — `convertEvenoddToWinding(PathKit, d)` (see 2e below)
+- `winding.ts` — `analyzeWinding` / `pathDataWithWinding` (winding alignment for the
+  merge, see 2e below), canonical / reversed winding for symbols
 
 ### `src/core/flatten/` — the SVG flattener
 
@@ -132,7 +133,7 @@ Reads all `.svg` files from `inputDir`. Initializes an empty glyphmap and a `Fon
 
 ### Step 2: For each SVG file — `prepareSvgLayers()`
 
-**File:** `src/core/pipeline/prepare.ts` — steps 2a–2f; returns `{ viewBox, paths }` or `null` when the SVG is rejected.
+**File:** `src/core/pipeline/prepare.ts` — steps 2a–2e; returns `{ viewBox, paths }` or `null` when the SVG is rejected.
 
 #### 2a. Validate
 
@@ -162,49 +163,24 @@ The flattener:
 
 - Extracts `viewBox` (or defaults to `0 0 100 100`)
 - For each `<path>`:
-  - Extracts `d`, `fill`, `fill-rule`, `opacity`, `fill-opacity`
+  - Extracts `d`, `fill`, `opacity`, `fill-opacity`
   - Bakes opacity into fill as `rgba(r,g,b,a)` via `calculateOpColor()`
   - Sanitizes paths missing initial moveto (prepends `M` from endpoint)
-- Returns `{ viewBox, paths: [{ d, fill, fillRule? }] }`
+- Returns `{ viewBox, paths: [{ d, fill }] }`
 
-#### 2e. Convert evenodd to nonzero winding
+#### 2e. Merge same-color paths
 
-**`convertEvenoddToWinding(PathKit, d)`**
+**`mergeSameColorPaths(parsed.paths, PathKit, logger)`**
 
-For each path with `fillRule === 'evenodd'`:
-
-1. Parse via `PathKit.FromSVGString(d)`
-2. Set fill type to `EVENODD`
-3. Call `simplify()` — resolves self-intersections respecting evenodd topology
-4. Re-parse the simplified result to get raw commands
-5. Split into individual contours
-6. Sort contours by absolute area (big-to-small)
-7. **Compute nesting depths** via ray-casting containment test:
-   - For each contour, get a sample point on its boundary
-   - Test if that point lies inside each other contour (ray-casting point-in-polygon)
-   - Nesting depth = number of containing contours
-8. **Fix winding direction**:
-   - Even depth (0, 2, 4…) → CCW (outer / fill)
-   - Odd depth (1, 3, 5…) → CW (hole / cutout)
-   - Reverse contour if current direction doesn't match
-9. Reconstruct `d` string from corrected commands
-
-The path is also marked **`noMerge = true`** — compound paths with holes must not be concatenated with adjacent paths (their CW hole contours would cancel adjacent CCW contours via winding).
-
-**Why the custom algorithm:** PathKit (WASM) does not expose Skia's `AsWinding()` function, and relabelling a path's fill type does not reverse its contours. The containment-based algorithm properly handles: independent shapes, simple holes, and arbitrarily nested bullseye patterns.
-
-#### 2f. Merge same-color paths
-
-**`mergeSameColorPaths(parsed.paths, logger)`**
-
-Groups **consecutive** paths with identical `fill` and concatenates their `d` strings into a single compound path. This reduces glyph count without any geometric risk — under nonzero winding, concatenation renders identically to drawing each path separately with the same color.
+Groups **consecutive** paths with identical `fill` and concatenates their `d` strings into a single compound path. This reduces glyph count. Under nonzero winding, paths wound opposite ways cancel where they overlap, so the winding of each path is aligned first (see [Same-Color Path Merging](#same-color-path-merging)).
 
 Rules:
 - Only merges **consecutive** same-color runs (preserves z-order)
-- Skips paths marked `noMerge` (evenodd-converted compound paths)
+- Reverses contours so that every outline in the run has the sign of the first path's outlines
+- Keeps a path in its own layer when its contours touch or cross, a contour crosses itself, or a hole winds like its outline
 - Uses simple string concatenation (`d1 + ' ' + d2`), **not** boolean union (which can corrupt complex geometry)
 
-#### 2g. Compute placement
+#### 2f. Compute placement
 
 **`computePlacement({ upm, safeZone, viewBox })`**
 
@@ -218,7 +194,7 @@ yOff     = (upm - viewBox.height * scale) / 2           // center vertically
 
 Returns `{ vx, vy, scale, xOff, yOff, adv }` — used for path transformation.
 
-#### 2h. Transform paths and build glyphs
+#### 2g. Transform paths and build glyphs
 
 For each (merged) path that passes `shouldSkipPath()` (non-empty, non-transparent):
 
@@ -233,7 +209,7 @@ For each (merged) path that passes `shouldSkipPath()` (non-empty, non-transparen
 
 The Y-flip naturally converts SVG winding convention (outer=CCW) to TrueType convention (outer=CW).
 
-#### 2i. Record in glyphmap
+#### 2h. Record in glyphmap
 
 ```typescript
 glyphMap.i[iconName] = [advanceWidth, [[cp1, color1], [cp2, color2], ...]]
@@ -316,11 +292,17 @@ Complexity: O(n^2 * polyline_size), but n is typically 1–5 contours per glyph.
 
 ### Same-Color Path Merging
 
-Consecutive paths with identical fill color are concatenated into a single compound path (`d1 + ' ' + d2`). This is safe because:
+Consecutive paths with identical fill color are concatenated into a single compound path (`d1 + ' ' + d2`). This renders like drawing each path separately only when every filled region winds the same way:
 - Under nonzero winding, overlapping same-direction contours just increase winding count (stays nonzero = filled)
+- Overlapping contours wound opposite ways (+1 and −1) sum to 0, so the overlap is unfilled
 - Non-overlapping contours render independently
 
-**Exception:** Paths converted from evenodd (marked `noMerge`) must not be concatenated with other paths. Their CW hole contours would cancel adjacent paths' CCW contours, producing winding=0 (unfilled) in the overlap region.
+So the winding of each path is aligned before joining (`src/core/pathkit/winding.ts`):
+1. Approximate each contour as a polyline (sample curves at 8 points)
+2. If two contours touch or cross, or a contour crosses itself, the path keeps its own layer. The segments are sorted by x, so only segments whose x ranges overlap are compared
+3. Otherwise test one point of each contour against the other contours via **ray-casting**; nesting depth = count of containing contours
+4. Outline sign = contour direction, flipped at odd depth. A hole that winds like its outline keeps the path in its own layer
+5. Contours whose sign differs from the run's sign are reversed. The path's own fill does not change
 
 ## Font Metrics & Inline Text Alignment
 
@@ -388,14 +370,14 @@ Checks if `parent` is a `ReactTextView`. If so, reads the text layout paint's `f
 src/core/
 ├── pipeline/
 │   ├── runFontPipeline.ts  # per-file loop → placement → glyphs → TTF + glyphmap
-│   ├── prepare.ts          # validate → preprocess → flatten → parse → evenodd → merge
+│   ├── prepare.ts          # validate → preprocess → flatten → parse → merge
 │   ├── config.ts           # PipelineConfig, PipelinePaths types, ensureDir
 │   └── index.ts            # public ./pipeline surface (runFontPipeline + runPipeline alias)
 ├── pathkit/
 │   ├── load.ts             # loadPathKit(): cached WASM instance
 │   ├── types.ts            # PathKitModule, PathKitPath, Cmd, Point
 │   ├── contours.ts         # verb-level contour maths, containment winding
-│   └── evenodd.ts          # convertEvenoddToWinding
+│   └── winding.ts          # merge winding alignment, canonical / reversed winding
 ├── flatten/
 │   ├── index.ts            # flattenSvg entry point
 │   ├── document.ts         # SvgDocument: tree, shape cache, traversal, lookups

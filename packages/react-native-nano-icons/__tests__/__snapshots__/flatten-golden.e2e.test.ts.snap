@@ -5,7 +5,6 @@ exports[`flatten seam golden — flattenSvg output broken/Air: flattened output 
   "paths": [
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 11,
         "bbox": [
@@ -19,7 +18,6 @@ exports[`flatten seam golden — flattenSvg output broken/Air: flattened output 
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 27,
         "bbox": [
@@ -33,7 +31,6 @@ exports[`flatten seam golden — flattenSvg output broken/Air: flattened output 
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 27,
         "bbox": [
@@ -60,7 +57,6 @@ exports[`flatten seam golden — flattenSvg output broken/Alarm: flattened outpu
   "paths": [
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 12,
         "bbox": [
@@ -74,7 +70,6 @@ exports[`flatten seam golden — flattenSvg output broken/Alarm: flattened outpu
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 69,
         "bbox": [
@@ -88,7 +83,6 @@ exports[`flatten seam golden — flattenSvg output broken/Alarm: flattened outpu
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -102,7 +96,6 @@ exports[`flatten seam golden — flattenSvg output broken/Alarm: flattened outpu
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -129,7 +122,6 @@ exports[`flatten seam golden — flattenSvg output clippath/teest: flattened out
   "paths": [
     {
       "fill": "rgba(0,0,0,0.3)",
-      "fillRule": null,
       "shape": {
         "area": 209,
         "bbox": [
@@ -143,7 +135,6 @@ exports[`flatten seam golden — flattenSvg output clippath/teest: flattened out
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 109,
         "bbox": [
@@ -157,7 +148,6 @@ exports[`flatten seam golden — flattenSvg output clippath/teest: flattened out
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 38,
         "bbox": [
@@ -171,7 +161,6 @@ exports[`flatten seam golden — flattenSvg output clippath/teest: flattened out
     },
     {
       "fill": "red",
-      "fillRule": null,
       "shape": {
         "area": 0,
         "bbox": [
@@ -198,7 +187,6 @@ exports[`flatten seam golden — flattenSvg output curved/Air: flattened output 
   "paths": [
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 11,
         "bbox": [
@@ -212,7 +200,6 @@ exports[`flatten seam golden — flattenSvg output curved/Air: flattened output 
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 32,
         "bbox": [
@@ -226,7 +213,6 @@ exports[`flatten seam golden — flattenSvg output curved/Air: flattened output 
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 31,
         "bbox": [
@@ -253,7 +239,6 @@ exports[`flatten seam golden — flattenSvg output curved/Alarm: flattened outpu
   "paths": [
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 12,
         "bbox": [
@@ -267,7 +252,6 @@ exports[`flatten seam golden — flattenSvg output curved/Alarm: flattened outpu
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 407,
         "bbox": [
@@ -281,7 +265,6 @@ exports[`flatten seam golden — flattenSvg output curved/Alarm: flattened outpu
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -295,7 +278,6 @@ exports[`flatten seam golden — flattenSvg output curved/Alarm: flattened outpu
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -322,7 +304,6 @@ exports[`flatten seam golden — flattenSvg output duotone/Alarm: flattened outp
   "paths": [
     {
       "fill": "rgba(0,26,114,0.15)",
-      "fillRule": null,
       "shape": {
         "area": 201,
         "bbox": [
@@ -336,7 +317,6 @@ exports[`flatten seam golden — flattenSvg output duotone/Alarm: flattened outp
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 12,
         "bbox": [
@@ -350,7 +330,6 @@ exports[`flatten seam golden — flattenSvg output duotone/Alarm: flattened outp
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 407,
         "bbox": [
@@ -364,7 +343,6 @@ exports[`flatten seam golden — flattenSvg output duotone/Alarm: flattened outp
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -378,7 +356,6 @@ exports[`flatten seam golden — flattenSvg output duotone/Alarm: flattened outp
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -405,7 +382,6 @@ exports[`flatten seam golden — flattenSvg output duotone/Dislike: flattened ou
   "paths": [
     {
       "fill": "rgba(0,26,114,0.15)",
-      "fillRule": null,
       "shape": {
         "area": 151,
         "bbox": [
@@ -419,7 +395,6 @@ exports[`flatten seam golden — flattenSvg output duotone/Dislike: flattened ou
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 17,
         "bbox": [
@@ -433,7 +408,6 @@ exports[`flatten seam golden — flattenSvg output duotone/Dislike: flattened ou
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 386,
         "bbox": [
@@ -460,7 +434,6 @@ exports[`flatten seam golden — flattenSvg output duotone/EyeOpen: flattened ou
   "paths": [
     {
       "fill": "rgba(0,26,114,0.15)",
-      "fillRule": null,
       "shape": {
         "area": 222,
         "bbox": [
@@ -474,7 +447,6 @@ exports[`flatten seam golden — flattenSvg output duotone/EyeOpen: flattened ou
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 391,
         "bbox": [
@@ -488,7 +460,6 @@ exports[`flatten seam golden — flattenSvg output duotone/EyeOpen: flattened ou
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 64,
         "bbox": [
@@ -515,7 +486,6 @@ exports[`flatten seam golden — flattenSvg output evenodd/barcode: flattened ou
   "paths": [
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 132,
         "bbox": [
@@ -542,7 +512,6 @@ exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened out
   "paths": [
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 136,
         "bbox": [
@@ -556,7 +525,6 @@ exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened out
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 4,
         "bbox": [
@@ -570,7 +538,6 @@ exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened out
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 136,
         "bbox": [
@@ -584,7 +551,6 @@ exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened out
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 4,
         "bbox": [
@@ -598,7 +564,6 @@ exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened out
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 136,
         "bbox": [
@@ -612,7 +577,6 @@ exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened out
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 4,
         "bbox": [
@@ -626,7 +590,6 @@ exports[`flatten seam golden — flattenSvg output evenodd/qrcode: flattened out
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 52,
         "bbox": [
@@ -653,7 +616,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
   "paths": [
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 16,
         "bbox": [
@@ -667,7 +629,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#1F252A",
-      "fillRule": null,
       "shape": {
         "area": 36,
         "bbox": [
@@ -681,7 +642,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 16,
         "bbox": [
@@ -695,7 +655,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#1F252A",
-      "fillRule": null,
       "shape": {
         "area": 36,
         "bbox": [
@@ -709,7 +668,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#092330",
-      "fillRule": null,
       "shape": {
         "area": 331,
         "bbox": [
@@ -723,7 +681,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#0C2C40",
-      "fillRule": null,
       "shape": {
         "area": 367,
         "bbox": [
@@ -737,7 +694,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 23,
         "bbox": [
@@ -751,7 +707,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 10,
         "bbox": [
@@ -765,7 +720,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#1C2226",
-      "fillRule": null,
       "shape": {
         "area": 28,
         "bbox": [
@@ -779,7 +733,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#F7ECE7",
-      "fillRule": null,
       "shape": {
         "area": 141,
         "bbox": [
@@ -793,7 +746,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#F7ECE7",
-      "fillRule": null,
       "shape": {
         "area": 332,
         "bbox": [
@@ -807,7 +759,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCF3F0",
-      "fillRule": null,
       "shape": {
         "area": 2,
         "bbox": [
@@ -821,7 +772,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 31,
         "bbox": [
@@ -835,7 +785,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#F4BE9A",
-      "fillRule": null,
       "shape": {
         "area": 14,
         "bbox": [
@@ -849,7 +798,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 81,
         "bbox": [
@@ -863,7 +811,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 81,
         "bbox": [
@@ -877,7 +824,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#1C2226",
-      "fillRule": null,
       "shape": {
         "area": 35,
         "bbox": [
@@ -891,7 +837,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 7,
         "bbox": [
@@ -905,7 +850,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#0C2C40",
-      "fillRule": null,
       "shape": {
         "area": 44,
         "bbox": [
@@ -919,7 +863,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#0C2C40",
-      "fillRule": null,
       "shape": {
         "area": 4,
         "bbox": [
@@ -933,7 +876,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCF3F0",
-      "fillRule": null,
       "shape": {
         "area": 13,
         "bbox": [
@@ -947,7 +889,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#EADDD8",
-      "fillRule": null,
       "shape": {
         "area": 2,
         "bbox": [
@@ -961,7 +902,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#AFAFAF",
-      "fillRule": null,
       "shape": {
         "area": 278,
         "bbox": [
@@ -975,7 +915,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#D1D1D1",
-      "fillRule": null,
       "shape": {
         "area": 278,
         "bbox": [
@@ -989,7 +928,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 30,
         "bbox": [
@@ -1003,7 +941,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 13,
         "bbox": [
@@ -1017,7 +954,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#F7ECE7",
-      "fillRule": null,
       "shape": {
         "area": 140,
         "bbox": [
@@ -1031,7 +967,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#EADDD8",
-      "fillRule": null,
       "shape": {
         "area": 2,
         "bbox": [
@@ -1045,7 +980,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#EADDD8",
-      "fillRule": null,
       "shape": {
         "area": 2,
         "bbox": [
@@ -1059,7 +993,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#1C2226",
-      "fillRule": null,
       "shape": {
         "area": 26,
         "bbox": [
@@ -1073,7 +1006,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 17380,
         "bbox": [
@@ -1087,7 +1019,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": "evenodd",
       "shape": {
         "area": 34109,
         "bbox": [
@@ -1101,7 +1032,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 102,
         "bbox": [
@@ -1115,7 +1045,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 242,
         "bbox": [
@@ -1129,7 +1058,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 118,
         "bbox": [
@@ -1143,7 +1071,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 109,
         "bbox": [
@@ -1157,7 +1084,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 188,
         "bbox": [
@@ -1171,7 +1097,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 255,
         "bbox": [
@@ -1185,7 +1110,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 74,
         "bbox": [
@@ -1199,7 +1123,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 175,
         "bbox": [
@@ -1213,7 +1136,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 188,
         "bbox": [
@@ -1227,7 +1149,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 256,
         "bbox": [
@@ -1241,7 +1162,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 124,
         "bbox": [
@@ -1255,7 +1175,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 102,
         "bbox": [
@@ -1269,7 +1188,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 54,
         "bbox": [
@@ -1283,7 +1201,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 242,
         "bbox": [
@@ -1297,7 +1214,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 124,
         "bbox": [
@@ -1311,7 +1227,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 4,
         "bbox": [
@@ -1325,7 +1240,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker: flattened 
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 10,
         "bbox": [
@@ -1352,7 +1266,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
   "paths": [
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 18744,
         "bbox": [
@@ -1366,7 +1279,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": "evenodd",
       "shape": {
         "area": 36785,
         "bbox": [
@@ -1380,7 +1292,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 110,
         "bbox": [
@@ -1394,7 +1305,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 261,
         "bbox": [
@@ -1408,7 +1318,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 127,
         "bbox": [
@@ -1422,7 +1331,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 117,
         "bbox": [
@@ -1436,7 +1344,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 203,
         "bbox": [
@@ -1450,7 +1357,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 275,
         "bbox": [
@@ -1464,7 +1370,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 79,
         "bbox": [
@@ -1478,7 +1383,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 188,
         "bbox": [
@@ -1492,7 +1396,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 203,
         "bbox": [
@@ -1506,7 +1409,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 276,
         "bbox": [
@@ -1520,7 +1422,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 134,
         "bbox": [
@@ -1534,7 +1435,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 110,
         "bbox": [
@@ -1548,7 +1448,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 58,
         "bbox": [
@@ -1562,7 +1461,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 261,
         "bbox": [
@@ -1576,7 +1474,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 134,
         "bbox": [
@@ -1590,7 +1487,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 5,
         "bbox": [
@@ -1604,7 +1500,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "white",
-      "fillRule": null,
       "shape": {
         "area": 11,
         "bbox": [
@@ -1618,7 +1513,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 31,
         "bbox": [
@@ -1632,7 +1526,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#1F252A",
-      "fillRule": null,
       "shape": {
         "area": 74,
         "bbox": [
@@ -1646,7 +1539,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 31,
         "bbox": [
@@ -1660,7 +1552,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#1F252A",
-      "fillRule": null,
       "shape": {
         "area": 74,
         "bbox": [
@@ -1674,7 +1565,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#092330",
-      "fillRule": null,
       "shape": {
         "area": 670,
         "bbox": [
@@ -1688,7 +1578,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#0C2C40",
-      "fillRule": null,
       "shape": {
         "area": 742,
         "bbox": [
@@ -1702,7 +1591,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 48,
         "bbox": [
@@ -1716,7 +1604,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 20,
         "bbox": [
@@ -1730,7 +1617,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#1C2226",
-      "fillRule": null,
       "shape": {
         "area": 56,
         "bbox": [
@@ -1744,7 +1630,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#F7ECE7",
-      "fillRule": null,
       "shape": {
         "area": 285,
         "bbox": [
@@ -1758,7 +1643,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#F7ECE7",
-      "fillRule": null,
       "shape": {
         "area": 671,
         "bbox": [
@@ -1772,7 +1656,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCF3F0",
-      "fillRule": null,
       "shape": {
         "area": 5,
         "bbox": [
@@ -1786,7 +1669,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 63,
         "bbox": [
@@ -1800,7 +1682,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#F4BE9A",
-      "fillRule": null,
       "shape": {
         "area": 27,
         "bbox": [
@@ -1814,7 +1695,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 165,
         "bbox": [
@@ -1828,7 +1708,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 165,
         "bbox": [
@@ -1842,7 +1721,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#1C2226",
-      "fillRule": null,
       "shape": {
         "area": 71,
         "bbox": [
@@ -1856,7 +1734,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 14,
         "bbox": [
@@ -1870,7 +1747,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#0C2C40",
-      "fillRule": null,
       "shape": {
         "area": 90,
         "bbox": [
@@ -1884,7 +1760,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#0C2C40",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -1898,7 +1773,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCF3F0",
-      "fillRule": null,
       "shape": {
         "area": 27,
         "bbox": [
@@ -1912,7 +1786,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#EADDD8",
-      "fillRule": null,
       "shape": {
         "area": 3,
         "bbox": [
@@ -1926,7 +1799,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#AFAFAF",
-      "fillRule": null,
       "shape": {
         "area": 562,
         "bbox": [
@@ -1940,7 +1812,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#D1D1D1",
-      "fillRule": null,
       "shape": {
         "area": 563,
         "bbox": [
@@ -1954,7 +1825,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 61,
         "bbox": [
@@ -1968,7 +1838,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#FCC9A7",
-      "fillRule": null,
       "shape": {
         "area": 25,
         "bbox": [
@@ -1982,7 +1851,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#F7ECE7",
-      "fillRule": null,
       "shape": {
         "area": 283,
         "bbox": [
@@ -1996,7 +1864,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#EADDD8",
-      "fillRule": null,
       "shape": {
         "area": 3,
         "bbox": [
@@ -2010,7 +1877,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#EADDD8",
-      "fillRule": null,
       "shape": {
         "area": 4,
         "bbox": [
@@ -2024,7 +1890,6 @@ exports[`flatten seam golden — flattenSvg output nested/swm-walker-overlay: fl
     },
     {
       "fill": "#1C2226",
-      "fillRule": null,
       "shape": {
         "area": 52,
         "bbox": [
@@ -2051,7 +1916,6 @@ exports[`flatten seam golden — flattenSvg output opacity/10k: flattened output
   "paths": [
     {
       "fill": "rgba(0,0,0,0.3)",
-      "fillRule": null,
       "shape": {
         "area": 11,
         "bbox": [
@@ -2065,7 +1929,6 @@ exports[`flatten seam golden — flattenSvg output opacity/10k: flattened output
     },
     {
       "fill": "rgba(0,0,0,0.3)",
-      "fillRule": null,
       "shape": {
         "area": 186,
         "bbox": [
@@ -2079,7 +1942,6 @@ exports[`flatten seam golden — flattenSvg output opacity/10k: flattened output
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 506,
         "bbox": [
@@ -2093,7 +1955,6 @@ exports[`flatten seam golden — flattenSvg output opacity/10k: flattened output
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 50,
         "bbox": [
@@ -2120,7 +1981,6 @@ exports[`flatten seam golden — flattenSvg output outline/Air: flattened output
   "paths": [
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 11,
         "bbox": [
@@ -2134,7 +1994,6 @@ exports[`flatten seam golden — flattenSvg output outline/Air: flattened output
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 32,
         "bbox": [
@@ -2148,7 +2007,6 @@ exports[`flatten seam golden — flattenSvg output outline/Air: flattened output
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 31,
         "bbox": [
@@ -2175,7 +2033,6 @@ exports[`flatten seam golden — flattenSvg output outline/Alarm: flattened outp
   "paths": [
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 12,
         "bbox": [
@@ -2189,7 +2046,6 @@ exports[`flatten seam golden — flattenSvg output outline/Alarm: flattened outp
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 407,
         "bbox": [
@@ -2203,7 +2059,6 @@ exports[`flatten seam golden — flattenSvg output outline/Alarm: flattened outp
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -2217,7 +2072,6 @@ exports[`flatten seam golden — flattenSvg output outline/Alarm: flattened outp
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 8,
         "bbox": [
@@ -2244,7 +2098,6 @@ exports[`flatten seam golden — flattenSvg output outline/ArrowCircleDown: flat
   "paths": [
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 17,
         "bbox": [
@@ -2258,7 +2111,6 @@ exports[`flatten seam golden — flattenSvg output outline/ArrowCircleDown: flat
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 19,
         "bbox": [
@@ -2272,7 +2124,6 @@ exports[`flatten seam golden — flattenSvg output outline/ArrowCircleDown: flat
     },
     {
       "fill": "#001A72",
-      "fillRule": null,
       "shape": {
         "area": 514,
         "bbox": [
@@ -2299,7 +2150,6 @@ exports[`flatten seam golden — flattenSvg output sanitize/elephant: flattened 
   "paths": [
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 1,
         "bbox": [
@@ -2313,7 +2163,6 @@ exports[`flatten seam golden — flattenSvg output sanitize/elephant: flattened 
     },
     {
       "fill": null,
-      "fillRule": null,
       "shape": {
         "area": 103,
         "bbox": [

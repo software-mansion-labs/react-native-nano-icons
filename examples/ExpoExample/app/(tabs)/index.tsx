@@ -81,6 +81,20 @@ export default function TabOneScreen() {
               </Text>
             </View>
           </View>
+          <View style={styles.row}>
+            <View style={styles.rowItem}>
+              <Icon name="overlap-squares" size={80} />
+              <Text style={styles.caption}>
+                Same-color paths wound opposite ways
+              </Text>
+            </View>
+            <View style={styles.rowItem}>
+              <Icon name="overlap-frame-bar" size={80} />
+              <Text style={styles.caption}>
+                Even-odd frame crossed by a bar
+              </Text>
+            </View>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
