@@ -4,6 +4,7 @@ export type PipelineConfig = {
   fontFamily: string;
   upm: number;
   safeZone: number;
+  curveTolerance?: number;
   startUnicode: number;
   linking: 'static' | 'dynamic';
   web?: boolean;

@@ -1,10 +1,12 @@
 import path from 'path';
 import fs from 'fs';
+import { inspect } from 'util';
 import {
   runFontPipeline,
   type PreparedSvgCache,
   type SvgWorkerPool,
 } from '../src/core/pipeline/index';
+import { QUADRATIC_ERROR_BOUND_EM } from '../src/core/font/quadratic';
 import type { NanoLogger } from './logger';
 import { fingerprintSvgDirSync } from '../src/utils/fingerPrint';
 import {
@@ -23,6 +25,8 @@ export type IconSetConfig = {
   upm?: number;
   /** Safe zone inside UPM for glyphs (default upm * 1020 / 1024, i.e. 1020 at the default upm). Must not exceed upm. */
   safeZone?: number;
+  /** Max distance between the font's quadratic curves and the SVG curves, as a fraction of the em (default 1/512). Must be positive. */
+  curveTolerance?: number;
   /** First Unicode codepoint for glyphs (default 0xe900). Hex string or number. */
   startUnicode?: number | string;
   /** Linking type for the font (default 'static'). Static bundles the TTF, dynamic delivers it via OTA*/
@@ -155,6 +159,12 @@ export async function buildAllFonts(
         `[react-native-nano-icons] safeZone (${safeZone}) of "${fontFamily}" must not exceed upm (${upm}).`
       );
     }
+    const curveTolerance = set.curveTolerance ?? QUADRATIC_ERROR_BOUND_EM;
+    if (!Number.isFinite(curveTolerance) || curveTolerance <= 0) {
+      throw new Error(
+        `[react-native-nano-icons] curveTolerance (${inspect(curveTolerance)}) of "${fontFamily}" must be a positive number.`
+      );
+    }
 
     const outputDir = set.outputDir
       ? path.resolve(projectRoot, set.outputDir)
@@ -167,6 +177,7 @@ export async function buildAllFonts(
       fontFamily,
       upm,
       safeZone,
+      curveTolerance,
       startUnicode:
         set.startUnicode !== undefined
           ? typeof set.startUnicode === 'string'
@@ -180,6 +191,7 @@ export async function buildAllFonts(
     const { hash: inputHash, svgHashByFile } = fingerprintSvgDirSync(inputDir, {
       upm: config.upm,
       safeZone: config.safeZone,
+      curveTolerance: config.curveTolerance,
       startUnicode: config.startUnicode,
       version,
       toolchain,

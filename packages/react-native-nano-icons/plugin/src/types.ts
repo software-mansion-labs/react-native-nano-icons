@@ -12,6 +12,8 @@ export interface IconSetConfig {
   upm?: number;
   /** Safe zone inside UPM for glyphs (default upm * 1020 / 1024, i.e. 1020 at the default upm). Must not exceed upm. */
   safeZone?: number;
+  /** Max distance between the font's quadratic curves and the SVG curves, as a fraction of the em (default 1/512). Must be positive. */
+  curveTolerance?: number;
   /** First Unicode codepoint for glyphs (default 0xe900). Hex string or number. */
   startUnicode?: number | string;
   /**

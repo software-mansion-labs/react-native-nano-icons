@@ -27,6 +27,7 @@ const STORED_FAMILY = `${FONT_FAMILY}-89efdcba`;
 const DEFAULT_INPUTS = {
   upm: 1024,
   safeZone: 1024,
+  curveTolerance: 1 / 512,
   startUnicode: 0xe900,
   version: packageVersion(),
   toolchain: fontToolchainVersions(),
@@ -99,6 +100,37 @@ describe('buildAllFonts — skip/rebuild logic', () => {
   test('runFontPipeline is called when no output files exist', async () => {
     await buildAllFonts([makeIconSet()], os.tmpdir());
     expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+  });
+
+  test('curveTolerance reaches the pipeline and the fingerprint', async () => {
+    writeFakeOutputs(outputDir, FONT_FAMILY, inputHash);
+    await buildAllFonts(
+      [{ ...makeIconSet(), curveTolerance: 1 / 2048 }],
+      os.tmpdir()
+    );
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+    expect(mockRunPipeline.mock.calls[0]![0]).toMatchObject({
+      curveTolerance: 1 / 2048,
+    });
+  });
+
+  test.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
+    'a curveTolerance of %p is rejected',
+    async (curveTolerance) => {
+      await expect(
+        buildAllFonts([{ ...makeIconSet(), curveTolerance }], os.tmpdir())
+      ).rejects.toThrow(/curveTolerance .* must be a positive number/);
+      expect(mockRunPipeline).not.toHaveBeenCalled();
+    }
+  );
+
+  test('a curveTolerance string is quoted in the error', async () => {
+    await expect(
+      buildAllFonts(
+        [{ ...makeIconSet(), curveTolerance: '0.001' as unknown as number }],
+        os.tmpdir()
+      )
+    ).rejects.toThrow(`curveTolerance ('0.001') of "${FONT_FAMILY}"`);
   });
 
   test('runFontPipeline is not called when output files exist with matching hash', async () => {

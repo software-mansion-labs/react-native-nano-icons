@@ -14,6 +14,7 @@ const SAMPLE_SVG = '<svg viewBox="0 0 24 24"><path d="M0 0L24 24"/></svg>';
 const INPUTS: FingerprintInputs = {
   upm: 1024,
   safeZone: 1020,
+  curveTolerance: 1 / 512,
   startUnicode: 0xe900,
   version: '1.0.0',
   toolchain: ['fonteditor-core@2.6.3', 'svg2ttf@6.0.3'],
@@ -114,6 +115,7 @@ describe('getFingerprintSync', () => {
   test.each([
     ['upm', { ...INPUTS, upm: 512 }],
     ['safeZone', { ...INPUTS, safeZone: 1000 }],
+    ['curveTolerance', { ...INPUTS, curveTolerance: 1 / 4096 }],
     ['startUnicode', { ...INPUTS, startUnicode: 0xf000 }],
     ['version', { ...INPUTS, version: '1.0.1' }],
     [

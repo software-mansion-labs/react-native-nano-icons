@@ -5,7 +5,7 @@ Legend: `✔` silent · `⚠` dev warning + issue recorded · `△` dev warning 
 ## Build identity
 
 ```
-fingerprint = sha256( svg names + contents , upm , safeZone , startUnicode , library version ,
+fingerprint = sha256( svg names + contents , upm , safeZone , curveTolerance , startUnicode , library version ,
                       installed versions of @xmldom/xmldom, cubic2quad, fonteditor-core, pathkit-wasm, svg2ttf )
 family      = <fontFamily>-<hash8>          → glyphMap.m.f  ==  TTF name table
 files       = <fontFamily>.ttf / .glyphmap.json   (unchanged)
@@ -19,7 +19,7 @@ fingerprint vs stored m.h · linking vs m.l · web vs m.w · files present
 ├─ all equal ───────────── "X.ttf is up to date", family kept
 └─ any differs ─────────── rebuild, outputs overwritten in place (Metro picks it up)
      ├─ svg edited
-     ├─ upm / safeZone / startUnicode changed
+     ├─ upm / safeZone / curveTolerance / startUnicode changed
      ├─ linking or web toggled, .woff2 missing
      └─ library or font toolchain upgraded (a dependency resolved to a new version)
 build fails ────────────── outputs deleted, other sets still linked, exit 1
