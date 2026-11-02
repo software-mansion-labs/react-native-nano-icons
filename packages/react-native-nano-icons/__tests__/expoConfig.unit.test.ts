@@ -125,6 +125,16 @@ test('nothing installed names the app root and the --path remedy', () => {
   );
 });
 
+test('findPluginOptions with nothing installed names only the app root', () => {
+  const app = path.join(root, 'app');
+  fs.mkdirSync(app);
+  expect(() => findPluginOptions(app)).toThrow(
+    new Error(
+      `[react-native-nano-icons] Could not find expo/config or @expo/config from ${app}.`
+    )
+  );
+});
+
 describe('findPluginOptions', () => {
   const OPTIONS = { iconSets: [{ inputDir: 'icons', fontFamily: 'Icons' }] };
 

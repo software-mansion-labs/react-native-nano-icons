@@ -5,9 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 const mockFindPluginOptions = jest.fn();
+const mockResolveExpoConfigModule = jest.fn();
 
 jest.mock('../cli/expoConfig', () => ({
   findPluginOptions: (...args: unknown[]) => mockFindPluginOptions(...args),
+  resolveExpoConfigModule: (...args: unknown[]) =>
+    mockResolveExpoConfigModule(...args),
 }));
 
 import { nanoIconsFingerprintSources } from '../cli/fingerprint';
@@ -38,6 +41,9 @@ describe('nanoIconsFingerprintSources', () => {
       ],
       symbolSets: [{ inputDir: './symbols', name: 'tabs' }],
     });
+    mockResolveExpoConfigModule.mockReturnValue(
+      path.join(projectRoot, 'node_modules', 'expo', 'config.js')
+    );
   });
 
   afterEach(() => {
@@ -126,13 +132,25 @@ describe('nanoIconsFingerprintSources', () => {
     ]);
   });
 
+  test('without expo/config the warning names the folder to pass', () => {
+    mockResolveExpoConfigModule.mockReturnValue(undefined);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(nanoIconsFingerprintSources(projectRoot)).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      `[react-native-nano-icons] No fingerprint sources added: Could not find expo/config or @expo/config from ${projectRoot}.\n` +
+        'Pass the folder of your app config, e.g. nanoIconsFingerprintSources(__dirname) in a fingerprint.config.js next to it.'
+    );
+    warn.mockRestore();
+  });
+
   test('a set that cannot be read gives no sources and a warning', () => {
     fs.rmSync(path.join(projectRoot, 'static'), { recursive: true });
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     expect(nanoIconsFingerprintSources(projectRoot)).toEqual([]);
     expect(warn).toHaveBeenCalledWith(
-      `[react-native-nano-icons] No fingerprint sources added: [react-native-nano-icons] Input directory does not exist: ${path.join(
+      `[react-native-nano-icons] No fingerprint sources added: Input directory does not exist: ${path.join(
         projectRoot,
         'static'
       )} (from "./static")`

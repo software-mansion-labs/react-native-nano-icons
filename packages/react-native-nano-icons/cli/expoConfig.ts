@@ -16,6 +16,13 @@ type ExpoGetConfig = (
 export function loadDynamicSetsFromAppConfig(
   projectRoot: string
 ): IconSetConfig[] {
+  if (!resolveExpoConfigModule(projectRoot)) {
+    throw new Error(
+      `[react-native-nano-icons] Could not find expo/config or @expo/config from ${projectRoot} — required for --dynamic-app-config.\n` +
+        `Run the command from your Expo app root, or pass --path <app root>.`
+    );
+  }
+
   const dynamicSets = loadIconSetsFromAppConfig(projectRoot).filter(
     (s) => s.linking === 'dynamic'
   );
@@ -74,8 +81,7 @@ export function findPluginOptions(
   const configModule = resolveExpoConfigModule(projectRoot);
   if (!configModule) {
     throw new Error(
-      `[react-native-nano-icons] Could not find expo/config or @expo/config from ${projectRoot} — required for --dynamic-app-config.\n` +
-        `Run the command from your Expo app root, or pass --path <app root>.`
+      `[react-native-nano-icons] Could not find expo/config or @expo/config from ${projectRoot}.`
     );
   }
   const { getConfig } = require(configModule) as { getConfig: ExpoGetConfig };
@@ -90,7 +96,9 @@ export function findPluginOptions(
   return (Array.isArray(entry) ? entry[1] : undefined) ?? {};
 }
 
-function resolveExpoConfigModule(projectRoot: string): string | undefined {
+export function resolveExpoConfigModule(
+  projectRoot: string
+): string | undefined {
   const candidates: [string, string[]][] = [
     ['expo/config', [projectRoot]],
     ['@expo/config', [projectRoot, __dirname]],
