@@ -1,6 +1,6 @@
 import { fingerprintIconSets } from './build';
 import { fingerprintSymbolSets } from './buildSymbols';
-import { findPluginOptions } from './expoConfig';
+import { findPluginOptions, resolveExpoConfigModule } from './expoConfig';
 
 /** An `@expo/fingerprint` hash source of type `contents`. */
 export type FingerprintSource = {
@@ -22,6 +22,13 @@ const REASONS = ['react-native-nano-icons'];
 export function nanoIconsFingerprintSources(
   projectRoot: string
 ): FingerprintSource[] {
+  if (!resolveExpoConfigModule(projectRoot)) {
+    console.warn(
+      `[react-native-nano-icons] No fingerprint sources added: Could not find expo/config or @expo/config from ${projectRoot}.\n` +
+        `Pass the folder of your app config, e.g. nanoIconsFingerprintSources(__dirname) in a fingerprint.config.js next to it.`
+    );
+    return [];
+  }
   try {
     const options = findPluginOptions(projectRoot);
     const iconSets = fingerprintIconSets(
@@ -44,10 +51,12 @@ export function nanoIconsFingerprintSources(
     }));
     return [...iconSets, ...symbolSets];
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.warn(
-      `[react-native-nano-icons] No fingerprint sources added: ${
-        err instanceof Error ? err.message : String(err)
-      }`
+      `[react-native-nano-icons] No fingerprint sources added: ${message.replace(
+        /^\[react-native-nano-icons\] /,
+        ''
+      )}`
     );
     return [];
   }
