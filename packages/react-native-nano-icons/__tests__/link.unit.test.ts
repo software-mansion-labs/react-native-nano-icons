@@ -60,7 +60,12 @@ jest.mock('xcode', () => ({
   project: () => mockXcodeProject,
 }));
 
-import { linkBare, linkBareSymbols, syncAndroidFontAssets } from '../cli/link';
+import {
+  copyDrawablesIntoResDir,
+  linkBare,
+  linkBareSymbols,
+  syncAndroidFontAssets,
+} from '../cli/link';
 import type { NanoLogger } from '../cli/logger';
 import type { BuiltFont } from '../cli/build';
 import type { BuiltSymbolSet } from '../cli/buildSymbols';
@@ -380,6 +385,80 @@ describe('linkBareSymbols — iOS asset catalog', () => {
     expect(addResourceFileCalls[0]![1]).toMatchObject({
       lastKnownFileType: 'folder.assetcatalog',
     });
+  });
+});
+
+describe('copyDrawablesIntoResDir — Android drawables', () => {
+  let resDir: string;
+  let drawableDir: string;
+  let symbolsOutDir: string;
+
+  function builtSet(icons: string[]): BuiltSymbolSet {
+    const drawablesDir = path.join(symbolsOutDir, 'tabs.drawables');
+    fs.mkdirSync(drawablesDir, { recursive: true });
+    const drawableFiles = icons.flatMap((icon) =>
+      [`nano_${icon}.xml`, `nano_${icon}_original.xml`].map((name) => {
+        const file = path.join(drawablesDir, name);
+        fs.writeFileSync(file, '<vector/>');
+        return file;
+      })
+    );
+    return {
+      name: 'tabs',
+      prefix: 'nano',
+      symbolsDir: path.join(symbolsOutDir, 'tabs.symbols'),
+      assetDirs: [],
+      drawablesDir,
+      drawableFiles,
+      dtsPath: path.join(symbolsOutDir, 'tabs.symbols.d.ts'),
+      symbolmapPath: path.join(symbolsOutDir, 'tabs.symbolmap.json'),
+      symbols: {},
+      drawables: Object.fromEntries(
+        icons.map((icon) => [icon, `nano_${icon}`])
+      ),
+    };
+  }
+
+  const keepPath = () => path.join(resDir, 'raw', 'nanoicons_keep.xml');
+
+  beforeEach(() => {
+    resDir = makeTmpDir();
+    drawableDir = path.join(resDir, 'drawable');
+    symbolsOutDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    fs.rmSync(resDir, { recursive: true, force: true });
+    fs.rmSync(symbolsOutDir, { recursive: true, force: true });
+  });
+
+  test('keeps every linked drawable, original variants included, through resource shrinking', () => {
+    copyDrawablesIntoResDir(drawableDir, [builtSet(['home', 'user'])]);
+
+    expect(fs.readFileSync(keepPath(), 'utf8')).toContain(
+      'tools:keep="@drawable/nano_home,@drawable/nano_home_original,@drawable/nano_user,@drawable/nano_user_original"'
+    );
+  });
+
+  test('the keep file follows the drawables when icons are removed', () => {
+    copyDrawablesIntoResDir(drawableDir, [builtSet(['home', 'user'])]);
+    fs.rmSync(path.join(symbolsOutDir, 'tabs.drawables'), { recursive: true });
+    copyDrawablesIntoResDir(drawableDir, [builtSet(['home'])]);
+
+    expect(fs.readdirSync(drawableDir).sort()).toEqual([
+      'nano_home.xml',
+      'nano_home_original.xml',
+    ]);
+    expect(fs.readFileSync(keepPath(), 'utf8')).toContain(
+      'tools:keep="@drawable/nano_home,@drawable/nano_home_original"'
+    );
+  });
+
+  test('removes the keep file when nothing is linked', () => {
+    copyDrawablesIntoResDir(drawableDir, [builtSet(['home'])]);
+    copyDrawablesIntoResDir(drawableDir, []);
+
+    expect(fs.existsSync(keepPath())).toBe(false);
   });
 });
 

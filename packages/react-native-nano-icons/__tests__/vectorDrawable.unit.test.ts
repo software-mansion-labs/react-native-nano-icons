@@ -1,6 +1,9 @@
 /** @jest-environment node */
 
-import { buildVectorDrawableXml } from '../src/core/symbols/vectorDrawable';
+import {
+  buildDrawableKeepXml,
+  buildVectorDrawableXml,
+} from '../src/core/symbols/vectorDrawable';
 import { toDrawableResourceName } from '../src/utils/naming';
 
 // ---------------------------------------------------------------------------
@@ -67,6 +70,18 @@ describe('buildVectorDrawableXml', () => {
     expect(xml).toContain('android:viewportHeight="16"');
     expect(xml).toContain(
       '<group android:translateX="-4" android:translateY="-4">'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildDrawableKeepXml
+// ---------------------------------------------------------------------------
+
+describe('buildDrawableKeepXml', () => {
+  test('keeps every given drawable through resource shrinking', () => {
+    expect(buildDrawableKeepXml(['nano_home', 'nano_home_original'])).toBe(
+      '<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@drawable/nano_home,@drawable/nano_home_original" />\n'
     );
   });
 });

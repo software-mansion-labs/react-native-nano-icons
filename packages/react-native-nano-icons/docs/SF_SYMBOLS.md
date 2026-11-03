@@ -308,6 +308,8 @@ A VectorDrawable fills each `<path>` separately and never joins them, and the ba
 - `<prefix>_<icon>.xml` (monochrome): the silhouette as one solid black path. This also keeps translucent layers from showing at partial tint and avoids hairline seams where adjacent layers meet.
 - `<prefix>_<icon>_original.xml` (original): every layer with its `fillColor` and `fillAlpha`.
 
+react-native-screens' native tab bar resolves drawables by name at runtime (`getIdentifier`), which resource shrinking (`shrinkResources` in release builds) cannot see. Linking therefore also writes `res/raw/nanoicons_keep.xml`, whose `tools:keep` lists every linked drawable so release builds keep them.
+
 ### Runtime: `nativeNanoSymbol(name, renderingMode?, prefix?)`
 
 `renderingMode` is `'monochrome'` (default) or `'multicolor'`. The helper returns react-navigation's `Icon` shapes: `{ type: 'sfSymbol', name: '<prefix>.<name>', renderingMode }` on iOS and `{ type: 'image', source: { uri }, tinted }` on Android, where `uri` is `<prefix>_<name>` and `tinted: true` for monochrome, `<prefix>_<name>_original` and `tinted: false` for multicolor. react-navigation's native bottom tabs pass the symbol's `renderingMode` to react-native-screens' `Tabs` (PR #4209), mapping `multicolor` to screens' `original`,, which applies `AlwaysTemplate` / `AlwaysOriginal` per slot on iOS, and map `tinted` to screens' Android `tinting` (`'tinted'` / `'original'`).

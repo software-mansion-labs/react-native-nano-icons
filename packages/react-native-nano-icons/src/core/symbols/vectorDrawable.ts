@@ -79,3 +79,13 @@ ${paths}
 </vector>
 `;
 }
+
+/**
+ * A resources file that keeps the given drawables through resource shrinking
+ * (`shrinkResources` in release builds): react-native-screens' native tab bar
+ * resolves them by name at runtime (`getIdentifier`), which the shrinker cannot see.
+ */
+export function buildDrawableKeepXml(resourceNames: string[]): string {
+  const refs = resourceNames.map((name) => `@drawable/${name}`).join(',');
+  return `<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="${refs}" />\n`;
+}
