@@ -89,26 +89,23 @@ jobs:
 
       - name: Resolve version
         id: version
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type == 'stable' && !inputs.dry-run }}
-        run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            echo "value=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "value=$(jq -r .version packages/react-native-nano-icons/package.json)" >> $GITHUB_OUTPUT
-          fi
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type != 'nightly' && !inputs.dry-run }}
+        run: echo "value=$(jq -r .version packages/react-native-nano-icons/package.json)" >> $GITHUB_OUTPUT
 
       - name: Pack package
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type == 'stable' && !inputs.dry-run }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type != 'nightly' && !inputs.dry-run }}
         working-directory: packages/react-native-nano-icons
         run: npm pack --pack-destination ../../
 
       - name: Create GitHub Release
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type == 'stable' && !inputs.dry-run }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release-type != 'nightly' && !inputs.dry-run }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.value }}
           name: v${{ steps.version.outputs.value }}
+          target_commitish: ${{ github.sha }}
           draft: true
+          prerelease: ${{ inputs.release-type != 'stable' }}
           generate_release_notes: true
           files: react-native-nano-icons-${{ steps.version.outputs.value }}.tgz
 
