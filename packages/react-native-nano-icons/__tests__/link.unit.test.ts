@@ -60,7 +60,12 @@ jest.mock('xcode', () => ({
   project: () => mockXcodeProject,
 }));
 
-import { linkBare, linkBareSymbols, syncAndroidFontAssets } from '../cli/link';
+import {
+  copyDrawablesIntoResDir,
+  linkBare,
+  linkBareSymbols,
+  syncAndroidFontAssets,
+} from '../cli/link';
 import type { NanoLogger } from '../cli/logger';
 import type { BuiltFont } from '../cli/build';
 import type { BuiltSymbolSet } from '../cli/buildSymbols';
@@ -380,6 +385,80 @@ describe('linkBareSymbols — iOS asset catalog', () => {
     expect(addResourceFileCalls[0]![1]).toMatchObject({
       lastKnownFileType: 'folder.assetcatalog',
     });
+  });
+});
+
+describe('copyDrawablesIntoResDir — resource shrinking', () => {
+  let resDir: string;
+  let symbolsOutDir: string;
+
+  function builtSymbolSet(prefix: string, icons: string[]): BuiltSymbolSet {
+    const drawablesDir = path.join(symbolsOutDir, `${prefix}.drawables`);
+    fs.mkdirSync(drawablesDir, { recursive: true });
+    const drawableFiles = icons.flatMap((icon) =>
+      [`${prefix}_${icon}`, `${prefix}_${icon}_original`].map((name) => {
+        const file = path.join(drawablesDir, `${name}.xml`);
+        fs.writeFileSync(file, '<vector/>');
+        return file;
+      })
+    );
+    return {
+      name: prefix,
+      prefix,
+      symbolsDir: path.join(symbolsOutDir, `${prefix}.symbols`),
+      assetDirs: [],
+      drawablesDir,
+      drawableFiles,
+      dtsPath: path.join(symbolsOutDir, `${prefix}.symbols.d.ts`),
+      symbolmapPath: path.join(symbolsOutDir, `${prefix}.symbolmap.json`),
+      symbols: {},
+      drawables: {},
+    };
+  }
+
+  function readKeep(): string {
+    return fs.readFileSync(
+      path.join(resDir, 'raw', 'nanoicons_keep.xml'),
+      'utf8'
+    );
+  }
+
+  beforeEach(() => {
+    resDir = path.join(makeTmpDir(), 'res');
+    symbolsOutDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    fs.rmSync(path.dirname(resDir), { recursive: true, force: true });
+    fs.rmSync(symbolsOutDir, { recursive: true, force: true });
+  });
+
+  test('keeps every linked drawable of every set in res/raw', () => {
+    copyDrawablesIntoResDir(path.join(resDir, 'drawable'), [
+      builtSymbolSet('nano', ['home']),
+      builtSymbolSet('tab', ['search']),
+    ]);
+
+    expect(readKeep()).toBe(
+      '<?xml version="1.0" encoding="utf-8"?>\n' +
+        '<resources xmlns:tools="http://schemas.android.com/tools"\n' +
+        '    tools:keep="@drawable/nano_home,@drawable/nano_home_original,' +
+        '@drawable/tab_search,@drawable/tab_search_original" />\n'
+    );
+  });
+
+  test('a removed icon drops out of the keep file on the next link', () => {
+    const drawableDir = path.join(resDir, 'drawable');
+    copyDrawablesIntoResDir(drawableDir, [
+      builtSymbolSet('nano', ['home', 'search']),
+    ]);
+    fs.rmSync(path.join(symbolsOutDir, 'nano.drawables'), { recursive: true });
+
+    copyDrawablesIntoResDir(drawableDir, [builtSymbolSet('nano', ['home'])]);
+
+    expect(readKeep()).toContain(
+      'tools:keep="@drawable/nano_home,@drawable/nano_home_original"'
+    );
   });
 });
 

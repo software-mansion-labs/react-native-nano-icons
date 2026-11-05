@@ -344,6 +344,12 @@ A `withDangerousMod(['ios'])` writes the `.symbolset` folders into the **already
 2. **Fallback** (no Images.xcassets): create `ios/NanoIconsSymbols.xcassets` (with a root `Contents.json`) and register it once via the `xcode` package:
    `addResourceFile('NanoIconsSymbols.xcassets', { lastKnownFileType: 'folder.assetcatalog', sourceTree: '"<group>"', target })` — an asset catalog is a single *file reference* (compiled by actool), **not** a folder reference or per-file resources. Guarded by `hasFile()` for idempotency; failures degrade to a one-time manual instruction instead of a corrupted pbxproj.
 
+### Android drawables
+
+**File:** `cli/link.ts` → `copyDrawablesIntoResDir()`, used by the config plugin (`plugin/src/withNanoIconsDrawableLinking.ts`) and the bare CLI (`linkBareAndroidDrawables()`).
+
+The VectorDrawables are copied into `android/app/src/main/res/drawable`. The tab bar resolves them by name at runtime and no code references `R.drawable`, so `shrinkResources` would remove them from a release build. Every link therefore also writes `res/raw/nanoicons_keep.xml`, a `tools:keep` list of every drawable it copied. AGP doesn't package the keep file. It sets no `tools:shrinkMode`, so the app's own shrink mode applies.
+
 ### Stale-symbolset cleanup
 
 `copySymbolsetsIntoCatalog()` first deletes catalog symbolsets whose names start with one of **our configured prefixes**, then copies the fresh set. Removed icons disappear from the catalog on the next build; user-owned symbolsets with other prefixes are untouched. This is why `prefix` is structural, not cosmetic.
