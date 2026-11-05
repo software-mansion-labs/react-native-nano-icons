@@ -11,6 +11,7 @@ import { isBuildFontFile, isFontFileOf } from '../src/utils/fontIdentity';
 
 const ANDROID_FONTS_DIR = 'android/app/src/main/assets/fonts';
 const ANDROID_DRAWABLES_DIR = 'android/app/src/main/res/drawable';
+const ANDROID_DRAWABLE_KEEP_FILE = 'nanoicons_keep.xml';
 const IOS_NANOICONS_FONTS_DIR = 'nanoicons-fonts';
 const IOS_RUN_SCRIPT_PHASE_NAME = 'Copy nanoicons fonts';
 const IOS_APPLICATION_PRODUCT_TYPE = 'com.apple.product-type.application';
@@ -470,7 +471,27 @@ export function copyDrawablesIntoResDir(
       linked.push(base);
     }
   }
+  writeDrawableKeepFile(
+    path.join(path.dirname(drawableDir), 'raw', ANDROID_DRAWABLE_KEEP_FILE),
+    linked
+  );
   if (ledgerPath) fs.writeFileSync(ledgerPath, JSON.stringify(linked));
+}
+
+function writeDrawableKeepFile(
+  keepPath: string,
+  drawableFiles: string[]
+): void {
+  const keep = drawableFiles
+    .map((file) => `@drawable/${file.replace(XML_FILE_RE, '')}`)
+    .join(',');
+  fs.mkdirSync(path.dirname(keepPath), { recursive: true });
+  fs.writeFileSync(
+    keepPath,
+    '<?xml version="1.0" encoding="utf-8"?>\n' +
+      '<resources xmlns:tools="http://schemas.android.com/tools"\n' +
+      `    tools:keep="${keep}" />\n`
+  );
 }
 
 /**
