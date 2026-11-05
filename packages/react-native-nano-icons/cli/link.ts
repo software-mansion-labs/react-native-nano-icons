@@ -6,6 +6,7 @@ import type { NanoLogger } from './logger';
 import type { BuiltFont } from './build';
 import type { BuiltSymbolSet } from './buildSymbols';
 import { catalogRootContentsJson } from '../src/core/symbols/contents';
+import { buildDrawableKeepXml } from '../src/core/symbols/vectorDrawable';
 import { toDrawableResourceName } from '../src/utils/naming';
 import { isBuildFontFile, isFontFileOf } from '../src/utils/fontIdentity';
 
@@ -301,6 +302,7 @@ const XML_FILE_RE = /\.xml$/;
 // scan below only sees names still in the config.
 const SYMBOL_LEDGER = '.nanoicons-catalog.json';
 const DRAWABLE_LEDGER = '.nanoicons-drawables.json';
+const DRAWABLE_KEEP_FILE = 'nanoicons_keep.xml';
 
 function readLedger(ledgerPath: string): string[] {
   try {
@@ -432,7 +434,9 @@ export async function linkBareSymbols(
 
 // Copy generated VectorDrawable XML into a res/drawable dir, first removing what
 // we linked last time (ledger) plus any current-prefix match. Handles removed
-// icons, prefix renames and dropped sets.
+// icons, prefix renames and dropped sets. A keep file in res/raw lists them so
+// release builds with resource shrinking don't strip them from react-native-screens'
+// tab bar, which looks them up by name.
 export function copyDrawablesIntoResDir(
   drawableDir: string,
   builtSymbolSets: BuiltSymbolSet[]
@@ -471,6 +475,22 @@ export function copyDrawablesIntoResDir(
     }
   }
   if (ledgerPath) fs.writeFileSync(ledgerPath, JSON.stringify(linked));
+
+  const keepPath = path.join(
+    path.dirname(drawableDir),
+    'raw',
+    DRAWABLE_KEEP_FILE
+  );
+  if (linked.length) {
+    fs.mkdirSync(path.dirname(keepPath), { recursive: true });
+    fs.writeFileSync(
+      keepPath,
+      buildDrawableKeepXml(linked.map((name) => name.replace(XML_FILE_RE, ''))),
+      'utf8'
+    );
+  } else {
+    fs.rmSync(keepPath, { force: true });
+  }
 }
 
 /**
